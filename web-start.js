@@ -1,6 +1,8 @@
 // CSA-Monitor als Web-App (iPhone, iPad, jeder Browser). Holt die Personaltabelle über die Dropbox-Schnittstelle,
 // entschlüsselt sie nur auf diesem Gerät (excel-kern.js) und setzt die Daten in die Monitor-Seite (monitor.html).
 // Anmeldung bei Dropbox mit PKCE und Code zum Einfügen (kein Server, keine Weiterleitung nötig); Zugriff nur lesend.
+// Die Dropbox-App hat nur Zugriff auf ihren eigenen App-Ordner (Dropbox/Apps/CSA-Monitor …); dort legt Excel nach jedem
+// Speichern eine verschlüsselte Kopie der Personaltabelle ab (Modul Web_Makros). Pfade sind relativ zu diesem Ordner.
 // Einstellungen und Anmeldung liegen im Speicher dieser Web-App auf dem Gerät.
 'use strict';
 (() => {
@@ -67,7 +69,10 @@
     if (r.status === 401 && nochmal) { zugang = null; return dropbox(url, optionen, false); }
     if (!r.ok) {
       const text = await r.text().catch(() => '');
-      if (r.status === 409 && /not_found/.test(text)) throw new Error(`Die Datei wurde in der Dropbox nicht gefunden: ${pfad()}`);
+      if (r.status === 409 && /not_found/.test(text)) {
+        throw new Error('Im App-Ordner der Dropbox liegt noch keine Kopie der Personaltabelle. Die Personaltabelle einmal ' +
+                        'in Excel öffnen und speichern (am Mac oder Windows-PC) – Excel legt die Kopie dann automatisch ab.');
+      }
       throw new Error(`Dropbox antwortet mit ${r.status}.`);
     }
     return r;
@@ -187,7 +192,7 @@
     const leute = window.ExcelKern.csaTraeger(window.XLSX, krypto, bytes, kennwort);
     if (!leute.length) throw new Error('In „CSA-Träger aktiv“ steht niemand.');
     DATEN = { leute, app: true, erzeugt: new Date().toISOString().slice(0, 16),   // eslint-disable-line no-undef
-              quelle: `Excel-Datei in der Dropbox, gespeichert am ${zeit(stand)}` };
+              quelle: `Kopie der Personaltabelle im App-Ordner der Dropbox, gespeichert am ${zeit(stand)}` };
     box.hidden = true; angezeigt = true;
     zeichnen();                                                                     // eslint-disable-line no-undef
   }
@@ -205,7 +210,7 @@
         stand = new Date().toISOString(); kennung = 'test';
         if (test.get('kw') && !kennwort) kennwort = test.get('kw');
       } else {
-        if (!appKey() || !SP.get('csa-dbx-refresh')) { ansicht('dropbox', 'Einmal mit Dropbox verbinden, damit die Web-App die Personaltabelle lesen darf (nur lesend).'); return; }
+        if (!appKey() || !SP.get('csa-dbx-refresh')) { ansicht('dropbox', 'Einmal mit Dropbox verbinden. Die Web-App liest dann nur ihren eigenen App-Ordner in der Dropbox – nichts sonst.'); return; }
         if (!pfad()) { ansicht('fehler', 'Kein Dateipfad eingestellt.', 'Über das Zahnrad › „Dateipfad in der Dropbox ändern“ einstellen.'); return; }
         const m = await metadaten();
         kennung = m.content_hash || m.rev; stand = m.server_modified;
@@ -280,13 +285,13 @@
     if (a === 'neu') { laden(true); hinweis('Wird neu eingelesen …', 2500); }
     if (a === 'kennwort') { SP.set('csa-kennwort', null); hinweis('Das gespeicherte Kennwort ist gelöscht. Beim nächsten Start fragt die Web-App wieder.'); }
     if (a === 'pfad') {
-      const neu = prompt('Pfad der Personaltabelle in der Dropbox (beginnt mit /):', pfad());
+      const neu = prompt('Pfad der Kopie im App-Ordner der Dropbox (beginnt mit /):', pfad());
       if (neu && neu.trim()) { SP.set('csa-pfad', neu.trim()); letzterStand = ''; angezeigt = false; laden(true); }
     }
     if (a === 'abmelden') {
       if (!confirm('Von Dropbox abmelden? Danach muss die Web-App neu verbunden werden.')) return;
       SP.set('csa-dbx-refresh', null); zugang = null; angezeigt = false; letzterStand = '';
-      ansicht('dropbox', 'Einmal mit Dropbox verbinden, damit die Web-App die Personaltabelle lesen darf (nur lesend).');
+      ansicht('dropbox', 'Einmal mit Dropbox verbinden. Die Web-App liest dann nur ihren eigenen App-Ordner in der Dropbox – nichts sonst.');
     }
   });
 
