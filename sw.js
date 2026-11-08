@@ -1,12 +1,13 @@
 // Service Worker der Web-App CSA-Monitor: hält die App-Dateien für den Start ohne Netz bereit und holt bei
 // Verbindung immer zuerst die neueste Fassung (so kommen Verbesserungen beim nächsten Öffnen von selbst an).
+// Immer beim Server nachfragen (no-cache), sonst liefert der Browser bis zu 10 Minuten lang die alte Fassung aus seinem Zwischenspeicher.
 // Anfragen an Dropbox laufen unverändert durch und werden nie zwischengespeichert.
-const CACHE = 'csa-monitor-202611081334';
+const CACHE = 'csa-monitor-202611081346';
 const DATEIEN = ['./', 'index.html', 'xlsx.core.min.js', 'sha512.min.js', 'aes.js', 'excel-kern.js', 'konfig.js',
   'web-start.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(DATEIEN)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(DATEIEN.map(d => new Request(d, { cache: 'no-cache' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -19,7 +20,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;   // Dropbox usw.: nicht anfassen
   e.respondWith(
-    fetch(e.request).then(antwort => {
+    fetch(e.request, { cache: 'no-cache' }).then(antwort => {
       if (antwort.ok) { const kopie = antwort.clone(); caches.open(CACHE).then(c => c.put(e.request, kopie)); }
       return antwort;
     }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(a => a || caches.match('index.html')))

@@ -30,13 +30,29 @@
   const kopfJson = o => JSON.stringify(o).replace(/[\u007f-￿]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   let zugang = null, zugangBis = 0;
 
-  async function anmeldeAdresse() {
-    const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
-    SP.set('csa-dbx-verifier', verifier);
+  // Anmeldelink zu Dropbox. Er wird vorab als echter Link vorbereitet: Ein Fenster, das erst nach einer Berechnung
+  // geöffnet wird, blockiert Safari (iPhone) stillschweigend. Der Prüfschlüssel (PKCE) bleibt gespeichert, bis die
+  // Verbindung steht – so passt der Code auch dann, wenn die App beim Zurückwechseln neu geladen wurde.
+  async function anmeldeLinkVorbereiten() {
+    const a = $a('a-anmelden'), key = appKey();
+    if (!key) { a.removeAttribute('href'); a.classList.add('aus'); return; }
+    let verifier = SP.get('csa-dbx-verifier');
+    if (!verifier || SP.get('csa-dbx-verifier-key') !== key) {
+      verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
+      SP.set('csa-dbx-verifier', verifier);
+      SP.set('csa-dbx-verifier-key', key);
+    }
     const challenge = b64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
-    const p = new URLSearchParams({ client_id: appKey(), response_type: 'code', code_challenge: challenge,
+    if (appKey() !== key || SP.get('csa-dbx-verifier') !== verifier) return;   // inzwischen weitergetippt
+    const p = new URLSearchParams({ client_id: key, response_type: 'code', code_challenge: challenge,
       code_challenge_method: 'S256', token_access_type: 'offline', scope: 'files.metadata.read files.content.read' });
-    return 'https://www.dropbox.com/oauth2/authorize?' + p;
+    a.href = 'https://www.dropbox.com/oauth2/authorize?' + p;
+    a.classList.remove('aus');
+  }
+  function anmeldungZuruecksetzen() {                     // Code ungültig/abgelaufen: neuer Prüfschlüssel, neuer Link
+    SP.set('csa-dbx-verifier', null);
+    SP.set('csa-dbx-verifier-key', null);
+    return anmeldeLinkVorbereiten();
   }
   async function tokenAnfrage(felder) {
     const r = await fetch('https://api.dropboxapi.com/oauth2/token', { method: 'POST', body: new URLSearchParams({ client_id: appKey(), ...felder }) });
@@ -48,6 +64,7 @@
     const j = await tokenAnfrage({ grant_type: 'authorization_code', code: code.trim(), code_verifier: SP.get('csa-dbx-verifier') || '' });
     SP.set('csa-dbx-refresh', j.refresh_token);
     SP.set('csa-dbx-verifier', null);
+    SP.set('csa-dbx-verifier-key', null);
     zugang = j.access_token; zugangBis = Date.now() + (j.expires_in - 120) * 1000;
   }
   async function zugriff() {
@@ -99,6 +116,10 @@
     border-radius: .45rem; border: 1px solid var(--rand); background: var(--surface2); color: var(--ink); width: 100%; box-sizing: border-box; }
   #anmeldung label { color: var(--ink2); font-size: .9rem; display: flex; gap: .5rem; align-items: center; }
   #anmeldung .los { background: var(--akzent); border-color: var(--akzent); color: #fff; font-weight: 600; padding: .55rem 1.2rem; font-size: 16px; }
+  #anmeldung a.knopf { display: inline-block; text-decoration: none; text-align: center; }
+  #anmeldung a.knopf.aus { opacity: .45; }
+  #anmeldung .klein-link { background: none; border: 0; padding: 0; color: var(--muted); font: inherit; font-size: .8rem;
+    text-decoration: underline; cursor: pointer; margin-top: .5rem; display: block; text-align: left; }
   #anmeldung .fehler { color: var(--crit); min-height: 1.2em; font-size: .9rem; }
   #anmeldung .hinweis { color: var(--muted); font-size: .8rem; line-height: 1.35; }
   #anmeldung [hidden] { display: none !important; }
@@ -125,8 +146,9 @@
       <p id="a-text">Wird geladen …</p>
       <div id="a-appkey" hidden><input type="text" id="a-appkey-feld" placeholder="App-Schlüssel der Dropbox-App" autocapitalize="off" spellcheck="false"></div>
       <div id="a-dropbox" hidden>
-        <button type="button" class="knopf los" id="a-anmelden">1. Bei Dropbox anmelden</button>
-        <p class="hinweis" style="margin:.6rem 0">Dropbox öffnet sich in einem neuen Fenster. Dort „Zulassen“ tippen, den angezeigten Code kopieren und hier einfügen:</p>
+        <a class="knopf los aus" id="a-anmelden" target="_blank" rel="noopener">1. Bei Dropbox anmelden</a>
+        <button type="button" class="klein-link" id="a-link-kopieren">Öffnet sich nichts? Anmeldelink kopieren und in Safari öffnen</button>
+        <p class="hinweis" style="margin:.6rem 0">Dropbox öffnet sich in einem eigenen Fenster. Dort anmelden, „Zulassen“ tippen, den angezeigten Code kopieren, das Fenster schließen („Fertig“) und den Code hier einfügen:</p>
         <input type="text" id="a-code" placeholder="Code von Dropbox einfügen" autocapitalize="off" spellcheck="false">
       </div>
       <div id="a-kennwort" hidden>
@@ -182,6 +204,7 @@
     $a('a-los').hidden = !['dropbox', 'kennwort', 'fehler'].includes(was);
     $a('a-los').textContent = was === 'dropbox' ? '2. Verbinden' : was === 'kennwort' ? 'Öffnen' : 'Erneut versuchen';
     if (was === 'dropbox' && !K.appKey) $a('a-appkey-feld').value = SP.get('csa-dbx-appkey') || '';
+    if (was === 'dropbox') anmeldeLinkVorbereiten();
     if (was === 'kennwort') setTimeout(() => $a('a-kw').focus(), 50);
   }
 
@@ -241,13 +264,30 @@
     }
   }
 
-  $a('a-anmelden').addEventListener('click', async () => {
-    if (!K.appKey) {
-      const k = $a('a-appkey-feld').value.trim();
-      if (!k) { $a('a-fehler').textContent = 'Bitte zuerst den App-Schlüssel eintragen.'; return; }
-      SP.set('csa-dbx-appkey', k);
-    }
-    window.open(await anmeldeAdresse(), '_blank');
+  $a('a-appkey-feld').addEventListener('input', () => {
+    SP.set('csa-dbx-appkey', $a('a-appkey-feld').value.trim() || null);
+    $a('a-fehler').textContent = '';
+    anmeldeLinkVorbereiten();
+  });
+  const linkBereit = () => {
+    if ($a('a-anmelden').getAttribute('href')) return true;
+    $a('a-fehler').textContent = appKey() ? 'Einen Moment – der Anmeldelink wird vorbereitet. Bitte gleich noch einmal tippen.'
+                                          : 'Bitte zuerst den App-Schlüssel eintragen.';
+    if (appKey()) anmeldeLinkVorbereiten();
+    return false;
+  };
+  $a('a-anmelden').addEventListener('click', e => {
+    if (!linkBereit()) { e.preventDefault(); return; }
+    $a('a-fehler').textContent = '';
+    $a('a-text').textContent = 'Dropbox ist geöffnet. Nach „Zulassen“ den Code kopieren, das Dropbox-Fenster schließen und den Code unten einfügen.';
+  });
+  $a('a-link-kopieren').addEventListener('click', () => {
+    if (!linkBereit()) return;
+    const url = $a('a-anmelden').href;
+    const ok = () => { $a('a-fehler').textContent = '';
+      $a('a-text').textContent = 'Anmeldelink kopiert. In Safari in die Adresszeile einfügen und öffnen, bei Dropbox „Zulassen“, den Code kopieren und hier unten einfügen.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, () => prompt('Anmeldelink kopieren:', url));
+    else prompt('Anmeldelink kopieren:', url);
   });
 
   box.addEventListener('submit', async e => {
@@ -257,7 +297,14 @@
       const code = $a('a-code').value.trim();
       if (!code) { $a('a-fehler').textContent = 'Bitte den Code von Dropbox einfügen.'; return; }
       try { await codeEinloesen(code); $a('a-code').value = ''; laden(true); }
-      catch (err) { $a('a-fehler').textContent = `Verbinden fehlgeschlagen: ${err.message}. Bitte erneut bei Dropbox anmelden.`; }
+      catch (err) {
+        if (err.dropbox === 'invalid_grant') {
+          await anmeldungZuruecksetzen();
+          $a('a-fehler').textContent = 'Der Code ist ungültig oder abgelaufen. Bitte noch einmal „1. Bei Dropbox anmelden“ tippen und den neuen Code einfügen.';
+        } else {
+          $a('a-fehler').textContent = `Verbinden fehlgeschlagen: ${err.message}`;
+        }
+      }
     } else if (schritt === 'kennwort') {
       const kw = $a('a-kw').value;
       if (!kw) { $a('a-fehler').textContent = 'Bitte das Kennwort eingeben.'; return; }
@@ -290,7 +337,8 @@
     }
     if (a === 'abmelden') {
       if (!confirm('Von Dropbox abmelden? Danach muss die Web-App neu verbunden werden.')) return;
-      SP.set('csa-dbx-refresh', null); zugang = null; angezeigt = false; letzterStand = '';
+      SP.set('csa-dbx-refresh', null); SP.set('csa-dbx-verifier', null); SP.set('csa-dbx-verifier-key', null);
+      zugang = null; angezeigt = false; letzterStand = '';
       ansicht('dropbox', 'Einmal mit Dropbox verbinden. Die Web-App liest dann nur ihren eigenen App-Ordner in der Dropbox – nichts sonst.');
     }
   });
