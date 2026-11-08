@@ -200,15 +200,94 @@ body.eng .kopfleiste { flex-wrap: wrap; white-space: normal; }
 body.eng .kennz { margin-left: 0; padding-left: 0; border-left: 0; flex-wrap: wrap; row-gap: .6rem; }
 body.eng .ampel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 body.eng .unten { grid-template-columns: 1fr; }
-/* Handy (Web-App auf dem iPhone): Ampel untereinander, Zeitstrahl seitlich verschiebbar statt zusammengedrückt */
-@media (max-width: 620px) {
-  body.eng .ampel { grid-template-columns: 1fr; }
-  .listen { grid-template-columns: 1fr; }
-  .liste.klein { border-left: 0; padding-left: 0; border-top: 1px solid var(--rand); padding-top: .6rem; }
-  .tn li { grid-template-columns: 1.4rem minmax(0, 1fr) 4.4rem 6.2rem; }
-  .karte:has(> .inhalt > #zs) .inhalt { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  #zs { min-width: 46rem; }
-}
+/* Handy im Hochformat (Web-App auf dem iPhone; Fensterbreite bis 640 px, Klasse "handy" per Skript):
+   eigene Anordnung, alles untereinander, nichts seitlich verschieben. Prognose als waagrechte Balken je Monat,
+   Zeitstrahl als Liste der Monate mit den Fälligen. Die Bildschirmfassung bleibt davon unberührt. */
+body.handy { padding: .55rem .55rem calc(.7rem + env(safe-area-inset-bottom)); gap: .55rem; }
+body.handy .kachel { border-radius: .65rem; }
+body.handy .kopfleiste { display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "logo titel rechts" "kennz kennz kennz"; gap: .6rem; padding: .55rem .6rem .6rem; white-space: normal; }
+body.handy .logo { grid-area: logo; width: 2.7rem; height: 2.7rem; border-radius: .45rem; }
+body.handy .titel { grid-area: titel; min-width: 0; }
+body.handy .titel h1 { font-size: 1.3rem; }
+body.handy .titel .unter { font-size: .7rem; margin-top: .1rem; line-height: 1.25; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+body.handy .rechts { grid-area: rechts; margin-left: 0; gap: .35rem; align-self: start; }
+body.handy .uhr, body.handy #vollbild { display: none; }
+body.handy .knopf { padding: .35rem .6rem; }
+body.handy .kennz { grid-area: kennz; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem;
+  margin: 0; padding: 0; border: 0; }
+body.handy .bereit, body.handy .kpi { background: var(--surface2); border: 1px solid var(--line); border-radius: .55rem;
+  padding: .45rem .6rem; min-width: 0; }
+body.handy .bereit { gap: .5rem; }
+body.handy .ring { width: 2.3rem; height: 2.3rem; }
+body.handy .bereit b, body.handy .kpi b { font-size: 1.35rem; }
+body.handy .bereit b small { font-size: .85rem; }
+body.handy .bereit span, body.handy .kpi span { font-size: .72rem; line-height: 1.25; display: block; white-space: normal; }
+
+body.handy .ampel { grid-template-columns: 1fr; gap: .45rem; }
+body.handy .lane h2 { padding: .5rem .7rem; font-size: .85rem; border-top-width: .25rem; cursor: pointer; user-select: none;
+  -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+body.handy .lane h2 .n { font-size: 1.3rem; }
+body.handy .lane h2::after { content: "▾"; width: 1rem; text-align: center; color: var(--muted); }
+body.handy .lane.zu h2::after { content: "▸"; }
+body.handy .lane.leerlane h2 { cursor: default; border-bottom: 0; }
+body.handy .lane.leerlane h2::after { content: "✓"; color: var(--good); }
+body.handy .lane.zu h2 { border-bottom: 0; }
+body.handy .lane.leerlane .leer, body.handy .lane.zu .kopfz, body.handy .lane.zu ul { display: none; }
+body.handy .lane .kopfz, body.handy .lane li { grid-template-columns: minmax(0, 1fr) 4.3rem 4.7rem; gap: .4rem;
+  padding-left: .7rem; padding-right: .7rem; }
+body.handy .lane li { font-size: .92rem; padding-top: .32rem; padding-bottom: .32rem; }
+
+body.handy .unten { grid-template-columns: 1fr; gap: .55rem; }
+body.handy .karte > h2 { font-size: .82rem; padding: .5rem .75rem; white-space: normal; line-height: 1.25; }
+body.handy .inhalt { padding: .6rem .7rem .7rem; }
+body.handy .eingaben { gap: .55rem .8rem; padding: .5rem .6rem; }
+body.handy .eingaben .hinweis { flex-basis: 100%; padding-bottom: 0; }
+body.handy .meldung { font-size: .88rem; margin: .55rem 0 .5rem; }
+body.handy .listen { grid-template-columns: 1fr; gap: .7rem; }
+body.handy .liste.klein { border-left: 0; padding-left: 0; }
+body.handy .liste h3, body.handy .pg-kopf h3 { white-space: normal; font-size: .72rem; }
+body.handy .tn li { grid-template-columns: 1.2rem minmax(0, 1fr) auto auto; gap: .45rem; font-size: .92rem; }
+body.handy .klein li { font-size: .82rem; }
+body.handy .prognose { min-height: 0; margin-top: .8rem; }
+body.handy .pg-kopf { flex-wrap: wrap; row-gap: .25rem; padding-bottom: .3rem; }
+body.handy .pg-legende { margin-left: 0; white-space: normal; flex-wrap: wrap; gap: .25rem .8rem; padding-bottom: 0; }
+body.handy .pg-legende > span:last-child { display: none; }
+body.handy footer { white-space: normal; text-align: left; font-size: .68rem; line-height: 1.35; }
+
+/* Prognose auf dem Handy: je Monat ein waagrechter Balken (grau = ohne Übung, blau = zusätzlich mit geplanter Übung) */
+.pgq { display: grid; grid-template-columns: 3.9rem minmax(0, 1fr) 3.4rem; gap: .3rem .5rem; align-items: center;
+  font-size: .82rem; margin-top: .35rem; }
+.pgq .mo { color: var(--ink2); white-space: nowrap; }
+.pgq .mo.tm { color: var(--akzent); font-weight: 700; }
+.pgq .balken { position: relative; height: 1rem; border-radius: .25rem; background: var(--surface2);
+  border: 1px solid var(--line); overflow: hidden; }
+.pgq .balken i { position: absolute; left: 0; top: 0; bottom: 0; }
+.pgq .balken .mit { background: var(--akzent); }
+.pgq .balken .ohne { background: var(--ohne); }
+.pgq .wert { text-align: right; font-weight: 700; white-space: nowrap; }
+.pgq .wert small { color: var(--muted); font-weight: 400; }
+
+/* Zeitstrahl auf dem Handy: Liste der Monate, je Monat die Fälligen als farbige Marken (Farbe = Ampel) */
+.zsl { display: flex; flex-direction: column; border: 1px solid var(--rand); border-radius: .45rem; overflow: hidden; }
+.zsl .zeile { display: grid; grid-template-columns: 3.7rem 1.5rem minmax(0, 1fr); gap: .5rem; align-items: start;
+  padding: .4rem .55rem; border-bottom: 1px solid var(--line); font-size: .85rem; }
+.zsl .zeile:last-child { border-bottom: 0; }
+.zsl .zeile:nth-child(even) { background: var(--surface2); }
+.zsl .zeile.tm { background: var(--termin); box-shadow: inset .25rem 0 0 var(--termin-line); }
+.zsl .mo { font-weight: 600; white-space: nowrap; line-height: 1.25; }
+.zsl .mo small { display: block; color: var(--muted); font-weight: 400; font-size: .68rem; }
+.zsl .zeile.tm .mo small { color: var(--akzent); font-weight: 700; }
+.zsl .anz { text-align: center; font-weight: 700; line-height: 1.25; }
+.zsl .anz.null { color: var(--muted); font-weight: 400; }
+.zsl .namen { display: flex; flex-wrap: wrap; gap: .3rem .35rem; min-width: 0; line-height: 1.25; }
+.zsl .namen.leer { color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: .3rem; max-width: 100%; padding: .1rem .5rem .1rem .4rem;
+  border-radius: 1rem; font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: color-mix(in srgb, var(--c) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--c) 40%, transparent); }
+.chip::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--c); flex: none; }
+.chip small { color: var(--ink2); font-size: .72rem; }
 @media print { .knopf { display: none; } }
 </style>
 </head>
@@ -267,7 +346,7 @@ body.eng .unten { grid-template-columns: 1fr; }
 
 <script>
 // let statt const: Das Programm CSA-Monitor setzt die Daten nach dem Einlesen der Excel-Datei neu (start.js)
-let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-08T11:58"};
+let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-08T12:05"};
 
 const KAT = {
   1: { label: 'überfällig', c: 'var(--crit)' },
@@ -297,6 +376,10 @@ const kurz = d => d ? `${p2(d.getDate())}.${p2(d.getMonth() + 1)}.${String(d.get
 const lang = d => `${p2(d.getDate())}.${p2(d.getMonth() + 1)}.${d.getFullYear()}`;
 const tagText = n => n < 0 ? `seit ${-n} T.` : n === 0 ? 'heute' : `in ${n} T.`;
 const bereitFarbe = q => q >= .85 ? 'var(--good)' : q >= .7 ? 'var(--warn)' : 'var(--crit)';
+// Handy im Hochformat: eigene Ansicht (siehe CSS "body.handy"); schmale Fenster bis 640 px
+const istHandy = () => innerWidth <= 640;
+const handy = () => document.body.classList.contains('handy');
+let zuKat = null;                       // auf dem Handy eingeklappte Ampel-Gruppen (Kategorien)
 
 // Eingaben merken
 const S = { get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch (e) { return d; } },
@@ -344,11 +427,14 @@ function kopf(h, L) {
 }
 
 function ampel(L) {
+  // Handy: lange Gruppe "später als 60 Tage" anfangs eingeklappt; Tippen auf die Kopfzeile klappt auf und zu
+  if (handy() && zuKat === null && L.length) zuKat = new Set(L.filter(p => p.kat === 4).length > 6 ? [4] : []);
   $('ampel').innerHTML = [1, 2, 3, 4].map(k => {
     const K = KAT[k], liste = L.filter(p => p.kat === k), spalte = k === 1 ? 'fällig seit' : 'fällig am';
     const zeilen = liste.map(p => `<li><span>${esc(p.voll)}</span><span class="d zahl">${kurz(p.f)}</span>` +
                                   `<span class="t zahl">${p.f ? tagText(p.t) : ''}</span></li>`).join('');
-    return `<div class="lane kachel${liste.length ? '' : ' leerlane'}" style="--c:${K.c}"><h2><span class="punkt"></span>${K.label}` +
+    const zu = handy() && liste.length && zuKat && zuKat.has(k);
+    return `<div class="lane kachel${liste.length ? '' : ' leerlane'}${zu ? ' zu' : ''}" data-k="${k}" style="--c:${K.c}"><h2><span class="punkt"></span>${K.label}` +
            `<span class="n zahl">${liste.length}</span></h2>` +
            (liste.length
              ? `<div class="kopfz"><span>Name</span><span class="d">${spalte}</span><span class="t">Tage</span>` +
@@ -399,6 +485,7 @@ function planung(h, L) {
 // Einsatzbereite am Ende jedes Monats: ohne weitere Übung und mit der geplanten (Teilnehmer = die N am nächsten Fälligen)
 function prognose(h, L, termin, N) {
   const n = L.length;
+  $('pg').className = handy() ? 'pgq' : 'pg';
   if (!n) { $('pg').innerHTML = ''; return; }
   const tn = new Set(L.slice(0, N).map(p => p.voll));
   const neu = edate(termin, 12);
@@ -409,6 +496,19 @@ function prognose(h, L, termin, N) {
   const m0 = new Date(h.getFullYear(), h.getMonth(), 1);
   const tIdx = (termin.getFullYear() - m0.getFullYear()) * 12 + termin.getMonth() - m0.getMonth();
   $('pgAlle').textContent = `alle ${n}`;
+  if (handy()) {
+    let zeilen = '';
+    for (let i = 0; i < 13; i++) {
+      const d = new Date(m0.getFullYear(), m0.getMonth() + i + 1, 0);
+      const o = bereit(d, false), m = bereit(d, true);
+      zeilen += `<span class="mo${i === tIdx ? ' tm' : ''}">${i === tIdx ? '▲ ' : ''}${MONATE[d.getMonth()]} ${String(d.getFullYear()).slice(2)}</span>` +
+                `<span class="balken"><i class="mit" style="width:${(m / n * 100).toFixed(1)}%"></i>` +
+                `<i class="ohne" style="width:${(o / n * 100).toFixed(1)}%"></i></span>` +
+                `<span class="wert zahl">${m}<small> / ${n}</small></span>`;
+    }
+    $('pg').innerHTML = zeilen;
+    return;
+  }
   let html = '<div class="soll"></div>';
   for (let i = 0; i < 13; i++) {
     const d = new Date(m0.getFullYear(), m0.getMonth() + i + 1, 0);           // Monatsende
@@ -423,7 +523,33 @@ function prognose(h, L, termin, N) {
   $('pg').innerHTML = html;
 }
 
+function zeitstrahlListe(h, L, termin) {
+  const m0 = new Date(h.getFullYear(), h.getMonth(), 1);
+  const idx = d => (d.getFullYear() - m0.getFullYear()) * 12 + d.getMonth() - m0.getMonth();
+  const tIdx = idx(termin);
+  const marke = (p, zusatz) => `<span class="chip" style="--c:${KAT[p.kat].c}" title="${esc(p.voll)}">${esc(p.kurz)}` +
+                               (zusatz ? ` <small>${zusatz}</small>` : '') + '</span>';
+  const zeile = (titel, unter, liste, tm, f) =>
+    `<div class="zeile${tm ? ' tm' : ''}"><span class="mo">${titel}${unter ? `<small>${unter}</small>` : ''}</span>` +
+    `<span class="anz zahl${liste.length ? '' : ' null'}">${liste.length || '·'}</span>` +
+    `<span class="namen${liste.length ? '' : ' leer'}">${liste.length ? liste.map(f).join('') : '–'}</span></div>`;
+  let html = zeile('überf.', '', L.filter(p => p.kat === 1), false, p => marke(p, p.f ? kurz(p.f) : 'keine Übung'));
+  for (let i = 0; i < 13; i++) {
+    const d = new Date(m0.getFullYear(), m0.getMonth() + i, 1);
+    const liste = L.filter(p => p.kat > 1 && p.f && idx(p.f) === i);
+    html += zeile(`${MONATE[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`, i === tIdx ? '▲ Termin' : (i === 0 ? 'jetzt' : ''),
+                  liste, i === tIdx, p => marke(p, `${p.f.getDate()}.`));
+  }
+  $('zs').className = 'zsl';
+  $('zs').style.gridTemplateRows = '';
+  $('zs').innerHTML = html;
+  $('legende').innerHTML = [1, 2, 3, 4].map(k => `<span><span class="punkt" style="--c:${KAT[k].c}"></span>${KAT[k].label}</span>`).join('') +
+    '<span><span class="tfeld"></span>Monat des Übungstermins</span>';
+}
+
 function zeitstrahl(h, L, termin) {
+  if (handy()) return zeitstrahlListe(h, L, termin);
+  $('zs').className = 'zs';
   const m0 = new Date(h.getFullYear(), h.getMonth(), 1);
   const monate = Array.from({ length: 13 }, (_, i) => new Date(m0.getFullYear(), m0.getMonth() + i, 1));
   const tage_im = d => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
@@ -470,6 +596,7 @@ function zeitstrahl(h, L, termin) {
 
 function zeichnen() {
   const h = heute(), L = personen(h);
+  document.body.classList.toggle('handy', istHandy());
   kopf(h, L);
   ampel(L);
   const { termin, N } = planung(h, L);
@@ -516,6 +643,11 @@ function groesseSuchen() {
 function anpassen() {
   const eng = innerWidth < 1000 || innerHeight > innerWidth * 1.1;
   document.body.classList.toggle('eng', eng);
+  if (handy()) {                                    // Handy: feste, gut lesbare Schrift; die Seite scrollt senkrecht
+    $('ampel').style.gridTemplateColumns = '';
+    document.documentElement.style.fontSize = Math.max(14, Math.min(16, innerWidth / 26)) + 'px';
+    return;
+  }
   const lanes = [...document.querySelectorAll('.lane')];
   lanes.forEach(l => l.classList.remove('zweispaltig'));
   const breiten = () => $('ampel').style.gridTemplateColumns = lanes.map(l =>
@@ -535,7 +667,23 @@ function anpassen() {
   document.documentElement.style.fontSize = Math.max(einspaltig, zweispaltig) + 'px';
 }
 let anpassenTimer;
-addEventListener('resize', () => { clearTimeout(anpassenTimer); anpassenTimer = setTimeout(anpassen, 120); });
+addEventListener('resize', () => {
+  clearTimeout(anpassenTimer);
+  // Wechsel zwischen Handy- und Bildschirmansicht (z. B. Drehen) braucht neu gezeichnete Prognose und Zeitstrahl
+  anpassenTimer = setTimeout(() => { if (istHandy() !== handy()) zeichnen(); else anpassen(); }, 120);
+});
+// Handy: Ampel-Gruppe durch Tippen auf die Kopfzeile auf- und zuklappen
+$('ampel').addEventListener('click', e => {
+  if (!handy()) return;
+  const kopfzeile = e.target.closest('.lane h2');
+  if (!kopfzeile) return;
+  const lane = kopfzeile.parentElement;
+  if (lane.classList.contains('leerlane')) return;
+  const k = Number(lane.dataset.k);
+  if (!zuKat) zuKat = new Set();
+  if (zuKat.has(k)) zuKat.delete(k); else zuKat.add(k);
+  lane.classList.toggle('zu', zuKat.has(k));
+});
 document.fonts?.ready?.then(anpassen);
 
 // Tooltip
