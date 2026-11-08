@@ -1,7 +1,7 @@
 // Service Worker der Web-App CSA-Monitor: hält die App-Dateien für den Start ohne Netz bereit und holt bei
 // Verbindung immer zuerst die neueste Fassung (so kommen Verbesserungen beim nächsten Öffnen von selbst an).
 // Anfragen an Dropbox laufen unverändert durch und werden nie zwischengespeichert.
-const CACHE = 'csa-monitor-202611081322';
+const CACHE = 'csa-monitor-202611081334';
 const DATEIEN = ['./', 'index.html', 'xlsx.core.min.js', 'sha512.min.js', 'aes.js', 'excel-kern.js', 'konfig.js',
   'web-start.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
