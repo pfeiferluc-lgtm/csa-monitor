@@ -193,6 +193,13 @@
   let kennwort = SP.get('csa-kennwort');
   let letzteDatei = null, letzterStand = '', schritt = '', angezeigt = false, beschaeftigt = false;
 
+  // Auf dem Home-Bildschirm hat die App einen eigenen Speicher (iOS): Eine Anmeldung aus Safari sieht sie nicht.
+  // Einmal dort verbinden – danach bleibt die Verbindung, beim Start kommt höchstens die Kennwortfrage.
+  const eigenstaendig = () => navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  const verbindenText = () => eigenstaendig()
+    ? 'Die App auf dem Home-Bildschirm einmal mit Dropbox verbinden – sie hat einen eigenen Speicher und kennt die Anmeldung aus Safari nicht. Danach bleibt sie verbunden und fragt beim Start nur noch nach dem Kennwort der Personaltabelle.'
+    : 'Einmal mit Dropbox verbinden. Die Web-App liest dann nur ihren eigenen App-Ordner in der Dropbox – nichts sonst.';
+
   function ansicht(was, text, fehler = '') {
     schritt = was;
     box.hidden = false;
@@ -233,7 +240,7 @@
         stand = new Date().toISOString(); kennung = 'test';
         if (test.get('kw') && !kennwort) kennwort = test.get('kw');
       } else {
-        if (!appKey() || !SP.get('csa-dbx-refresh')) { ansicht('dropbox', 'Einmal mit Dropbox verbinden. Die Web-App liest dann nur ihren eigenen App-Ordner in der Dropbox – nichts sonst.'); return; }
+        if (!appKey() || !SP.get('csa-dbx-refresh')) { ansicht('dropbox', verbindenText()); return; }
         if (!pfad()) { ansicht('fehler', 'Kein Dateipfad eingestellt.', 'Über das Zahnrad › „Dateipfad in der Dropbox ändern“ einstellen.'); return; }
         const m = await metadaten();
         kennung = m.content_hash || m.rev; stand = m.server_modified;
@@ -296,7 +303,14 @@
     if (schritt === 'dropbox') {
       const code = $a('a-code').value.trim();
       if (!code) { $a('a-fehler').textContent = 'Bitte den Code von Dropbox einfügen.'; return; }
-      try { await codeEinloesen(code); $a('a-code').value = ''; laden(true); }
+      try {
+        await codeEinloesen(code);
+        $a('a-code').value = '';
+        // Speicher dauerhaft halten (iOS räumt sonst bei Platzmangel womöglich auf); Verbindung bleibt gespeichert
+        if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+        hinweis('Mit Dropbox verbunden – die Verbindung bleibt auf diesem Gerät gespeichert. Künftig fragt die App höchstens nach dem Kennwort.', 9000);
+        laden(true);
+      }
       catch (err) {
         if (err.dropbox === 'invalid_grant') {
           await anmeldungZuruecksetzen();
@@ -339,7 +353,7 @@
       if (!confirm('Von Dropbox abmelden? Danach muss die Web-App neu verbunden werden.')) return;
       SP.set('csa-dbx-refresh', null); SP.set('csa-dbx-verifier', null); SP.set('csa-dbx-verifier-key', null);
       zugang = null; angezeigt = false; letzterStand = '';
-      ansicht('dropbox', 'Einmal mit Dropbox verbinden. Die Web-App liest dann nur ihren eigenen App-Ordner in der Dropbox – nichts sonst.');
+      ansicht('dropbox', verbindenText());
     }
   });
 
