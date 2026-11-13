@@ -1,7 +1,7 @@
 {
  "name": "CSA-Monitor",
  "short_name": "CSA-Monitor",
- "description": "Belastungsübung der CSA-Träger · TE Gefahrstoffzug Miehlen",
+ "description": "Gefahrstoffzug · Teileinheit Miehlen: Belastungsübung der CSA-Träger und Übungsanwesenheit",
  "lang": "de",
  "start_url": "./",
  "scope": "./",

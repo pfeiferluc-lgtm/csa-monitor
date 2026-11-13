@@ -1,10 +1,10 @@
-// Service Worker der Web-App CSA-Monitor: hält die App-Dateien für den Start ohne Netz bereit und holt bei
+// Service Worker der Web-App (CSA-Monitor und Übungsanwesenheit): hält die App-Dateien für den Start ohne Netz bereit und holt bei
 // Verbindung immer zuerst die neueste Fassung (so kommen Verbesserungen beim nächsten Öffnen von selbst an).
 // Immer beim Server nachfragen (no-cache), sonst liefert der Browser bis zu 10 Minuten lang die alte Fassung aus seinem Zwischenspeicher.
 // Anfragen an Dropbox laufen unverändert durch und werden nie zwischengespeichert.
-const CACHE = 'csa-monitor-202611081358';
+const CACHE = 'csa-monitor-202611130134';
 const DATEIEN = ['./', 'index.html', 'xlsx.core.min.js', 'sha512.min.js', 'aes.js', 'excel-kern.js', 'konfig.js',
-  'web-start.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+  'oberflaeche.js', 'web-start.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(DATEIEN.map(d => new Request(d, { cache: 'no-cache' })))).then(() => self.skipWaiting()));
