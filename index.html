@@ -35,7 +35,7 @@
   --eingabe: #fff4d1; --eingabe-rand: #bf9000; --ohne: #c6ced8;
 }
 * { box-sizing: border-box; }
-html { font-size: 15px; }                       /* wird per Skript an den Bildschirm angepasst */
+html { font-size: 15px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }   /* Größe passt ein Skript an den Bildschirm an */
 body {
   margin: 0; min-height: 100vh; padding: .9rem 1.1rem .45rem; background: var(--page); color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; -webkit-font-smoothing: antialiased;
@@ -98,6 +98,8 @@ button, input { font: inherit; color: inherit; }
 .lane.zweispaltig .kopfz .wdh { display: block; }
 .lane .kopfz .wdh { display: none; }
 .lane li .d, .lane .kopfz .d { text-align: center; }
+.lane li .d.ohne { grid-column: 2 / -1; }                 /* ohne Übung: Datums- und Tage-Spalte zusammen */
+.lane.zweispaltig li .d.ohne { grid-column: auto; white-space: normal; line-height: 1.05; font-size: .78em; }
 .lane li .t, .lane .kopfz .t { text-align: right; }
 .lane li .t { color: var(--ink2); }
 .lane .leer { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
@@ -119,8 +121,14 @@ button, input { font: inherit; color: inherit; }
   background: var(--surface2); border: 1px solid var(--line); }
 .eingaben label { display: flex; flex-direction: column; gap: .2rem; font-size: .8rem; color: var(--ink2); }
 .eingaben input { background: var(--eingabe); border: 2px solid var(--eingabe-rand); border-radius: .45rem;
-  padding: .3rem .5rem; font-size: 1.1rem; font-weight: 700; }
+  padding: 0 .5rem; font-size: 1.1rem; font-weight: 700; height: 2.25em; line-height: 1.2; box-sizing: border-box; margin: 0; }
 .eingaben input[type=number] { width: 5.5rem; text-align: center; }
+/* Datum: Safari (iPhone) zeichnet Datumsfelder sonst höher als Textfelder, zentriert den Wert und lässt ein leeres Feld
+   zusammenfallen. Ohne eigenes Aussehen gilt die Höhe oben; die Auswahl (Kalender bzw. Drehrad) öffnet sich weiter. */
+.eingaben input[type=date] { -webkit-appearance: none; appearance: none; min-width: 0; line-height: calc(2.25em - 4px); }
+.eingaben input[type=date]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+/* Touch-Geräte: mindestens 16 px, sonst vergrößert Safari beim Antippen die ganze Seite (und sie wirkt danach zu breit) */
+@media (pointer: coarse) { .eingaben input { font-size: max(16px, 1.1rem); } }
 .eingaben .hinweis { font-size: .8rem; color: var(--muted); padding-bottom: .35rem; }
 .eingaben .hinweis b { color: var(--ink); }
 .meldung { margin: .65rem 0 .55rem; padding: .45rem .7rem; border-radius: .45rem; font-weight: 600; font-size: .95rem;
@@ -136,6 +144,8 @@ button, input { font: inherit; color: inherit; }
 .tn .nr { color: var(--muted); text-align: right; }
 .tn .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 .tn .d { text-align: center; color: var(--ink2); }
+.tn .d.ohne, .klein li .d.ohne { white-space: normal; width: min-content; line-height: 1.05; font-size: .82em; }
+.tn .d.ohne { justify-self: center; }
 .marke { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 600; padding: .1rem .45rem;
   border-radius: .3rem; background: var(--bg); justify-self: start; }
 .klein li { display: grid; grid-template-columns: 1rem minmax(0, 1fr) 4.2rem; gap: .3rem; font-size: .8rem;
@@ -143,6 +153,7 @@ button, input { font: inherit; color: inherit; }
 .klein li span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
 .klein li.offen { background: var(--ser-t); color: var(--ink); font-weight: 600; }
 .klein li .d { text-align: right; }
+.klein li .d.ohne { justify-self: end; }
 
 /* Prognose */
 .prognose { display: flex; flex-direction: column; flex: 1; margin-top: .9rem; min-height: 9.5rem; }
@@ -249,6 +260,8 @@ body.handy .karte > h2 { font-size: .82rem; padding: .5rem .75rem; white-space: 
 body.handy .inhalt { padding: .6rem .7rem .7rem; }
 body.handy .eingaben { gap: .55rem .8rem; padding: .5rem .6rem; }
 body.handy .eingaben .hinweis { flex-basis: 100%; padding-bottom: 0; }
+body.handy .eingaben input { font-size: max(16px, 1.1rem); }
+body.handy .eingaben input[type=date] { width: 8.6em; }
 body.handy .meldung { font-size: .88rem; margin: .55rem 0 .5rem; }
 body.handy .listen { grid-template-columns: 1fr; gap: .7rem; }
 body.handy .liste.klein { border-left: 0; padding-left: 0; }
@@ -352,7 +365,7 @@ body.handy footer { white-space: normal; text-align: left; font-size: .68rem; li
 
 <script>
 // let statt const: Das Programm CSA-Monitor setzt die Daten nach dem Einlesen der Excel-Datei neu (start.js)
-let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-13T00:34"};
+let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-13T01:01"};
 
 const KAT = {
   1: { label: 'überfällig', c: 'var(--crit)' },
@@ -437,8 +450,9 @@ function ampel(L) {
   if (handy() && zuKat === null && L.length) zuKat = new Set(L.filter(p => p.kat === 4).length > 6 ? [4] : []);
   $('ampel').innerHTML = [1, 2, 3, 4].map(k => {
     const K = KAT[k], liste = L.filter(p => p.kat === k), spalte = k === 1 ? 'fällig seit' : 'fällig am';
-    const zeilen = liste.map(p => `<li><span>${esc(p.voll)}</span><span class="d zahl">${kurz(p.f)}${p.vorlaeufig ? '<span class="vorl">*</span>' : ''}</span>` +
-                                  `<span class="t zahl">${p.f ? tagText(p.t) : ''}</span></li>`).join('');
+    const zeilen = liste.map(p => `<li><span>${esc(p.voll)}</span>` + (p.f
+      ? `<span class="d zahl">${kurz(p.f)}${p.vorlaeufig ? '<span class="vorl">*</span>' : ''}</span><span class="t zahl">${tagText(p.t)}</span>`
+      : '<span class="d ohne">keine Übung</span>') + '</li>').join('');
     const zu = handy() && liste.length && zuKat && zuKat.has(k);
     return `<div class="lane kachel${liste.length ? '' : ' leerlane'}${zu ? ' zu' : ''}" data-k="${k}" style="--c:${K.c}"><h2><span class="punkt"></span>${K.label}` +
            `<span class="n zahl">${liste.length}</span></h2>` +
@@ -475,7 +489,7 @@ function planung(h, L) {
   $('tn').innerHTML = L.slice(0, N).map((p, i) => {
     const Z = ZUM_TERMIN[katT(p)];
     return `<li><span class="nr zahl">${i + 1}</span><span class="name">${esc(p.voll)}</span>` +
-           `<span class="d zahl">${kurz(p.f)}</span>` +
+           `<span class="d zahl${p.f ? '' : ' ohne'}">${kurz(p.f)}</span>` +
            `<span class="marke" style="--bg:${Z.bg}"><span class="icon" style="--c:${Z.c}">${Z.icon}</span>${Z.label}</span></li>`;
   }).join('');
 
@@ -483,7 +497,7 @@ function planung(h, L) {
   $('kl').innerHTML = m ? faellig2.map((p, i) => {
     const drin = i < N;
     return `<li class="${drin ? '' : 'offen'}" title="${drin ? 'eingeplant' : 'nicht eingeplant'}">` +
-           `<span>${drin ? '✓' : '–'}</span><span>${esc(p.voll)}</span><span class="d zahl">${kurz(p.f)}</span></li>`;
+           `<span>${drin ? '✓' : '–'}</span><span>${esc(p.voll)}</span><span class="d zahl${p.f ? '' : ' ohne'}">${kurz(p.f)}</span></li>`;
   }).join('') : '<li><span></span><span>– niemand –</span><span></span></li>';
   return { termin, N };
 }

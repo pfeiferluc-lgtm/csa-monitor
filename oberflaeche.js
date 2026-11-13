@@ -18,13 +18,13 @@
   body[data-ansicht="anwesenheit"] > :not(#anwesenheit):not(#anmeldung):not(#update):not(#web-meldung):not(#einst):not(script):not(style),
   body[data-ansicht="monitor"] > #startseite, body[data-ansicht="monitor"] > #anwesenheit,
   body:not([data-ansicht]) > #startseite, body:not([data-ansicht]) > #anwesenheit { display: none !important; }
-  body[data-ansicht="start"], body[data-ansicht="anwesenheit"] { padding: 0; gap: 0; display: block; min-height: 100vh; }
+  body[data-ansicht="start"], body[data-ansicht="anwesenheit"] { padding: 0; gap: 0; display: block; min-height: 100vh; min-height: 100svh; }
   .gsz-ansicht { --rund: .8rem; font-size: 16px; color: var(--ink); }
   .logo-hell { object-fit: contain !important; border-radius: 0 !important; }
   :root:not(.hell) .logo-hell, :root.hell .logo-dunkel:not(.allein) { display: none !important; }
 
   /* Startseite */
-  #startseite { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  #startseite { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: calc(1.5rem + env(safe-area-inset-top)) 1.2rem calc(1.2rem + env(safe-area-inset-bottom)); gap: 1.8rem; }
   .st-oben { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .35rem; }
   .st-logo { width: 9.5rem; height: 9.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: .6rem; }
@@ -60,19 +60,27 @@
   .aw-kopf { display: flex; align-items: center; gap: .8rem; padding: .55rem .8rem; }
   .aw-kopf img { width: 2.9rem; height: 2.9rem; object-fit: cover; border-radius: .45rem; flex: none; }
   .aw-titel { flex: 1; min-width: 0; }
-  .aw-titel h1 { margin: 0; font-size: 1.35rem; line-height: 1.15; }
-  .aw-titel div { color: var(--muted); font-size: .8rem; }
+  /* „Übungs­anwesenheit“ trennt nur, wenn die Zeile zu schmal ist (weiches Trennzeichen im Titel) */
+  .aw-titel h1 { margin: 0; font-size: 1.35rem; line-height: 1.15; -webkit-hyphens: manual; hyphens: manual; overflow-wrap: break-word; }
+  .aw-titel div { color: var(--muted); font-size: .8rem; line-height: 1.3; }
   .aw-kopf .knopf, .aw-leiste .knopf { text-decoration: none; white-space: nowrap; }
+  .aw-kopf .knopf { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; flex: none; }
+  .aw-kopf .knopf svg { width: 1.1em; height: 1.1em; flex: none; }
   .gsz-ansicht .knopf { font-size: .95rem; padding: .45rem .75rem; }
   .gsz-ansicht h2 { margin: 0 0 .55rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink2); }
   .aw-uebung, .aw-liste { padding: .8rem .9rem .9rem; }
   .aw-felder { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: .7rem; }
   .aw-felder label { display: flex; flex-direction: column; gap: .25rem; font-size: .8rem; color: var(--ink2); }
-  .aw-felder input { font: inherit; font-size: 16px; padding: .55rem .6rem; border-radius: .5rem; border: 2px solid var(--eingabe-rand);
-    background: var(--eingabe); color: var(--ink); min-width: 0; width: 100%; box-sizing: border-box; }
+  .aw-felder input { font: inherit; font-size: 16px; height: 2.75em; line-height: 1.2; padding: 0 .65rem; margin: 0;
+    border-radius: .5rem; border: 2px solid var(--eingabe-rand); background: var(--eingabe); color: var(--ink);
+    min-width: 0; width: 100%; box-sizing: border-box; display: block; -webkit-appearance: none; appearance: none; }
+  /* Safari (iPhone) zeichnet Datumsfelder sonst höher als Textfelder und zentriert den Wert; die Auswahl öffnet sich weiter */
+  .aw-felder input[type=date] { -webkit-appearance: none; appearance: none; line-height: calc(2.75em - 4px); }   /* Wert mittig */
+  .aw-felder input[type=date]::-webkit-date-and-time-value { text-align: left; margin: 0; }
   .aw-chips { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .7rem; }
   .aw-chip { font: inherit; font-size: .82rem; padding: .35rem .6rem; border-radius: 1rem; border: 1px solid var(--rand);
-    background: var(--surface2); color: var(--ink2); cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+    background: var(--surface2); color: var(--ink2); cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .aw-chip.gewaehlt { background: var(--akzent); border-color: var(--akzent); color: #fff; font-weight: 600; }
   .aw-chip.geplant:not(.gewaehlt) { border-style: dashed; }
   .aw-chip small { opacity: .8; }
@@ -80,7 +88,8 @@
   .aw-hinweis b { color: var(--ink); }
   .aw-werkzeuge { display: flex; gap: .5rem .7rem; flex-wrap: wrap; align-items: center; margin-bottom: .55rem; }
   .aw-werkzeuge input { flex: 1 1 12rem; font: inherit; font-size: 16px; padding: .5rem .65rem; border-radius: .5rem;
-    border: 1px solid var(--rand); background: var(--surface2); color: var(--ink); min-width: 0; }
+    border: 1px solid var(--rand); background: var(--surface2); color: var(--ink); min-width: 0; margin: 0;
+    -webkit-appearance: none; appearance: none; }
   .aw-filter { display: inline-flex; border: 1px solid var(--rand); border-radius: .55rem; overflow: hidden; }
   .aw-filter button { font: inherit; font-size: .82rem; border: 0; background: var(--surface2); color: var(--ink2); padding: .45rem .65rem;
     cursor: pointer; border-right: 1px solid var(--rand); }
@@ -115,6 +124,7 @@
     display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "summe knopf" "status knopf"; gap: .15rem .9rem;
     align-items: center; }
   .aw-summe { grid-area: summe; font-weight: 700; font-size: 1.02rem; }
+  .aw-kurz { display: none; }
   .aw-status { grid-area: status; font-size: .8rem; color: var(--muted); line-height: 1.3; }
   .aw-status.ok { color: var(--good); }
   .aw-status.fehler { color: var(--crit); }
@@ -129,11 +139,30 @@
     .st-te { font-size: 1.2rem; }
     .st-kachel { padding: 1rem 1rem .95rem; }
     .aw-felder { grid-template-columns: 1fr; }
-    .aw-kopf { gap: .55rem; padding: .5rem .55rem; }
+    .aw-kopf { gap: .5rem; padding: .5rem .55rem; }
     .aw-kopf img { width: 2.4rem; height: 2.4rem; }
     .aw-titel h1 { font-size: 1.15rem; }
+    .aw-zt { display: none; }                               /* Haus-Symbol ohne „Start“ */
+    .gsz-ansicht .aw-kopf .knopf { padding: .45rem .6rem; }
     #anwesenheit { padding-left: .5rem; padding-right: .5rem; }
     .aw-uebung, .aw-liste { padding: .7rem .65rem .8rem; }
+    .aw-werkzeuge input { flex-basis: 100%; }
+    .aw-filter { display: flex; width: 100%; }              /* Filter über die ganze Breite, Knöpfe teilen sich den Platz */
+    .aw-filter button { flex: 1 1 auto; padding: .5rem .35rem; }
+    .aw-leiste { gap: .1rem .7rem; padding-left: .75rem; padding-right: .75rem; }
+  }
+  @media (max-width: 400px) {
+    .aw-lang { display: none; }
+    .aw-kurz { display: inline; }
+  }
+  @media (max-width: 360px) {
+    .aw-kopf { gap: .4rem; }
+    .aw-kopf img { width: 2rem; height: 2rem; }
+    .aw-titel h1 { font-size: 1.05rem; }
+    .aw-titel div { font-size: .72rem; }
+    .gsz-ansicht .aw-kopf .knopf { padding: .4rem .5rem; }
+    .aw-speichern { padding: .55rem .85rem !important; }
+    .st-kachel em { font-size: .84rem; }
   }`;
   const stil = document.createElement('style');
   stil.textContent = css;
@@ -174,6 +203,8 @@
 
   const ICON_MONITOR = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true">' +
     '<circle cx="24" cy="24" r="18" opacity=".25"/><path d="M24 6a18 18 0 0 1 17.1 23.6"/><path d="M24 15v10l6 4"/></svg>';
+  const ICON_HAUS = '<svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>';
   const ICON_LISTE = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<rect x="9" y="7" width="30" height="36" rx="4" opacity=".25"/><path d="M18 7h12v6H18z"/><path d="m16 25 5 5 11-11"/></svg>';
 
@@ -205,9 +236,9 @@
   anw.className = 'gsz-ansicht';
   anw.innerHTML = `
     <header class="kachel aw-kopf">
-      <a class="knopf" href="#start" id="aw-zurueck">‹ Start</a>
       ${logos()}
-      <div class="aw-titel"><h1>Übungsanwesenheit</h1><div>Gefahrstoffzug · Teileinheit Miehlen</div></div>
+      <div class="aw-titel"><h1>Übungs&shy;anwesenheit</h1><div>Gefahrstoffzug · Teileinheit&nbsp;Miehlen</div></div>
+      <a class="knopf" href="#start" id="aw-zurueck" title="Startseite" aria-label="Startseite">${ICON_HAUS}<span class="aw-zt">Start</span></a>
       <button class="knopf" id="aw-modus" title="Hell / Dunkel">◐</button>
       <button class="knopf" id="aw-einst" title="Einstellungen" hidden>⚙</button>
     </header>
@@ -246,8 +277,7 @@
     const k = document.createElement('a');
     k.className = 'knopf'; k.href = '#start'; k.id = 'mon-start'; k.title = 'Startseite'; k.setAttribute('aria-label', 'Startseite');
     k.style.cssText = 'text-decoration:none;display:inline-flex;align-items:center;';
-    k.innerHTML = '<svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="none" stroke="currentColor" stroke-width="2.2" ' +
-      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>';
+    k.innerHTML = ICON_HAUS;
     rechts.insertBefore(k, rechts.firstChild);
   }
 
@@ -297,8 +327,8 @@
     const ueber = L.length - bereit;
     const bald = L.filter(p => p.faellig && p.faellig >= h && tageBis(p.faellig) <= 60).length;
     $('st-monitor-info').innerHTML = L.length
-      ? `<b>${bereit} / ${L.length}</b> einsatzbereit` + (ueber ? ` · <span class="warn">${ueber} überfällig</span>` : ' · <span class="gut">keiner überfällig</span>') +
-        (bald ? ` · ${bald} fällig in ≤ 60 Tagen` : '') + (L.some(p => p.vorlaeufig) ? '<br><small>mit Belastungsübungen aus der App (vorläufig)</small>' : '')
+      ? `<b>${bereit} / ${L.length}</b> einsatzbereit` + (ueber ? ` · <span class="warn">${ueber}&nbsp;überfällig</span>` : ' · <span class="gut">keiner überfällig</span>') +
+        (bald ? ` · ${bald}&nbsp;fällig in ≤&nbsp;60&nbsp;Tagen` : '') + (L.some(p => p.vorlaeufig) ? '<br><small>mit Belastungsübungen aus der App (vorläufig)</small>' : '')
       : 'keine Daten';
     const U = (D.anwesenheit && D.anwesenheit.uebungen) || [];
     const vorbei = U.filter(u => u.datum <= h && Object.keys(u.marken).length);
@@ -435,6 +465,7 @@
     } else st.textContent = 'Antippen = anwesend · BÜ = Belastungsübung (CSA-Träger)';
     knopf.disabled = sendet || (!offen && !wartend);
     knopf.textContent = wartend && !offen && !sendet ? 'Erneut senden' : 'Speichern';
+    leisteAbstand();
     // Hinweise
     const w = $('aw-warnung');
     let t = '';
@@ -449,6 +480,14 @@
     const v = $('aw-verbinden');
     if (v) v.addEventListener('click', () => adapter.verbinden());
   }
+
+  // Inhalt endet über der festen Speichern-Leiste, auch wenn sie durch Umbrüche höher wird
+  function leisteAbstand() {
+    const l = document.querySelector('.aw-leiste');
+    if (!l || ansicht !== 'anwesenheit') return;
+    anw.style.paddingBottom = `calc(${Math.ceil(l.getBoundingClientRect().height)}px + 1.2rem)`;
+  }
+  addEventListener('resize', () => leisteAbstand());
 
   // nur bei Änderung neu aufbauen – sonst ginge ein Antippen während einer Aktualisierung im Hintergrund verloren
   function setzeHtml(el, html) {
@@ -518,7 +557,8 @@
     // Übersicht
     const da = P.filter(p => m[p.schluessel]).length, bue = P.filter(p => m[p.schluessel] === 'B').length;
     const mitglieder = P.filter(p => (!p.seit || p.seit <= sitzung.datum) && (!p.bis || p.bis >= sitzung.datum)).length;
-    $('aw-summe').textContent = `${da} anwesend` + (bue ? ` · ${bue} mit Belastungsübung` : '') +
+    $('aw-summe').innerHTML = `${da} anwesend` +
+      (bue ? ` · ${bue} <span class="aw-lang">mit Belastungsübung</span><span class="aw-kurz">BÜ</span>` : '') +
       (mitglieder ? ` · ${Math.round(da / mitglieder * 100)} %` : '');
     const am = uebungenAm(sitzung.datum);
     let info = `<b>${lang(sitzung.datum)}</b>` + (sitzung.datum > h ? ' (geplant)' : sitzung.datum === h ? ' (heute)' : '') + ' – ';
