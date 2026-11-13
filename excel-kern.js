@@ -1,7 +1,8 @@
 // Gemeinsamer Kern für das Desktop-Programm (Node) und die Web-App (Browser, iPhone):
 //   Personaltabelle (.xlsm, auch mit Kennwort zum Öffnen) lesen:
 //     - CSA-Träger (Name, Vorname, letzte Übung, fällig bis) aus „CSA-Träger aktiv“
-//     - Übungsanwesenheit (Personen, Übungen, wer war da) aus „Übungsanwesenheit“
+//     - Übungsanwesenheit (Personen, Übungen, wer war da) aus „Übungsanwesenheit 2026“, „… 2027“ usw. (ein Reiter je
+//       Jahr seit 14.11.2026, zusammengeführt) bzw. aus „Übungsanwesenheit“ (ältere Mappen)
 //     - Übertragungsschlüssel (Name GSZ_Uebertragung), mit dem die App ihre Meldungen verschlüsselt
 //   Meldungen der App (Anwesenheit einer Übung) als kleine, verschlüsselte .xlsx schreiben und lesen. Excel öffnet sie
 //   mit dem Übertragungsschlüssel als Kennwort und übernimmt sie (Modul Anwesenheit_Makros der Personaltabelle).
@@ -283,8 +284,22 @@
     return leute;
   }
 
-  // Reiter „Übungsanwesenheit“: Personen (Zeilen) und Übungen (Spalten mit Datum in Zeile 6, Thema in Zeile 5).
-  // Fehlt der Reiter, kommen die Namen aus „Personal aktiv“ (eingerichtet = false).
+  // Reiter der Übungsanwesenheit: einer je Jahr („Übungsanwesenheit 2026“ …), in älteren Mappen einer ohne Jahr.
+  // Ergebnis nach Jahr sortiert: [{ name, jahr }] (jahr 0 = Reiter ohne Jahr)
+  function anwesenheitsBlaetter(wb) {
+    const basis = norm(BLATT_ANW);
+    return wb.SheetNames.map(name => {
+      const n = norm(name);
+      if (n === basis) return { name, jahr: 0 };
+      const m = n.startsWith(basis + ' ') ? /^(\d{4})$/.exec(n.slice(basis.length + 1)) : null;
+      return m ? { name, jahr: Number(m[1]) } : null;
+    }).filter(Boolean).sort((a, b) => a.jahr - b.jahr);
+  }
+
+  // Übungsanwesenheit: Personen (Zeilen) und Übungen (Spalten mit Datum in Zeile 6, Thema in Zeile 5) aller Jahresreiter.
+  // Personen werden über den Namen zusammengeführt: „seit“ aus dem frühesten Reiter, in dem sie stehen, „bis“ aus dem
+  // jüngsten – so gilt die Mitgliedschaft über die Jahre hinweg. Fehlt der Reiter, kommen die Namen aus „Personal aktiv“
+  // (eingerichtet = false).
   function anwesenheitAusMappe(XLSX, wb, leute) {
     const d1904 = !!(wb.Workbook && wb.Workbook.WBProps && wb.Workbook.WBProps.date1904);
     const csa = new Map(leute.map(p => [schluessel(p.name, p.vorname), p]));
@@ -293,8 +308,8 @@
       return { name, vorname, schluessel: k, csa: !!c, csaLetzte: c ? c.letzte : null, csaFaellig: c ? c.faellig : null,
                seit: null, bis: null, ...extra };
     };
-    const b = blattZugriff(XLSX, wb, BLATT_ANW);
-    if (!b) {
+    const blaetter = anwesenheitsBlaetter(wb);
+    if (!blaetter.length) {
       const p = blattZugriff(XLSX, wb, BLATT_PERSONAL), personen = [];
       if (p) for (let r = ERSTE_ZEILE; r <= p.zeilen; r++) {
         const n = p.text(r, SPALTE_NAME);
@@ -304,34 +319,42 @@
       if (!personen.length) for (const l of leute) personen.push(person(l.name, l.vorname));
       return { eingerichtet: false, personen, uebungen: [] };
     }
-    // Spalten der Personenangaben über die Überschrift, Übungen = Spalten mit einem Datum in der Kopfzeile
-    const kopf = {}, uebSpalten = [];
-    for (let c = 1; c <= b.spalten; c++) {
-      const z = b.zelle(KOPFZEILE, c);
-      if (!z || z.v === undefined || z.v === null || z.v === '') continue;
-      if (z.t === 'n' && z.v > 36000 && z.v < 80000 && c > SPALTE_VORNAME) uebSpalten.push(c);
-      else { const k = kopfNorm(z.v); if (!(k in kopf)) kopf[k] = c; }
+    const personen = new Map(), uebungen = [];
+    for (const { name: blattName } of blaetter) {
+      const b = blattZugriff(XLSX, wb, blattName);
+      if (!b) continue;
+      // Spalten der Personenangaben über die Überschrift, Übungen = Spalten mit einem Datum in der Kopfzeile
+      const kopf = {}, uebSpalten = [];
+      for (let c = 1; c <= b.spalten; c++) {
+        const z = b.zelle(KOPFZEILE, c);
+        if (!z || z.v === undefined || z.v === null || z.v === '') continue;
+        if (z.t === 'n' && z.v > 36000 && z.v < 80000 && c > SPALTE_VORNAME) uebSpalten.push(c);
+        else { const k = kopfNorm(z.v); if (!(k in kopf)) kopf[k] = c; }
+      }
+      const cCSA = kopf.csa, cSeit = kopf['mitglied seit'] || kopf.seit, cBis = kopf.bis;
+      const zeilen = [];
+      for (let r = ERSTE_ZEILE; r <= b.zeilen; r++) {
+        const n = b.text(r, SPALTE_NAME);
+        if (n === '') break;
+        const p = person(n, b.text(r, SPALTE_VORNAME), {
+          seit: cSeit ? datum(XLSX, b.zelle(r, cSeit), d1904) : null, bis: cBis ? datum(XLSX, b.zelle(r, cBis), d1904) : null });
+        if (!p.csa && cCSA && /csa/i.test(b.text(r, cCSA))) p.csa = true;
+        const alt = personen.get(p.schluessel);
+        if (!alt) personen.set(p.schluessel, p);
+        else { alt.bis = p.bis; if (p.csa) alt.csa = true; }      // „seit“ bleibt aus dem früheren Jahr
+        zeilen.push([r, p.schluessel]);
+      }
+      for (const c of uebSpalten) {
+        const marken = {};
+        for (const [r, k] of zeilen) {
+          const w = b.text(r, c).toUpperCase();
+          if (w === 'X' || w === 'B') marken[k] = w;
+        }
+        uebungen.push({ datum: datum(XLSX, b.zelle(KOPFZEILE, c), d1904), thema: b.text(THEMA_ZEILE, c), marken });
+      }
     }
-    const cCSA = kopf.csa, cSeit = kopf['mitglied seit'] || kopf.seit, cBis = kopf.bis;
-    const personen = [], zeilen = [];
-    for (let r = ERSTE_ZEILE; r <= b.zeilen; r++) {
-      const n = b.text(r, SPALTE_NAME);
-      if (n === '') break;
-      const p = person(n, b.text(r, SPALTE_VORNAME), {
-        seit: cSeit ? datum(XLSX, b.zelle(r, cSeit), d1904) : null, bis: cBis ? datum(XLSX, b.zelle(r, cBis), d1904) : null });
-      if (!p.csa && cCSA && /csa/i.test(b.text(r, cCSA))) p.csa = true;
-      personen.push(p);
-      zeilen.push(r);
-    }
-    const uebungen = uebSpalten.map(c => {
-      const marken = {};
-      zeilen.forEach((r, i) => {
-        const w = b.text(r, c).toUpperCase();
-        if (w === 'X' || w === 'B') marken[personen[i].schluessel] = w;
-      });
-      return { datum: datum(XLSX, b.zelle(KOPFZEILE, c), d1904), thema: b.text(THEMA_ZEILE, c), marken };
-    }).filter(u => u.datum).sort((a, b2) => a.datum.localeCompare(b2.datum));
-    return { eingerichtet: true, personen, uebungen };
+    return { eingerichtet: true, personen: [...personen.values()],
+             uebungen: uebungen.filter(u => u.datum).sort((a, b2) => a.datum.localeCompare(b2.datum)) };
   }
 
   // Übertragungsschlüssel aus dem verborgenen Namen GSZ_Uebertragung (leer = noch nicht eingerichtet)
