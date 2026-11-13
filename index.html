@@ -55,7 +55,7 @@ button, input { font: inherit; color: inherit; }
 :root:not(.hell) .logo-hell, :root.hell .logo-dunkel:not(.allein) { display: none; }
 .vorl { color: var(--akzent); font-weight: 700; }
 .titel h1 { margin: 0; font-size: 1.75rem; letter-spacing: .01em; line-height: 1.1; }
-.titel .unter { color: var(--muted); font-size: .82rem; margin-top: .2rem; }
+.titel .unter { color: var(--muted); font-size: .82rem; margin-top: .2rem; white-space: normal; max-width: 21rem; line-height: 1.2; }
 .kennz { display: flex; align-items: stretch; margin-left: 1rem; padding-left: 1rem; border-left: 1px solid var(--line); }
 .bereit { display: flex; align-items: center; gap: .65rem; padding-right: 1.1rem; }
 .ring { width: 3.5rem; height: 3.5rem; transform: rotate(-90deg); flex: none; }
@@ -83,6 +83,8 @@ button, input { font: inherit; color: inherit; }
   text-transform: uppercase; letter-spacing: .05em; border-top: .35rem solid var(--c); white-space: nowrap;
   background: color-mix(in srgb, var(--c) 15%, var(--surface)); border-bottom: 1px solid var(--rand); }
 .lane h2 .n { margin-left: auto; font-size: 1.75rem; line-height: 1; }
+/* leere Gruppe am Bildschirm ohne „0“ (darunter steht „✓ niemand“): Die schmale Spalte braucht den Platz für den Titel */
+body:not(.handy) .lane.leerlane h2 .n { display: none; }
 .lane .kopfz, .lane li { display: grid; grid-template-columns: minmax(0, 1fr) 5rem 6.2rem; gap: .5rem;
   padding: 0 .9rem; align-items: center; white-space: nowrap; }
 .lane li span:first-child { overflow: hidden; text-overflow: ellipsis; }
@@ -109,7 +111,8 @@ button, input { font: inherit; color: inherit; }
 .icon { font-weight: 700; color: var(--c); width: 1rem; text-align: center; }
 
 /* unten */
-.unten { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: .9rem; flex: 1; }
+/* Planung etwas breiter als bis 14.11.2026 (5:7): Dort sind die Namen der Teilnehmer sonst als Erstes zu lang */
+.unten { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 13fr); gap: .9rem; flex: 1; }
 .karte { display: flex; flex-direction: column; }
 .karte > h2 { margin: 0; padding: .5rem 1rem; font-size: .92rem; text-transform: uppercase; letter-spacing: .05em;
   background: var(--kopf); border-bottom: 1px solid var(--rand); display: flex; align-items: center; gap: .6rem; white-space: nowrap; }
@@ -170,7 +173,10 @@ button, input { font: inherit; color: inherit; }
 .pg .mit { background: var(--akzent); }
 .pg em { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-style: normal; font-size: .72rem;
   font-weight: 700; color: var(--ink); padding-bottom: .1rem; white-space: nowrap; }
-.pg .monat { text-align: center; font-size: .72rem; color: var(--muted); padding-top: .2rem; white-space: nowrap; overflow: hidden; }
+.pg .monat { text-align: center; font-size: .76rem; color: var(--muted); padding-top: .2rem; white-space: nowrap; overflow: hidden;
+  line-height: 1.1; }
+.pg .monat span, .pg .monat small { display: block; overflow: hidden; }   /* zwei Zeilen, jede wird einzeln geprüft */
+.pg .monat small { font-size: .85em; min-height: 1.1em; }
 .pg .monat.tm { color: var(--akzent); font-weight: 700; }
 .pg .soll { position: absolute; left: 0; right: 0; top: 1.15rem; border-top: 1px dashed var(--muted); opacity: .7; pointer-events: none; }
 .pg-legende .strich { width: 1rem; height: 0; border-radius: 0; border-top: 1px dashed var(--muted); vertical-align: .2rem; }
@@ -365,7 +371,7 @@ body.handy footer { white-space: normal; text-align: left; font-size: .68rem; li
 
 <script>
 // let statt const: Das Programm CSA-Monitor setzt die Daten nach dem Einlesen der Excel-Datei neu (start.js)
-let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-13T23:20"};
+let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-13T23:51"};
 
 const KAT = {
   1: { label: 'überfällig', c: 'var(--crit)' },
@@ -493,7 +499,8 @@ function planung(h, L) {
            `<span class="marke" style="--bg:${Z.bg}"><span class="icon" style="--c:${Z.c}">${Z.icon}</span>${Z.label}</span></li>`;
   }).join('');
 
-  $('klTitel').textContent = `Fällig bis ${kurz(bis2)} (2 Mon. danach)`;
+  $('klTitel').textContent = `Fällig bis ${kurz(bis2)}`;
+  $('klTitel').title = 'bis 2 Monate nach dem Übungstermin fällig';
   $('kl').innerHTML = m ? faellig2.map((p, i) => {
     const drin = i < N;
     return `<li class="${drin ? '' : 'offen'}" title="${drin ? 'eingeplant' : 'nicht eingeplant'}">` +
@@ -533,12 +540,13 @@ function prognose(h, L, termin, N) {
   for (let i = 0; i < 13; i++) {
     const d = new Date(m0.getFullYear(), m0.getMonth() + i + 1, 0);           // Monatsende
     const o = bereit(d, false), m = bereit(d, true);
-    const jahr = i === 0 || d.getMonth() === 0 ? ` ${String(d.getFullYear()).slice(2)}` : '';
+    const jahr = i === 0 || d.getMonth() === 0 ? String(d.getFullYear()).slice(2) : '';
     html += `<div class="gruppe" data-tip="Ende ${MONATE_LANG[d.getMonth()]} ${d.getFullYear()}|` +
             `mit geplanter Übung: ${m} von ${n} einsatzbereit|ohne weitere Übung: ${o} von ${n}">` +
             `<div class="saeulen"><i class="ohne" style="height:${(o / n * 100).toFixed(1)}%"></i>` +
             `<i class="mit" style="height:${(m / n * 100).toFixed(1)}%"><em class="zahl">${m}</em></i></div>` +
-            `<div class="monat${i === tIdx ? ' tm' : ''}">${i === tIdx ? '▲ ' : ''}${MONATE[d.getMonth()]}${jahr}</div></div>`;
+            `<div class="monat${i === tIdx ? ' tm' : ''}"><span>${MONATE[d.getMonth()]}</span><small>${i === tIdx ? '▲' : ''}` +
+            `${i === tIdx && jahr ? ' ' : ''}${jahr}</small></div></div>`;
   }
   $('pg').innerHTML = html;
 }
@@ -636,8 +644,14 @@ function zeichnen() {
   anpassen();
 }
 
-// ---- Größe an den Bildschirm anpassen: größtmögliche Schrift, bei der alles ohne Scrollen sichtbar ist
-const ABGESCHNITTEN = '.lane li span:first-child, .tn .name, .zs .nm, .klein li span:nth-child(2), .pg .monat';
+// ---- Größe an den Bildschirm anpassen: größtmögliche Schrift, bei der alles ohne Scrollen sichtbar ist – aber nie kleiner
+// als MIN_SCHRIFT. Passt es dann noch nicht, darf die Seite scrollen (lesbar geht vor „alles auf einen Blick“).
+// Nur die Namensspalten selbst prüfen („>“): Bis 14.11.2026 traf „.lane li span:first-child“ auch das Sternchen einer
+// vorläufigen Belastungsübung (<span class="vorl">* im Datum). Das ist ein Inline-Element ohne eigene Breite, galt also
+// bei jeder Größe als abgeschnitten, und die Schrift fiel auf das Minimum von damals 7 px.
+const MIN_SCHRIFT = 12;
+const ABGESCHNITTEN = '.lane li > span:first-child, .tn .name, .zs .nm, .klein li > span:nth-child(2), .pg .monat > span, ' +
+                      '.pg .monat > small';
 const UEBERLAUF = '.kopfleiste, .lane h2, .karte > h2, .pg-kopf, .liste h3, .legende';   // Zeilen, die nicht umbrechen
 function passt() {
   const d = document.documentElement;
@@ -647,20 +661,27 @@ function passt() {
   return true;
 }
 function zuBreit(el) {
+  const cs = getComputedStyle(el);
+  if (cs.display === 'inline' || !el.clientWidth) return false;      // Inline-Elemente haben keine eigene Breite
   const r = document.createRange();
   r.selectNodeContents(el);
-  const cs = getComputedStyle(el);
-  const innen = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  return r.getBoundingClientRect().width > innen + 0.25;
+  // genaue (gebrochene) Breite statt clientWidth (ganze Pixel) und ein halbes Pixel Luft: Schon 0,2 px zu viel setzt der
+  // Browser als „…“ (14.11.2026: „Bauerfeind, Sebasti…“ galt mit der alten Toleranz von +0,25 px als passend)
+  const innen = el.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) -
+                parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+  return r.getBoundingClientRect().width > innen - 0.5;
 }
+// Rückgabe: [Schrift, passt]; passt = false heißt: schon bei MIN_SCHRIFT zu groß (die Seite scrollt dann)
 function groesseSuchen() {
-  let lo = 7, hi = 48;
-  for (let i = 0; i < 14; i++) {
+  let lo = MIN_SCHRIFT, hi = 48;
+  document.documentElement.style.fontSize = lo + 'px';
+  if (!passt()) return [lo, false];
+  for (let i = 0; i < 12; i++) {
     const m = (lo + hi) / 2;
     document.documentElement.style.fontSize = m + 'px';
     if (passt()) lo = m; else hi = m;
   }
-  return lo;
+  return [lo, true];
 }
 function anpassen() {
   if (document.body.dataset.ansicht && document.body.dataset.ansicht !== 'monitor') return;   // Startseite/Anwesenheit
@@ -678,16 +699,23 @@ function anpassen() {
     l.classList.contains('zweispaltig') ? 'minmax(0, 1.75fr)' : 'minmax(0, 1fr)').join(' ');
   if (eng) { $('ampel').style.gridTemplateColumns = ''; document.documentElement.style.fontSize = Math.max(14, Math.min(18, innerWidth / 55)) + 'px'; return; }
   breiten();
-  const einspaltig = groesseSuchen();
+  const hoehe = () => document.documentElement.scrollHeight;
+  const [einspaltig, passt1] = groesseSuchen();
+  document.documentElement.style.fontSize = einspaltig + 'px';
+  const h1 = hoehe();
   const lange = lanes.filter(l => l.querySelectorAll('li').length > 6);
-  let zweispaltig = 0;
+  let schrift = einspaltig;
   if (lange.length) {
     lange.forEach(l => l.classList.add('zweispaltig'));
     breiten();
-    zweispaltig = groesseSuchen();
-    if (zweispaltig <= einspaltig) { lange.forEach(l => l.classList.remove('zweispaltig')); breiten(); }
+    const [zweispaltig, passt2] = groesseSuchen();
+    document.documentElement.style.fontSize = zweispaltig + 'px';
+    // zweispaltig nur, wenn die Schrift dadurch größer wird oder - beide bei der Mindestschrift - weniger zu scrollen ist
+    const besser = passt2 ? (!passt1 || zweispaltig > einspaltig) : (!passt1 && hoehe() < h1);
+    if (besser) schrift = zweispaltig;
+    else { lange.forEach(l => l.classList.remove('zweispaltig')); breiten(); }
   }
-  document.documentElement.style.fontSize = Math.max(einspaltig, zweispaltig) + 'px';
+  document.documentElement.style.fontSize = schrift + 'px';
 }
 let anpassenTimer;
 addEventListener('resize', () => {
