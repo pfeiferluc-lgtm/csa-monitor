@@ -2,7 +2,7 @@
 // Verbindung immer zuerst die neueste Fassung (so kommen Verbesserungen beim nächsten Öffnen von selbst an).
 // Immer beim Server nachfragen (no-cache), sonst liefert der Browser bis zu 10 Minuten lang die alte Fassung aus seinem Zwischenspeicher.
 // Anfragen an Dropbox laufen unverändert durch und werden nie zwischengespeichert.
-const CACHE = 'csa-monitor-202611140051';
+const CACHE = 'csa-monitor-202611140125';
 const DATEIEN = ['./', 'index.html', 'xlsx.core.min.js', 'sha512.min.js', 'aes.js', 'excel-kern.js', 'konfig.js',
   'oberflaeche.js', 'web-start.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 

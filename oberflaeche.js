@@ -14,8 +14,8 @@
 'use strict';
 (() => {
   const css = `
-  body[data-ansicht="start"] > :not(#startseite):not(#anmeldung):not(#update):not(#web-meldung):not(#einst):not(script):not(style),
-  body[data-ansicht="anwesenheit"] > :not(#anwesenheit):not(#anmeldung):not(#update):not(#web-meldung):not(#einst):not(script):not(style),
+  body[data-ansicht="start"] > :not(#startseite):not(#anmeldung):not(#update):not(#web-meldung):not(#einst):not(#statusband):not(script):not(style),
+  body[data-ansicht="anwesenheit"] > :not(#anwesenheit):not(#anmeldung):not(#update):not(#web-meldung):not(#einst):not(#statusband):not(script):not(style),
   body[data-ansicht="monitor"] > #startseite, body[data-ansicht="monitor"] > #anwesenheit,
   body:not([data-ansicht]) > #startseite, body:not([data-ansicht]) > #anwesenheit { display: none !important; }
   body[data-ansicht="start"], body[data-ansicht="anwesenheit"] { padding: 0; gap: 0; display: block; min-height: 100vh; min-height: 100svh; }
@@ -25,7 +25,8 @@
 
   /* Startseite */
   #startseite { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: calc(1.5rem + env(safe-area-inset-top)) 1.2rem calc(1.2rem + env(safe-area-inset-bottom)); gap: 1.8rem; }
+    padding: calc(1.5rem + var(--frei-oben)) calc(1.2rem + var(--sicher-rechts)) calc(1.2rem + var(--sicher-unten)) calc(1.2rem + var(--sicher-links));
+    gap: 1.8rem; }
   .st-oben { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .35rem; }
   .st-logo { width: 9.5rem; height: 9.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: .6rem; }
   .st-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 1.4rem; box-shadow: var(--schatten); }
@@ -55,10 +56,14 @@
   .st-fuss .knopf { font-size: .95rem; }
 
   /* Übungsanwesenheit */
-  #anwesenheit { max-width: 56rem; margin: 0 auto; padding: calc(.7rem + env(safe-area-inset-top)) .8rem 7.5rem;
-    display: flex; flex-direction: column; gap: .8rem; }
-  .aw-kopf { display: flex; align-items: center; gap: .8rem; padding: .55rem .8rem; }
-  .aw-kopf img { width: 2.9rem; height: 2.9rem; object-fit: cover; border-radius: .45rem; flex: none; }
+  #anwesenheit { max-width: 56rem; margin: 0 auto; display: flex; flex-direction: column; gap: .8rem;
+    padding: calc(.7rem + var(--frei-oben)) calc(.8rem + var(--sicher-rechts)) calc(7.5rem + var(--sicher-unten)) calc(.8rem + var(--sicher-links)); }
+  /* Logo über die volle Höhe der Leiste: mindestens so hoch wie Titel und Unterzeile (dann bestimmt das Logo die Höhe),
+     Breite im Umriss der hellen Fassung (1184 × 1555) – das quadratische Original wird seitlich auf denselben Umriss
+     beschnitten (dort nur dunkelblauer Rand), damit Hell und Dunkel gleich breit sind und der Titel gleich umbricht */
+  .aw-kopf { display: flex; align-items: center; gap: .8rem; padding: .3rem .8rem .3rem .45rem; }
+  .aw-kopf img { height: 3.4rem; width: auto; aspect-ratio: 19 / 25; object-fit: cover; border-radius: .45rem; flex: none; }
+  .aw-te { white-space: nowrap; }
   .aw-titel { flex: 1; min-width: 0; }
   /* „Übungs­anwesenheit“ trennt nur, wenn die Zeile zu schmal ist (weiches Trennzeichen im Titel) */
   .aw-titel h1 { margin: 0; font-size: 1.35rem; line-height: 1.15; -webkit-hyphens: manual; hyphens: manual; overflow-wrap: break-word; }
@@ -120,7 +125,8 @@
     font-size: .9rem; line-height: 1.4; }
   .aw-warnung .knopf { margin-top: .5rem; }
   .aw-leiste { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); box-shadow: 0 -4px 16px rgba(0,0,0,.25);
-    border-top: 1px solid var(--rand); padding: .65rem max(.9rem, calc((100vw - 56rem) / 2 + .9rem)) calc(.65rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rand); padding: .65rem max(calc(.9rem + var(--sicher-rechts)), calc((100vw - 56rem) / 2 + .9rem))
+      calc(.65rem + var(--sicher-unten)) max(calc(.9rem + var(--sicher-links)), calc((100vw - 56rem) / 2 + .9rem));
     display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "summe knopf" "status knopf"; gap: .15rem .9rem;
     align-items: center; }
   .aw-summe { grid-area: summe; font-weight: 700; font-size: 1.02rem; }
@@ -139,28 +145,32 @@
     .st-te { font-size: 1.2rem; }
     .st-kachel { padding: 1rem 1rem .95rem; }
     .aw-felder { grid-template-columns: 1fr; }
-    .aw-kopf { gap: .5rem; padding: .5rem .55rem; }
-    .aw-kopf img { width: 2.4rem; height: 2.4rem; }
+    .aw-kopf { gap: .5rem; padding: .3rem .55rem .3rem .4rem; }
+    .aw-kopf img { height: 3.6rem; }                        /* Titel 1.15rem × 1.15 + Unterzeile 2 × .8rem × 1.3 = 3.4rem */
     .aw-titel h1 { font-size: 1.15rem; }
+    .aw-trenn { display: none; }                            /* Unterzeile zweizeilig: Gefahrstoffzug / Teileinheit Miehlen */
+    .aw-te { display: block; }
     .aw-zt { display: none; }                               /* Haus-Symbol ohne „Start“ */
     .gsz-ansicht .aw-kopf .knopf { padding: .45rem .6rem; }
-    #anwesenheit { padding-left: .5rem; padding-right: .5rem; }
+    #anwesenheit { padding-left: calc(.5rem + var(--sicher-links)); padding-right: calc(.5rem + var(--sicher-rechts)); }
     .aw-uebung, .aw-liste { padding: .7rem .65rem .8rem; }
     .aw-werkzeuge input { flex-basis: 100%; }
     .aw-filter { display: flex; width: 100%; }              /* Filter über die ganze Breite, Knöpfe teilen sich den Platz */
     .aw-filter button { flex: 1 1 auto; padding: .5rem .35rem; }
-    .aw-leiste { gap: .1rem .7rem; padding-left: .75rem; padding-right: .75rem; }
+    .aw-leiste { gap: .1rem .7rem; padding-left: calc(.75rem + var(--sicher-links)); padding-right: calc(.75rem + var(--sicher-rechts)); }
   }
   @media (max-width: 400px) {
     .aw-lang { display: none; }
     .aw-kurz { display: inline; }
   }
-  @media (max-width: 360px) {
+  @media (max-width: 374px) {                                /* Titel darf zweizeilig werden: */
     .aw-kopf { gap: .4rem; }
-    .aw-kopf img { width: 2rem; height: 2rem; }
+    .aw-kopf img { height: 4.3rem; }                        /* 2 × 1.05rem × 1.15 + 2 × .72rem × 1.3 = 4.29rem */
     .aw-titel h1 { font-size: 1.05rem; }
     .aw-titel div { font-size: .72rem; }
     .gsz-ansicht .aw-kopf .knopf { padding: .4rem .5rem; }
+  }
+  @media (max-width: 360px) {
     .aw-speichern { padding: .55rem .85rem !important; }
     .st-kachel em { font-size: .84rem; }
   }`;
@@ -237,7 +247,7 @@
   anw.innerHTML = `
     <header class="kachel aw-kopf">
       ${logos()}
-      <div class="aw-titel"><h1>Übungs&shy;anwesenheit</h1><div>Gefahrstoffzug · Teileinheit&nbsp;Miehlen</div></div>
+      <div class="aw-titel"><h1>Übungs&shy;anwesenheit</h1><div>Gefahrstoffzug<span class="aw-trenn"> · </span><span class="aw-te">Teileinheit Miehlen</span></div></div>
       <a class="knopf" href="#start" id="aw-zurueck" title="Startseite" aria-label="Startseite">${ICON_HAUS}<span class="aw-zt">Start</span></a>
       <button class="knopf" id="aw-modus" title="Hell / Dunkel">◐</button>
       <button class="knopf" id="aw-einst" title="Einstellungen" hidden>⚙</button>

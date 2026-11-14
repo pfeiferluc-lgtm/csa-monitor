@@ -183,10 +183,27 @@
   }
 
   // ---------------------------------------------------------------- Oberfläche
+  // Auf dem Home-Bildschirm installiert (eigenes Fenster ohne Adresszeile)? #app=1 nur für die automatischen Tests.
+  const eigenstaendig = () => navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
+    new URLSearchParams(location.hash.slice(1)).get('app') === '1';
+  // iOS 26 legt in der Web-App auf dem Home-Bildschirm eine Unschärfe über den Seitenanfang (unter der Statusleiste,
+  // rund 40 pt tief) – Titel und Logo oben wirken verschwommen. Sie entfällt, wenn 4 px unter der Mitte des oberen
+  // Rands ein fest stehendes Element liegt (mindestens 90 % so breit wie der Bildschirm, höher als 10 px) mit deckender
+  // Hintergrundfarbe ohne backdrop-filter; die Statusleiste nimmt dann dessen Farbe an. Dieses Band hat die Farbe der
+  // Seite; die Ansichten beginnen darunter (--frei-oben).
+  if (eigenstaendig()) {
+    document.documentElement.classList.add('eigenstaendig');
+    const band = document.createElement('div');
+    band.id = 'statusband'; band.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(band);
+  }
   const stil = document.createElement('style');
   stil.textContent = `
+  :root.eigenstaendig { --frei-oben: max(var(--sicher-oben), 12px); }
+  #statusband { position: fixed; top: 0; left: 0; right: 0; height: var(--frei-oben); background: var(--page); z-index: 40; }
   #anmeldung { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
-    background: var(--page); overflow: auto; padding: 1rem; }
+    background: var(--page); overflow: auto;
+    padding: calc(1rem + var(--frei-oben)) calc(1rem + var(--sicher-rechts)) calc(1rem + var(--sicher-unten)) calc(1rem + var(--sicher-links)); }
   #anmeldung[hidden] { display: none; }
   #anmeldung .box { width: min(30rem, 100%); background: var(--surface); box-shadow: var(--schatten); border-radius: .8rem;
     padding: 1.4rem 1.4rem 1.2rem; display: flex; flex-direction: column; gap: .75rem; font-size: 16px; }
@@ -214,7 +231,7 @@
   #einst button { text-align: left; background: none; border: 0; color: var(--ink); padding: .6rem .7rem; border-radius: .35rem; font: inherit; }
   #einst button:hover { background: var(--surface); }
   #einst .klein { color: var(--muted); font-size: .75rem; padding: .4rem .7rem; }
-  #web-meldung { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 60; background: var(--surface2);
+  #web-meldung { position: fixed; left: 50%; bottom: calc(1.5rem + var(--sicher-unten)); transform: translateX(-50%); z-index: 60; background: var(--surface2);
     box-shadow: var(--schatten); border-left: 4px solid var(--warn); border-radius: .55rem; padding: .6rem .9rem; font-size: 14px;
     color: var(--ink); max-width: 92vw; }
   #web-meldung[hidden] { display: none; }`;
@@ -299,7 +316,6 @@
 
   // Auf dem Home-Bildschirm hat die App einen eigenen Speicher (iOS): Eine Anmeldung aus Safari sieht sie nicht.
   // Einmal dort verbinden – danach bleibt die Verbindung, beim Start kommt höchstens die Kennwortfrage.
-  const eigenstaendig = () => navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
   const verbindenText = () => eigenstaendig()
     ? 'Die App auf dem Home-Bildschirm einmal mit Dropbox verbinden – sie hat einen eigenen Speicher und kennt die Anmeldung aus Safari nicht. Danach bleibt sie verbunden und fragt beim Start nur noch nach dem Kennwort der Personaltabelle.'
     : 'Einmal mit Dropbox verbinden. Die Web-App liest dann nur ihren eigenen App-Ordner in der Dropbox – nichts sonst.';

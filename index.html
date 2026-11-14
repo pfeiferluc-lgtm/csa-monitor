@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>CSA-Monitor · Belastungsübung</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -24,6 +24,11 @@
   --crit-t: rgba(229, 72, 77, .17); --ser-t: rgba(240, 121, 74, .17); --warn-t: rgba(242, 176, 30, .15);
   --good-t: rgba(38, 169, 91, .15);
   --eingabe: #24211a; --eingabe-rand: #b8902a; --ohne: #3b424d;
+  /* Ränder des Geräts (iPhone: Home-Balken unten, quer die Kamera-Aussparung; viewport-fit=cover), am Computer 0.
+     --frei-oben: Abstand oben – in der Web-App auf dem Home-Bildschirm mindestens das deckende Band (web-start.js) */
+  --sicher-oben: env(safe-area-inset-top, 0px); --sicher-unten: env(safe-area-inset-bottom, 0px);
+  --sicher-links: env(safe-area-inset-left, 0px); --sicher-rechts: env(safe-area-inset-right, 0px);
+  --frei-oben: var(--sicher-oben);
 }
 :root.hell {
   --akzent: #1f62c4;
@@ -37,7 +42,8 @@
 * { box-sizing: border-box; }
 html { font-size: 15px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }   /* Größe passt ein Skript an den Bildschirm an */
 body {
-  margin: 0; min-height: 100vh; padding: .9rem 1.1rem .45rem; background: var(--page); color: var(--ink);
+  margin: 0; min-height: 100vh; background: var(--page); color: var(--ink);
+  padding: calc(.9rem + var(--frei-oben)) calc(1.1rem + var(--sicher-rechts)) calc(.45rem + var(--sicher-unten)) calc(1.1rem + var(--sicher-links));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; -webkit-font-smoothing: antialiased;
   display: flex; flex-direction: column; gap: .9rem;
 }
@@ -225,7 +231,8 @@ body.eng .unten { grid-template-columns: 1fr; }
 /* Handy im Hochformat (Web-App auf dem iPhone; Fensterbreite bis 640 px, Klasse "handy" per Skript):
    eigene Anordnung, alles untereinander, nichts seitlich verschieben. Prognose als waagrechte Balken je Monat,
    Zeitstrahl als Liste der Monate mit den Fälligen. Die Bildschirmfassung bleibt davon unberührt. */
-body.handy { padding: .55rem .55rem calc(.7rem + env(safe-area-inset-bottom)); gap: .55rem; }
+body.handy { padding: calc(.55rem + var(--frei-oben)) calc(.55rem + var(--sicher-rechts)) calc(.7rem + var(--sicher-unten)) calc(.55rem + var(--sicher-links));
+  gap: .55rem; }
 body.handy .kachel { border-radius: .65rem; }
 body.handy .kopfleiste { display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas: "logo titel rechts" "kennz kennz kennz"; gap: .6rem; padding: .55rem .6rem .6rem; white-space: normal; }
@@ -371,7 +378,7 @@ body.handy footer { white-space: normal; text-align: left; font-size: .68rem; li
 
 <script>
 // let statt const: Das Programm CSA-Monitor setzt die Daten nach dem Einlesen der Excel-Datei neu (start.js)
-let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-13T23:51"};
+let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-14T00:25"};
 
 const KAT = {
   1: { label: 'überfällig', c: 'var(--crit)' },
