@@ -14,13 +14,54 @@
   /* Finger-Zoom nur in Dokumenten (html.zoom-frei) */
   html { touch-action: pan-x pan-y; }
   html.zoom-frei { touch-action: auto; }
-  .ez { --rund: .8rem; font-size: 16px; color: var(--ink); max-width: 62rem; margin: 0 auto; display: flex; flex-direction: column; gap: .8rem;
-    padding: calc(.7rem + var(--frei-oben)) calc(.8rem + var(--sicher-rechts)) calc(1.4rem + var(--sicher-unten)) calc(.8rem + var(--sicher-links)); }
+  .ez { --rund: .8rem; --rand-l: calc(.8rem + var(--sicher-links)); --rand-r: calc(.8rem + var(--sicher-rechts));
+    font-size: 16px; color: var(--ink); display: flex; flex-direction: column; gap: .8rem;
+    padding: calc(.7rem + var(--frei-oben)) var(--rand-r) calc(1.4rem + var(--sicher-unten)) var(--rand-l); }
+  /* Inhalt höchstens 62rem breit und mittig; der dunkle Kopf (auf der Einsatz-Seite samt Suche) läuft über die volle Breite */
+  .ez > :not(.ez-kopf):not(.ez-leiste) { width: 100%; max-width: 62rem; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+  body:not([data-ansicht="uebungen"]):not([data-ansicht="anwesenheit"]):not([data-ansicht="monitor"]) #statusband { background: #10151c; }
   .ez.mit-leiste { padding-bottom: calc(var(--leiste-h, calc(5.6rem + var(--sicher-unten))) + 1.2rem); }
   .ez .knopf { font-size: .95rem; padding: .45rem .75rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: .35rem; }
   .ez .knopf svg { width: 1.1em; height: 1.1em; flex: none; }
   .ez h2 { margin: 0 0 .55rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink2); }
   .ez-kopf { display: flex; align-items: center; gap: .7rem; padding: .3rem .7rem .3rem .45rem; }
+  /* Kopf aller Einsatz-Seiten wie das Hauptmenü: dunkel (in Hell und Dunkel gleich, daher das Original-Logo), über die volle Breite,
+     unten die rot-weiße Warnmarkierung */
+  .ez > .ez-kopf { position: relative; isolation: isolate; overflow: hidden; color: #fff; border-radius: 0; box-shadow: none; gap: .75rem;
+    margin: calc(-.7rem - var(--frei-oben)) calc(-1 * var(--rand-r)) .15rem calc(-1 * var(--rand-l));
+    padding: calc(.85rem + var(--frei-oben)) max(var(--rand-r), calc((100% - 62rem) / 2 + var(--rand-r))) 1.3rem max(var(--rand-l), calc((100% - 62rem) / 2 + var(--rand-l)));
+    background: radial-gradient(90% 190% at 100% 0%, rgba(214, 41, 48, .34) 0%, rgba(214, 41, 48, 0) 60%), linear-gradient(165deg, #141a23 0%, #0b0e13 82%); }
+  .ez > .ez-kopf::before { content: ""; position: absolute; z-index: -1; right: -2.6rem; top: 50%; width: 9.5rem; height: 9.5rem; border-radius: 1.3rem;
+    border: 1.5rem solid rgba(255, 255, 255, .04); transform: translateY(-50%) rotate(45deg); pointer-events: none; }
+  .ez > .ez-kopf::after, #einsatz > .ez-held::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: .45rem;
+    background: repeating-linear-gradient(-45deg, #d42a30 0 .85rem, #f2f2f2 .85rem 1.7rem); }
+  .ez > .ez-kopf .ez-titel h1 { color: #fff; font-size: 1.45rem; font-weight: 800; letter-spacing: -.005em; }
+  .ez > .ez-kopf .ez-titel div { color: rgba(255, 255, 255, .7); }
+  .ez > .ez-kopf .knopf { background: rgba(255, 255, 255, .08) !important; border: 1px solid rgba(255, 255, 255, .2) !important; color: #fff !important; box-shadow: none !important; }
+  .ez > .ez-kopf .knopf:hover { background: rgba(255, 255, 255, .15) !important; }
+  .ez > .ez-kopf img.ez-logo { height: 3.3rem; width: 3.3rem; aspect-ratio: 1; object-fit: cover; border-radius: .8rem; flex: none;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .15), 0 6px 18px rgba(0, 0, 0, .45); }
+  /* Einsatz-Seite: Stoffsuche im dunklen Kopf (wie die Schnellsuche im Hauptmenü), Warnmarkierung erst darunter */
+  #einsatz > .ez-kopf.mit-suche { padding-bottom: .4rem; }
+  #einsatz > .ez-kopf.mit-suche::after { display: none; }
+  #einsatz > .ez-held { position: relative; isolation: isolate; width: auto; max-width: none; color: #fff; border-radius: 0; box-shadow: none; background: #0b0e13;
+    margin: -.85rem calc(-1 * var(--rand-r)) .15rem calc(-1 * var(--rand-l));      /* leicht überlappend: keine Haarlinie zum Kopf */
+    padding: .6rem max(var(--rand-r), calc((100% - 62rem) / 2 + var(--rand-r))) 1.5rem max(var(--rand-l), calc((100% - 62rem) / 2 + var(--rand-l))); }
+  #einsatz > .ez-held .ez-held-kopf b { color: #fff; }
+  #einsatz > .ez-held .ez-held-kopf small { color: #fff; border-color: rgba(255, 255, 255, .35); }
+  #einsatz > .ez-held .ez-suchfeld { background: #fff; border: 0; box-shadow: 0 12px 32px rgba(0, 0, 0, .38); }
+  #einsatz > .ez-held .ez-suchfeld:focus-within { box-shadow: 0 0 0 3px rgba(229, 72, 77, .55), 0 12px 32px rgba(0, 0, 0, .38); }
+  #einsatz > .ez-held .ez-suchfeld input { color: #0e1318; }
+  #einsatz > .ez-held .ez-suchfeld input::placeholder { color: #7b8794; }
+  #einsatz > .ez-held .ez-suchfeld .lupe { color: #687482; }
+  #einsatz > .ez-held .ez-leeren { background: rgba(14, 19, 24, .1); color: #3c4753; }
+  #einsatz > .ez-held .ez-los { background: #d42a30; }
+  #einsatz > .ez-held .ez-un { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .22); color: #fff; }
+  #einsatz > .ez-held .ez-un[aria-pressed="true"] { background: #d42a30; border-color: #d42a30; }
+  #einsatz > .ez-held .ez-art { color: rgba(255, 255, 255, .7); }
+  #einsatz > .ez-held .ez-art b { color: #7ee2a8; }
+  #einsatz > .ez-held .ez-leer { color: rgba(255, 255, 255, .72); }
+  #einsatz > .ez-held .ez-import-zeile { border-top-color: rgba(255, 255, 255, .16); }
   .ez-kopf img { height: 3.4rem; width: auto; aspect-ratio: 19 / 25; object-fit: cover; border-radius: .45rem; flex: none; }
   .ez-kopf .zur { flex: none; padding: .45rem .6rem; }
   .ez-titel { flex: 1; min-width: 0; }
@@ -258,11 +299,19 @@
   .ez-stufe.gemischt { --c: var(--ser); } .ez-stufe.unbekannt, .ez-stufe.keine, .ez-stufe.offen { --c: #6b7480; }
   .ez-geraete { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
   .ez-geraete > li > a, .ez-geraete > li > div { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: .3rem .75rem; padding: .6rem;
-    border-radius: .65rem; background: var(--surface2); border: 1px solid var(--line); color: var(--ink); text-decoration: none; border-left: .3rem solid var(--c, var(--rand)); }
+    border-radius: .65rem; background: var(--surface2); border: 1px solid var(--line); color: var(--ink); text-decoration: none;
+    position: relative; overflow: hidden; padding-right: 5rem; }
+  /* Band rechts über die volle Höhe: grün beständig (mit Zeit bzw. Klasse), rot nicht beständig, gelb bedingt, grau ohne Angabe */
+  .ez-band { position: absolute; top: 0; right: 0; bottom: 0; width: 4.3rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .2rem; padding: .35rem .3rem; box-sizing: border-box; text-align: center; color: #fff; background: #6b7480; }
+  .ez-band.gut { background: var(--good); } .ez-band.nicht { background: var(--crit); } .ez-band.bedingt { background: #c48a00; } .ez-band.gemischt { background: var(--ser); }
+  .ez-band b { font-size: 1.25rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .ez-band.lang b { font-size: .95rem; }
+  .ez-band small { font-size: .62rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; line-height: 1.15; opacity: .92; overflow-wrap: anywhere; }
   .ez-bild { width: 4.2rem; height: 4.2rem; border-radius: .45rem; background: var(--surface); border: 1px solid var(--line); object-fit: contain; grid-row: span 3;
     display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: .65rem; text-align: center; overflow: hidden; }
   /* Bild links über die ersten Zeilen, alles andere immer in der rechten Spalte (sonst rutschen weitere Listenzeilen unter das Bild) */
-  .ez-geraete > li > a > :not(.ez-bild), .ez-geraete > li > div > :not(.ez-bild) { grid-column: 2; min-width: 0; }
+  .ez-geraete > li > a > :not(.ez-bild):not(.ez-band), .ez-geraete > li > div > :not(.ez-bild):not(.ez-band) { grid-column: 2; min-width: 0; }
   .ez-geraete .ez-bild { grid-column: 1; grid-row: 1 / span 3; background: var(--bild-bg, var(--surface)); }
   .ez-geraete b { font-weight: 600; overflow-wrap: anywhere; }
   .ez-geraete .zeile { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; font-size: .8rem; color: var(--ink2); }
@@ -402,7 +451,7 @@
     .ez-ok.breit .fotos { grid-row: 3; grid-column: 1 / -1; margin-top: .45rem; }
   }
   @media (max-width: 640px) {
-    .ez { padding-left: calc(.5rem + var(--sicher-links)); padding-right: calc(.5rem + var(--sicher-rechts)); gap: .65rem; }
+    .ez { --rand-l: calc(.5rem + var(--sicher-links)); --rand-r: calc(.5rem + var(--sicher-rechts)); gap: .65rem; }
     .ez-kopf { gap: .5rem; padding: .3rem .5rem .3rem .4rem; }
     .ez-kopf img { height: 3.1rem; }
     .ez-titel h1 { font-size: 1.15rem; }
@@ -419,6 +468,12 @@
     .ez-ausbr b { font-size: 1.12rem; }
   }
   @media (max-width: 360px) { .ez-suchfeld input { font-size: 17px; } .ez-suchfeld { padding-left: .6rem; } .ez-zuletzt { width: 8.6rem; } }
+  @media (max-width: 380px) {
+    .ez-geraete > li > a, .ez-geraete > li > div { padding-right: 4.4rem; grid-template-columns: 3.6rem minmax(0, 1fr); }
+    .ez-geraete .ez-bild { width: 3.6rem; height: 3.6rem; }
+    .ez-band { width: 3.8rem; } .ez-band b { font-size: 1.05rem; } .ez-band.lang b { font-size: .82rem; }
+    .ez > .ez-kopf .ez-titel h1 { font-size: 1.25rem; }
+  }
   @media (max-width: 380px) { .ez-ordner { gap: .5rem; } .ez-ok { padding: .75rem .65rem .7rem; } .ez-kw { gap: .4rem; } .ez-kw > div:not(.ez-ausbr) { padding: .45rem .5rem; } .ez-aegl th, .ez-aegl td { font-size: .76rem; padding: .28rem .1rem; } .ez-aegl th:first-child, .ez-aegl td:first-child { width: 3.3rem; }
     .ez-leiste { gap: .35rem; } .ez-leiste a { font-size: .74rem; padding: .4rem .2rem; } .ez-hs li { grid-template-columns: 3.7rem minmax(0, 1fr); } }`;
   const stil = document.createElement('style');
@@ -512,7 +567,7 @@
     const h = document.createElement('header');
     h.className = 'kachel ez-kopf';
     h.innerHTML = (eltern ? `<button class="knopf zur" data-zurueck="${esc(eltern)}" title="Zurück" aria-label="Zurück">${I.zurueck}</button>` : '') +
-      (logo ? GSZ.logos() : '') +
+      (logo ? (GSZ.logoOriginal ? `<img class="ez-logo" src="${GSZ.logoOriginal}" alt="">` : GSZ.logos()) : '') +
       `<div class="ez-titel"><h1>${esc(titel)}</h1>${unter ? `<div>${unter}</div>` : ''}</div>` +
       `<a class="knopf" href="${haus}" title="Hauptmenü" aria-label="Hauptmenü">${I.haus}<span class="lang">Menü</span></a>` +
       `<button class="knopf modus" title="Hell / Dunkel">◐</button><button class="knopf einst" title="Einstellungen" hidden>⚙</button>`;
@@ -678,6 +733,7 @@
   function einsatzAufbauen() {
     eEl.innerHTML = '';
     const kp = kopf({ titel: 'Einsatz', unter: 'Gefahrstoffzug · Teileinheit Miehlen', logo: true });
+    kp.classList.add('mit-suche');
     const kpUnter = kp.querySelector('.ez-titel div');
     if (kpUnter) kpUnter.id = 'ez-kopf-status';
     eEl.appendChild(kp);
@@ -1291,6 +1347,25 @@
   }
   // Stoffname aus der Liste lesbar: „Chlor , trocken“ → „Chlor, trocken“
   const stoffText = t => String(t || '').replace(/\s+([,;.)])/g, '$1').replace(/\(\s+/g, '(').replace(/\s{2,}/g, ' ').trim();
+  // Band rechts an der Gerätezeile: Farbe der Gesamtbewertung, dazu die Angabe, die sie bestimmt (Zeit bzw. Klasse; bei mehreren
+  // Zeilen die ungünstigste – bei Durchbruchzeiten die kürzeste)
+  function bandHtml(e) {
+    const g = e.geraet, L = g.daten && g.daten.liste;
+    const band = (zeichen, text, extra = '') => `<span class="ez-band ${esc(e.stufe)}${extra}" title="${esc(B.STUFE_TEXT[e.stufe] || '')}"><b>${esc(zeichen)}</b><small>${esc(text)}</small></span>`;
+    if (e.stufe === 'offen') return band('…', 'noch offen');
+    if (e.stufe === 'keine' || !L) return band('–', 'nicht in der Liste');
+    if (e.stufe === 'gemischt') return band('±', 'gemischt');
+    const ids = L.relevant.length ? L.relevant : L.spalten.map(s => s.id);
+    const sicher = e.treffer.filter(t => t.art !== 'aehnlich'), basis = sicher.length ? sicher : e.treffer;
+    const werte = [];
+    for (const t of basis) for (const id of ids) { const w = t.eintrag.werte[id]; if (w && w.roh) werte.push({ roh: w.roh, stufe: w.stufe, id }); }
+    if (e.stufe === 'unbekannt' || !werte.length) return band('?', 'keine Angabe');
+    const passend = werte.filter(w => w.stufe === e.stufe), kand = passend.length ? passend : werte;
+    const zahl = w => { const m = /(\d+(?:[.,]\d+)?)/.exec(w.roh); return m ? Number(m[1].replace(',', '.')) : Infinity; };
+    const w = L.art === 'permeation' ? kand.reduce((a, b) => (zahl(b) < zahl(a) ? b : a)) : kand[0];
+    const unter = L.art === 'permeation' && /\d/.test(w.roh) ? 'min' : ids.length > 1 || L.spalten.length > 1 ? w.id : (B.STUFE_TEXT[e.stufe] || '');
+    return band(w.roh, unter, w.roh.length > 5 ? ' lang' : '');
+  }
   function geraetZeile(e, kontext = '') {
     const g = e.geraet;
     const titel = (g.nr ? g.nr + ' · ' : '') + g.name;
@@ -1312,7 +1387,7 @@
       ${g.foto ? `<img class="ez-bild${bildFuellen(bildVon(g))}" style="${bildStil(bildVon(g), false)}" data-foto="${esc(g.foto)}" alt="">` : '<span class="ez-bild">kein Bild</span>'}
       <b>${esc(titel)}</b>
       <div class="zeile">${stufeBadge(e.stufe)}${e.nurAehnlich ? '<span class="ez-ungeprueft">nur ähnlicher Name</span>' : ''}${pruefBadge(g)}</div>
-      ${eintraege}${rest}</a></li>`;
+      ${eintraege}${rest}${bandHtml(e)}</a></li>`;
   }
 
   // Seite des Einsatzbildschirms aufbauen: stoff (Stoffobjekt), basis (#stoff/<zvg> bzw. #sdb/<id>), teil

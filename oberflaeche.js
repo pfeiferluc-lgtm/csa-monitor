@@ -867,7 +867,7 @@
     fremde[name] = def;
     if (def.element && !def.element.parentNode) { def.element.classList.add('gsz-ansicht'); document.body.appendChild(def.element); }
   }
-  window.GSZ = { einrichten, daten, zeige, zurueck, ansicht: ansichtAnmelden, kachelInfo, modusKnopf, einstellungenKnopf, logos,
+  window.GSZ = { einrichten, daten, zeige, zurueck, ansicht: ansichtAnmelden, kachelInfo, modusKnopf, einstellungenKnopf, logos, logoOriginal,
                  get aktuell() { return { ansicht, param: ansichtParam }; }, get adapter() { return adapter; },
                  get ausgang() { return ausgang.slice(); } };
 })();
