@@ -23,7 +23,20 @@
   .sdb-los:disabled { opacity: .45; }
   .sdb-balken { height: .45rem; border-radius: .3rem; background: var(--surface2); border: 1px solid var(--line); overflow: hidden; margin-top: .45rem; }
   .sdb-balken i { display: block; height: 100%; background: var(--akzent); transition: width .3s; }
-  .sdb-zeile { display: flex; gap: .45rem; flex-wrap: wrap; margin-top: .55rem; }`;
+  .sdb-zeile { display: flex; gap: .45rem; flex-wrap: wrap; margin-top: .55rem; }
+  /* Auswertung: Claude (über den Mac-Helfer) und Texterkennung (auf dem Gerät) – je Status, Fortschrittsbalken, Knopf */
+  .sdb-auswertung { display: grid; grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr)); gap: .7rem; }
+  .sdb-weg { padding: .75rem .85rem .85rem; border-radius: .75rem; background: var(--surface); box-shadow: var(--schatten); display: flex; flex-direction: column; gap: .45rem; min-width: 0; }
+  .sdb-weg .kopf { display: flex; align-items: baseline; gap: .2rem .5rem; flex-wrap: wrap; }
+  .sdb-weg .kopf b { font-size: 1rem; } .sdb-weg .kopf small { font-size: .74rem; color: var(--muted); }
+  .sdb-weg .status { font-size: .86rem; color: var(--ink2); line-height: 1.38; overflow-wrap: anywhere; }
+  .sdb-weg .status.fertig { color: var(--good); font-weight: 600; } .sdb-weg .status.fehler { color: var(--crit); }
+  .sdb-weg .sdb-balken { margin-top: 0; }
+  .sdb-weg > .knopf { align-self: flex-start; margin-top: .15rem; }
+  .sdb-weg > .knopf:disabled { opacity: .5; cursor: default; }
+  .sdb-weg .sdb-mehr { margin-top: .1rem; }
+  .sdb-balken.unbestimmt i { width: 35% !important; animation: sdb-lauf 1.5s ease-in-out infinite; }
+  @keyframes sdb-lauf { 0% { transform: translateX(-110%); } 100% { transform: translateX(310%); } }`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   // ---------------------------------------------------------------- Speicher
@@ -36,7 +49,7 @@
   const speichern = d => SP.setze('sdb', d.id, d);
   const fortschritt = new Map();          // id -> { text, anteil }
   const beobachter = new Set();
-  const melden = id => { for (const f of beobachter) { try { f(id); } catch { /* weiter */ } } };
+  const melden = (id, nurFortschritt = false) => { for (const f of beobachter) { try { f(id, nurFortschritt); } catch { /* weiter */ } } };
 
   function stoffVon(d) {
     const ocr = d.ocr ? S.normalisieren(d.ocr) : null, cl = d.claude ? S.normalisieren(d.claude) : null;
@@ -45,11 +58,14 @@
     s.id = d.id;
     return s;
   }
+  // Claude-Auftrag unterwegs? (abgelegt, noch kein Ergebnis; ältere Datensätze mit Ergebnis gelten als erledigt)
+  const auftragOffen = d => !!(d && d.auftrag && d.auftrag.abgelegt && !d.auftrag.erledigt && !(d.claude && !d.auftrag.id));
   function statusText(d) {
+    if (auftragOffen(d) && d.claude) return `von Claude ausgewertet (${d.claudeVon === 'iphone' ? 'iPhone' : 'Mac'}) · wird erneut ausgewertet`;
     if (d.claude) return `von Claude ausgewertet (${d.claudeVon === 'iphone' ? 'iPhone' : 'Mac'})`;
     if (d.status === 'liest') return 'wird gelesen …';
     if (d.status === 'fehler') return 'Fehler beim Lesen';
-    return d.auftrag && d.auftrag.abgelegt ? 'Texterkennung · Claude ausstehend' : 'Texterkennung';
+    return auftragOffen(d) ? 'Texterkennung · Claude ausstehend' : 'Texterkennung';
   }
 
   // ---------------------------------------------------------------- Ablauf
@@ -59,13 +75,20 @@
     // 1. Auftrag für den Mac-Helfer (Bilder verkleinert, PDFs unverändert), sofern mit Dropbox verbunden
     auftragAblegen(d).catch(() => {});
     // 2. Text auf dem Gerät lesen und auswerten
+    await textLesen(id);
+  }
+  // Texterkennung auf dem Gerät (PDF-Textebene bzw. Texterkennung der Bilder) – auch einzeln über „Mit Texterkennung lesen“
+  async function textLesen(id) {
+    if (fortschritt.has(id)) return;                                     // läuft schon
+    const d = await hole(id);
+    if (!d) return;
     try {
-      fortschritt.set(id, { text: 'Text wird gelesen …', anteil: 0 }); melden(id);
-      const r = await window.GSZOcr.textAus(d.dateien, (text, anteil) => { fortschritt.set(id, { text, anteil }); melden(id); });
+      fortschritt.set(id, { text: 'Text wird gelesen …', anteil: 0 }); melden(id, true);
+      const r = await window.GSZOcr.textAus(d.dateien, (text, anteil) => { fortschritt.set(id, { text, anteil }); melden(id, true); });
       const x = await hole(id);
-      x.text = r.text; x.textArt = r.art;
+      x.text = r.text; x.textArt = r.art; x.textZeit = new Date().toISOString();
       x.ocr = window.GSZSdbParser ? GSZSdbParser.sdbLesen(r.text, { dateiname: d.name }) : S.normalisieren({ quelle: 'sdb', quelleText: 'Sicherheitsdatenblatt – Texterkennung' });
-      x.status = 'gelesen';
+      x.status = 'gelesen'; x.fehler = '';
       await speichern(x);
     } catch (e) {
       const x = await hole(id);
@@ -73,9 +96,13 @@
       await speichern(x);
     } finally { fortschritt.delete(id); melden(id); }
   }
-  async function auftragAblegen(d) {
+  // Auftrag für Claude in den App-Ordner (Auswertung/<Kennung>/) – der Mac-Helfer holt ihn ab. Erneut: eigene Kennung <id>-2, -3 …
+  async function auftragAblegen(d, { erneut = false } = {}) {
     const a = ad();
-    if (!a || !a.auftragAblegen || !a.verbunden() || navigator.onLine === false) return;
+    if (!a || !a.auftragAblegen || !a.verbunden()) throw new Error('Dafür braucht die App die Verbindung zum Dropbox-App-Ordner.');
+    if (navigator.onLine === false) throw new Error('Ohne Netz nicht möglich.');
+    const nummer = erneut ? ((d.auftrag && d.auftrag.nummer) || 1) + 1 : 1;
+    const kennung = nummer > 1 ? `${d.id}-${nummer}` : d.id;
     const dateien = [];
     let n = 0;
     for (const f of d.dateien) {
@@ -83,30 +110,38 @@
       if (/pdf/i.test(f.typ) || /\.pdf$/i.test(f.name)) { if (f.blob.size < 25 * 1048576) dateien.push({ name: `datenblatt-${n}.pdf`, blob: f.blob }); }
       else { try { dateien.push({ name: `seite-${String(n).padStart(2, '0')}.jpg`, blob: await window.GSZOcr.bildVerkleinern(f.blob) }); } catch { /* Bild unlesbar */ } }
     }
-    if (!dateien.length) return;
-    await a.auftragAblegen(d.id, dateien, { format: 'gsz-auftrag-1', art: 'sdb', id: d.id, erstellt: new Date().toISOString(),
+    if (!dateien.length) throw new Error('Keine Datei, die Claude lesen kann.');
+    await a.auftragAblegen(kennung, dateien, { format: 'gsz-auftrag-1', art: 'sdb', id: kennung, erstellt: new Date().toISOString(),
       geraet: `${istIphone() ? 'iPhone' : a.art === 'web' ? 'Browser' : 'Programm'} · Gefahrstoffzug-App`, dateien: dateien.map(x => x.name) });
     const x = await hole(d.id);
-    x.auftrag = { abgelegt: new Date().toISOString(), fehler: '' };
+    x.auftrag = { id: kennung, nummer, abgelegt: new Date().toISOString(), fehler: '', erledigt: null };
     await speichern(x); melden(d.id);
   }
   // Ergebnis abholen (Mac-Helfer: ergebnis.json, Kurzbefehl: antwort-iphone.txt)
   async function ergebnisHolen(id) {
     const a = ad();
     if (!a || !a.auftragErgebnis) return false;
+    const x0 = await hole(id);
+    if (!x0) return false;
+    const offen = auftragOffen(x0);
+    if (!offen && x0.claude) return false;                                // nichts angefragt
     let r;
-    try { r = await a.auftragErgebnis(id); } catch { return false; }
+    try { r = await a.auftragErgebnis(offen ? x0.auftrag.id || id : id); } catch { return false; }
     if (!r) return false;
     const x = await hole(id);
-    if (!x || x.claude) return false;
-    if (r.ergebnis && r.ergebnis.stoff) {
+    if (!x) return false;
+    const jetzt = new Date().toISOString();
+    if (offen && r.ergebnis && r.ergebnis.stoff) {
       x.claude = S.normalisieren({ ...r.ergebnis.stoff, quelle: 'sdb', quelleText: 'Sicherheitsdatenblatt – ausgewertet von Claude (Mac)' });
-      x.claudeVon = 'mac'; x.claudeZeit = r.ergebnis.zeit || new Date().toISOString();
-    } else if (r.antwortIphone) {
-      try { x.claude = S.antwortLesen(r.antwortIphone, 'Sicherheitsdatenblatt – ausgewertet von Claude (iPhone)'); x.claudeVon = 'iphone'; x.claudeZeit = new Date().toISOString(); }
+      x.claudeVon = 'mac'; x.claudeZeit = r.ergebnis.zeit || jetzt;
+      x.auftrag = { ...x.auftrag, erledigt: jetzt, fehler: '' };
+    } else if (offen && r.ergebnis && r.ergebnis.fehler) {
+      x.auftrag = { ...x.auftrag, erledigt: jetzt, fehler: 'Claude (Mac): ' + r.ergebnis.fehler };
+    } else if (r.antwortIphone && !x.claude) {
+      // die Antwort der Claude-App erledigt auch einen offenen Auftrag an den Mac
+      try { x.claude = S.antwortLesen(r.antwortIphone, 'Sicherheitsdatenblatt – ausgewertet von Claude (iPhone)'); x.claudeVon = 'iphone'; x.claudeZeit = jetzt;
+            if (x.auftrag) x.auftrag = { ...x.auftrag, erledigt: jetzt, fehler: '' }; }
       catch (e) { x.auftrag = { ...(x.auftrag || {}), fehler: 'Antwort von Claude (iPhone) nicht lesbar: ' + e.message }; }
-    } else if (r.ergebnis && r.ergebnis.fehler) {
-      x.auftrag = { ...(x.auftrag || {}), fehler: 'Claude (Mac): ' + r.ergebnis.fehler };
     } else return false;
     await speichern(x); melden(id);
     return true;
@@ -115,6 +150,7 @@
     const x = await hole(id);
     x.claude = S.antwortLesen(text, 'Sicherheitsdatenblatt – ausgewertet von Claude (iPhone)');
     x.claudeVon = 'iphone'; x.claudeZeit = new Date().toISOString();
+    if (x.auftrag) x.auftrag = { ...x.auftrag, erledigt: x.claudeZeit, fehler: '' };
     await speichern(x); melden(id);
   }
   // Text für die Claude-App: die einsatzwichtigen Abschnitte (Kurzbefehl-Links bleiben handlich)
@@ -166,46 +202,79 @@
   const rEl = E.ansichtElement('sdbansicht');
   let aktuell = null, abfrage = null, helferStand = null, helferZeit = 0, iphoneLink = '';
   const helferLebt = () => helferStand && helferStand.zeit && Date.now() - Date.parse(helferStand.zeit) < 3 * 60 * 1000;
-  async function helferPruefen() {
-    if (Date.now() - helferZeit < 30 * 1000) return;
+  async function helferPruefen(abstand = 30 * 1000) {
+    if (Date.now() - helferZeit < abstand) return;
     helferZeit = Date.now();
     try { helferStand = ad() && ad().helfer ? await ad().helfer() : null; } catch { helferStand = null; }
   }
-  function bannerHtml(d) {
-    const f = fortschritt.get(d.id);
-    const teile = [];
-    if (f) teile.push(`<div class="ez-warn blau"><b>${esc(f.text)}</b><div class="sdb-balken"><i style="width:${Math.round((f.anteil || 0) * 100)}%"></i></div>
-      <div class="ez-klein" style="margin-top:.35rem">Die erste Auswertung erscheint gleich hier; Claude verbessert sie danach.</div></div>`);
-    if (d.status === 'fehler') teile.push(`<div class="ez-warn rot">Text nicht lesbar: ${esc(d.fehler)}</div>`);
-    const a = ad();
-    if (d.claude) {
-      teile.push(`<div class="ez-warn" style="border-left-color:var(--good);background:var(--good-t)">✓ Von Claude ausgewertet (${d.claudeVon === 'iphone' ? 'iPhone' : 'Mac'})` +
-        `${d.claudeZeit ? ', ' + esc(datumZeit(d.claudeZeit)) : ''}.</div>`);
-    } else if (!f) {
-      const mac = d.auftrag && d.auftrag.abgelegt;
-      let t = '';
-      if (mac && helferLebt()) t = 'Erste Auswertung per Texterkennung – Claude prüft gerade nach (meist unter einer Minute).';
-      else if (mac) t = 'Ausgewertet per Texterkennung. Claude prüft nach, sobald dein Mac wieder erreichbar ist.';
-      else if (a && a.verbunden && !a.verbunden()) t = 'Ausgewertet per Texterkennung (ohne Dropbox-Verbindung keine Prüfung durch Claude).';
-      else if (navigator.onLine === false) t = 'Ausgewertet per Texterkennung (ohne Netz). Mit Netz prüft Claude nach.';
-      else t = 'Ausgewertet per Texterkennung.';
-      if (d.auftrag && d.auftrag.fehler) t += ' ' + d.auftrag.fehler;
-      const knoepfe = [];
-      if (istIphone() && d.text) {
-        knoepfe.push(`<a class="knopf" id="sdb-iphone" ${iphoneLink ? `href="${esc(iphoneLink)}"` : 'aria-disabled="true"'}>${I.neu}Mit Claude auf diesem iPhone auswerten</a>`);
-        knoepfe.push('<button class="knopf" id="sdb-einfuegen">Antwort aus der Zwischenablage übernehmen</button>');
+  const uhr = t => { const d = new Date(t); return isNaN(d) ? '' : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const balken = anteil => anteil === 'unbestimmt' ? '<div class="sdb-balken unbestimmt"><i></i></div>'
+    : typeof anteil === 'number' ? `<div class="sdb-balken" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(anteil * 100)}"><i style="width:${(anteil * 100).toFixed(1)}%"></i></div>` : '';
+  // Zustand der Auswertung durch Claude: aus dem Auftrag und dem Lebenszeichen des Mac-Helfers (Auswertung/mac-helfer.json)
+  function claudeZustand(d) {
+    const a = ad(), offen = auftragOffen(d);
+    const verbunden = !!(a && a.auftragAblegen && a.verbunden && a.verbunden());
+    if (offen) {
+      const w = helferStand && helferStand.arbeit, kennung = d.auftrag.id || d.id;
+      if (w && w.art === 'sdb' && w.id === kennung) {
+        const sek = Math.max(0, (Date.now() - Date.parse(w.seit)) / 1000);
+        return { text: `Claude wertet aus … ${Math.min(95, Math.round(sek / 45 * 100))} % · seit ${uhr(w.seit)}`, anteil: Math.min(.95, sek / 45) };
       }
-      if (d.text) knoepfe.push('<button class="knopf" id="sdb-kopieren">Anfrage für Claude kopieren</button>');
-      const mehr = knoepfe.length && !(mac && helferLebt()) ? `<details class="sdb-mehr"><summary>Ohne Mac mit Claude auswerten</summary><div class="sdb-zeile">${knoepfe.join('')}</div>
-        ${istIphone() ? '<div class="ez-klein" style="margin-top:.4rem">Braucht einmalig den Kurzbefehl „GSZ Claude“: <a href="GSZ-Claude.shortcut" download="GSZ Claude.shortcut">hier laden</a>.</div>' : ''}</details>` : '';
-      teile.push(`<div class="ez-warn blau">${esc(t)}${mehr}</div>`);
+      if (!helferLebt()) return { text: 'Wartet auf den Mac-Helfer – Claude prüft nach, sobald dein Mac wieder erreichbar ist.', anteil: null, ohneMac: true };
+      if (helferStand.pause_bis && Date.parse(helferStand.pause_bis) > Date.now()) return { text: `Pause bis ${uhr(helferStand.pause_bis)} – das Kontingent des Claude-Abos ist gerade erschöpft.`, anteil: null };
+      if (w) return { text: `In der Warteschlange – der Mac-Helfer wertet gerade ${w.art === 'sdb' ? 'ein anderes Datenblatt' : `„${w.ordner || ''}“`} aus.`, anteil: 'unbestimmt' };
+      return { text: 'In der Warteschlange – Claude beginnt in Kürze.', anteil: 'unbestimmt' };
     }
+    if (d.claude) return { text: `✓ Von Claude ausgewertet (${d.claudeVon === 'iphone' ? 'iPhone' : 'Mac'})${d.claudeZeit ? ', ' + datumZeit(d.claudeZeit) : ''}`, klasse: 'fertig' };
+    if (d.auftrag && d.auftrag.fehler) return { text: d.auftrag.fehler, klasse: 'fehler' };
+    if (!verbunden) return { text: 'Braucht die Verbindung zum Dropbox-App-Ordner (⚙ › Mit Dropbox verbinden).', anteil: null, ohneMac: true };
+    if (navigator.onLine === false) return { text: 'Ohne Netz – mit Netz prüft Claude nach.', anteil: null, ohneMac: true };
+    return { text: 'Noch nicht ausgewertet.', anteil: null };
+  }
+  function auswertungHtml(d) {
+    const a = ad(), offen = auftragOffen(d), f = fortschritt.get(d.id);
+    const cl = claudeZustand(d);
+    const kannClaude = !!(a && a.auftragAblegen && a.verbunden && a.verbunden()) && navigator.onLine !== false && !offen;
+    // ohne Mac: Claude-App auf dem iPhone (Kurzbefehl) bzw. Anfrage kopieren
+    const knoepfe = [];
+    if (istIphone() && d.text) {
+      knoepfe.push(`<a class="knopf" id="sdb-iphone" ${iphoneLink ? `href="${esc(iphoneLink)}"` : 'aria-disabled="true"'}>${I.neu}Mit Claude auf diesem iPhone auswerten</a>`);
+      knoepfe.push('<button class="knopf" id="sdb-einfuegen">Antwort aus der Zwischenablage übernehmen</button>');
+    }
+    if (d.text) knoepfe.push('<button class="knopf" id="sdb-kopieren">Anfrage für Claude kopieren</button>');
+    const ohneMac = knoepfe.length && (!d.claude || offen) && !(offen && helferLebt()) ? `<details class="sdb-mehr"><summary>Ohne Mac mit Claude auswerten</summary><div class="sdb-zeile">${knoepfe.join('')}</div>
+      ${istIphone() ? '<div class="ez-klein" style="margin-top:.4rem">Braucht einmalig den Kurzbefehl „GSZ Claude“: <a href="GSZ-Claude.shortcut" download="GSZ Claude.shortcut">hier laden</a>.</div>' : ''}</details>` : '';
+    const tx = f ? { text: f.text, anteil: f.anteil || 0 }
+      : d.status === 'fehler' ? { text: 'Text nicht lesbar: ' + d.fehler, klasse: 'fehler' }
+      : d.ocr ? { text: `✓ Gelesen${d.textArt === 'pdf-text' ? ' (Textebene des PDFs)' : d.textArt === 'ocr' ? ' (Texterkennung der Bilder)' : ''}${d.textZeit ? ', ' + datumZeit(d.textZeit) : ''}`, klasse: 'fertig' }
+      : { text: 'Noch nicht gelesen.' };
+    return `<div class="sdb-auswertung" id="sdb-auswertung">
+      <div class="sdb-weg" id="sdb-weg-claude"><div class="kopf"><b>Claude</b><small>über den Mac-Helfer – genauer</small></div>
+        <div class="status ${cl.klasse || ''}">${esc(cl.text)}</div>${balken(cl.anteil)}
+        <button type="button" class="knopf" id="sdb-claude"${kannClaude ? '' : ' disabled'}>${I.neu}${offen ? 'Claude ist angefragt' : d.claude || (d.auftrag && d.auftrag.abgelegt) ? 'Erneut mit Claude auswerten' : 'Mit Claude auswerten'}</button>${ohneMac}</div>
+      <div class="sdb-weg" id="sdb-weg-ocr"><div class="kopf"><b>Texterkennung</b><small>auf diesem Gerät – auch ohne Netz</small></div>
+        <div class="status ${tx.klasse || ''}">${esc(tx.text)}</div>${balken(tx.anteil)}
+        <button type="button" class="knopf" id="sdb-ocr"${f ? ' disabled' : ''}>${I.blatt}${d.ocr || d.status === 'fehler' ? 'Erneut mit Texterkennung lesen' : 'Mit Texterkennung lesen'}</button></div>
+    </div>`;
+  }
+  function bannerHtml(d) {
     const s = stoffVon(d);
     const cas = s.cas[0] || (s.bestandteile.find(b => b.cas) || {}).cas;
-    teile.push(`<div class="sdb-zeile"><a class="knopf" href="#sdb/${esc(d.id)}/original">${I.blatt}Original ansehen</a>
+    return auswertungHtml(d) + `<div class="sdb-zeile"><a class="knopf" href="#sdb/${esc(d.id)}/original">${I.blatt}Original ansehen</a>
       ${cas ? `<button class="knopf" data-gestis="${esc(cas)}">${I.suche}GESTIS zu CAS ${esc(cas)}</button>` : ''}
-      <button class="knopf" id="sdb-loeschen">Löschen</button></div>`);
-    return teile.join('');
+      <button class="knopf" id="sdb-loeschen">Löschen</button></div>`;
+  }
+  // nur die Kästen neu zeichnen (Fortschritt), nicht den ganzen Einsatzbildschirm
+  async function auswertungAktualisieren(id) {
+    const box = rEl.querySelector('#sdb-auswertung');
+    if (!box) return;
+    const d = await hole(id);
+    if (!d || !box.isConnected) return;
+    const t = document.createElement('div');
+    t.innerHTML = auswertungHtml(d);
+    const neu = t.firstElementChild;
+    box.replaceWith(neu);
+    auswertungBedienung(neu, d);
   }
   async function zeichnen(id, teil) {
     const d = await hole(id);
@@ -229,6 +298,23 @@
     if (g) g.addEventListener('click', () => E.suchen(g.dataset.gestis));
     const w = el.querySelector('#sdb-loeschen');
     if (w) w.addEventListener('click', async () => { if (!confirm('Dieses Datenblatt vom Gerät löschen?')) return; await SP.loesche('sdb', d.id); GSZ.zeige('einsatz', true); });
+    const box = el.querySelector('#sdb-auswertung');
+    if (box) auswertungBedienung(box, d);
+  }
+  function auswertungBedienung(el, d) {
+    const c = el.querySelector('#sdb-claude');
+    if (c) c.addEventListener('click', async () => {
+      c.disabled = true;
+      try {
+        const x = await hole(d.id);
+        await auftragAblegen(x, { erneut: !!(x.auftrag && x.auftrag.abgelegt) });
+        helferZeit = 0;
+        meldung('An den Mac-Helfer übergeben – Claude wertet aus, sobald er dran ist. Der Balken zeigt den Stand.', 5500);
+        auswertungAktualisieren(d.id);
+      } catch (e) { c.disabled = false; meldung('Nicht möglich: ' + e.message, 7000); }
+    });
+    const o = el.querySelector('#sdb-ocr');
+    if (o) o.addEventListener('click', () => { o.disabled = true; textLesen(d.id); });
     const k = el.querySelector('#sdb-kopieren');
     if (k) k.addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(anfrageFuer(d)); meldung('Anfrage kopiert – in der Claude-App einfügen, Antwort kopieren und hier übernehmen.', 7000); }
@@ -257,9 +343,10 @@
     const runde = async () => {
       if (document.hidden || !aktuell || aktuell.id !== id) return;
       const d = await hole(id);
-      if (!d || d.claude) { clearInterval(abfrage); return; }
-      await helferPruefen();
-      if (d.auftrag && d.auftrag.abgelegt || istIphone()) await ergebnisHolen(id);
+      if (!d) { clearInterval(abfrage); return; }
+      const offen = auftragOffen(d);
+      await helferPruefen(offen ? 3500 : 30 * 1000);
+      if (offen || (istIphone() && !d.claude)) { if (!(await ergebnisHolen(id)) && offen) auswertungAktualisieren(id); }
     };
     abfrage = setInterval(runde, 4000);
     runde();
@@ -276,7 +363,8 @@
     },
     verlassen() { aktuell = null; clearInterval(abfrage); if (E.zoomErlauben) E.zoomErlauben(false); },
   });
-  beobachter.add(id => { if (aktuell && aktuell.id === id && aktuell.teil !== 'original') zeichnen(id, aktuell.teil); });
+  // Fortschritt: nur die Kästen; neue Ergebnisse: ganzer Einsatzbildschirm
+  beobachter.add((id, nurFortschritt) => { if (aktuell && aktuell.id === id && aktuell.teil !== 'original') { if (nurFortschritt) auswertungAktualisieren(id); else zeichnen(id, aktuell.teil); } });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && aktuell) ergebnisHolen(aktuell.id); });
 
   // Texterkennung einmal im Hintergrund laden (danach offline), wenn die App ruhig läuft und Netz da ist
@@ -288,5 +376,5 @@
     } catch { /* später */ }
   }, 20000);
 
-  window.GSZSdbImport = { statusText, verarbeiten, ergebnisHolen, antwortUebernehmen, anfrageFuer, importieren };
+  window.GSZSdbImport = { statusText, verarbeiten, textLesen, auftragAblegen, auftragOffen, ergebnisHolen, antwortUebernehmen, anfrageFuer, importieren };
 })();
