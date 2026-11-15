@@ -353,6 +353,9 @@
   .ez-bildrahmen img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .ez-bildrahmen .leer { color: #6b7480; font-size: .8rem; }
   .bild-fuellen img, img.bild-fuellen { object-fit: cover !important; }
+  /* Gerät aus der Stoffsuche geöffnet: Hinweis oben, Liste auf den Stoff gefiltert */
+  .ez-stoffbezug { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .8rem; margin-bottom: .8rem; }
+  .ez-stoffbezug .knopf { margin: 0 !important; white-space: nowrap; }
   /* Lange Texte eingeklappt („Mehr zur Liste …“) */
   details.ez-mehr { border-top: 1px solid var(--line); padding-top: .45rem; margin-top: .1rem; }
   details.ez-mehr > summary { cursor: pointer; font-size: .84rem; font-weight: 600; color: var(--akzent); list-style: none; display: flex; align-items: center; gap: .4rem;
@@ -1258,19 +1261,27 @@
 
   // Beständigkeiten unserer Ausrüstung für den Stoff
   let bestFilter = 'Alle';
+  // Stoff, aus dessen „Beständigkeiten“ bzw. „PSA“ ein Gerät geöffnet wird: Die Geräteseite zeigt dann in ihrer Liste nur die
+  // passenden Zeilen (Adresse #geraet/<Gerät>/<Kennung>; Kennung = ZVG-Nr. bzw. sdb-<id> des eigenen Datenblatts)
+  const stoffKontexte = new Map();
+  const kontextVon = stoff => String(stoff.zvg || (stoff.id ? 'sdb-' + stoff.id : '')).replace(/[\/\s]/g, '');
+  const stoffInfoVon = stoff => ({ name: stoff.name, synonyme: [...stoff.synonyme, ...stoff.bestandteile.map(b => b.name)],
+    cas: [...stoff.cas, ...stoff.bestandteile.map(b => b.cas).filter(Boolean)], anzeige: nameSchoen(stoff.name) });
   async function bestaendigkeitHtml(stoff, ziel, { nurKategorie = null } = {}) {
     if (!ad() || !ad().verbunden()) { ziel.innerHTML = '<div class="ez-leer">Die Beständigkeitslisten liegen im Dropbox-App-Ordner – dazu einmal mit Dropbox verbinden.</div>'; return; }
     if (!dateien.length) await listeHolen(false);
     const G_ = await geraete();
     if (!G_.length) { ziel.innerHTML = `<div class="ez-leer">Noch keine Beständigkeitslisten hinterlegt (Ordner Einsatz › ${BL} im Dropbox-App-Ordner).</div>`; return; }
-    const stoffInfo = { name: stoff.name, synonyme: [...stoff.synonyme, ...stoff.bestandteile.map(b => b.name)], cas: [...stoff.cas, ...stoff.bestandteile.map(b => b.cas).filter(Boolean)] };
+    const stoffInfo = stoffInfoVon(stoff);
+    const kontext = kontextVon(stoff);
+    if (kontext) stoffKontexte.set(kontext, stoffInfo);
     let erg = B.fuerStoff(G_, stoffInfo);
     if (nurKategorie) erg = erg.filter(e => kategorie(e.geraet) === nurKategorie);
     const kats = ['Alle', ...new Set(erg.map(e => kategorie(e.geraet)))];
     const zeigen = () => {
       const sicht = erg.filter(e => nurKategorie || bestFilter === 'Alle' || kategorie(e.geraet) === bestFilter);
       ziel.innerHTML = (nurKategorie || kats.length <= 2 ? '' : `<div class="ez-filter">${kats.map(k => `<button class="${k === bestFilter ? 'an' : ''}" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>`) +
-        (sicht.length ? `<ul class="ez-geraete">${sicht.map(e => geraetZeile(e)).join('')}</ul>` : '<div class="ez-leer">Keine Ausrüstung in dieser Gruppe.</div>') +
+        (sicht.length ? `<ul class="ez-geraete">${sicht.map(e => geraetZeile(e, kontext)).join('')}</ul>` : '<div class="ez-leer">Keine Ausrüstung in dieser Gruppe.</div>') +
         '<div class="ez-klein" style="margin-top:.6rem">Bewertung nach den Herstellerlisten. Maßgeblich ist die Originalliste – Tippen öffnet das Gerät mit Original. ' +
         'Bei mehreren Zeilen (Konzentration, Temperatur) zählt in der Übersicht die ungünstigste.</div>';
       for (const b of ziel.querySelectorAll('.ez-filter button')) b.addEventListener('click', () => { bestFilter = b.dataset.k; zeigen(); });
@@ -1280,7 +1291,7 @@
   }
   // Stoffname aus der Liste lesbar: „Chlor , trocken“ → „Chlor, trocken“
   const stoffText = t => String(t || '').replace(/\s+([,;.)])/g, '$1').replace(/\(\s+/g, '(').replace(/\s{2,}/g, ' ').trim();
-  function geraetZeile(e) {
+  function geraetZeile(e, kontext = '') {
     const g = e.geraet;
     const titel = (g.nr ? g.nr + ' · ' : '') + g.name;
     const eintraege = e.treffer.slice(0, 6).map(t => {
@@ -1297,7 +1308,7 @@
         `${t.art === 'aehnlich' ? ' <i>(ähnlicher Name – prüfen)</i>' : ''}</span></span>${werte ? `<i>${werte}</i>` : ''}${t.eintrag.hinweis ? `<i>${esc(t.eintrag.hinweis)}</i>` : ''}</div>`;
     }).join('');
     const rest = e.treffer.length > 6 ? `<div class="eintrag"><i>… und ${e.treffer.length - 6} weitere Zeilen</i></div>` : '';
-    return `<li><a href="#geraet/${kodiere(g.ordner)}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}">
+    return `<li><a href="#geraet/${kodiere(g.ordner)}${kontext ? '/' + kodiere(kontext) : ''}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}">
       ${g.foto ? `<img class="ez-bild${bildFuellen(bildVon(g))}" style="${bildStil(bildVon(g), false)}" data-foto="${esc(g.foto)}" alt="">` : '<span class="ez-bild">kein Bild</span>'}
       <b>${esc(titel)}</b>
       <div class="zeile">${stufeBadge(e.stufe)}${e.nurAehnlich ? '<span class="ez-ungeprueft">nur ähnlicher Name</span>' : ''}${pruefBadge(g)}</div>
@@ -1485,10 +1496,17 @@
 
   // Gerät mit geordneter Liste
   const gEl = ansichtElement('geraetansicht');
-  async function geraetSeite(ordner) {
+  let geraetKontext = { ordner: '', kontext: '' };
+  async function geraetSeite(ordner, kontext) {
+    // ohne Angabe (neu zeichnen nach Spaltenwahl oder Auswertung): Stoffbezug derselben Seite behalten
+    if (kontext === undefined) kontext = geraetKontext.ordner === ordner ? geraetKontext.kontext : '';
+    geraetKontext = { ordner, kontext };
     gEl.innerHTML = '';
     if (!dateien.length && ad() && ad().verbunden()) await listeHolen(false);
     const g = (await geraete()).find(x => x.ordner === ordner);
+    // Stoff aus der Stoffsuche (Gerät über „Beständigkeiten“ bzw. „PSA“ geöffnet); nach Neuladen aus dem Stoffspeicher
+    let sf = kontext ? stoffKontexte.get(kontext) || null : null;
+    if (!sf && /^\d{6}$/.test(kontext)) { try { sf = stoffInfoVon(await stoffHolen(kontext)); stoffKontexte.set(kontext, sf); } catch { sf = null; } }
     gEl.appendChild(kopf({ titel: g ? (g.nr ? g.nr + ' · ' : '') + g.name : ordner, unter: BL, eltern: 'ordner/' + kodiere(BL) }));
     if (!g) { gEl.insertAdjacentHTML('beforeend', '<div class="ez-leer">Gerät nicht gefunden.</div>'); return; }
     const d = g.daten, L = d && d.liste;
@@ -1503,7 +1521,8 @@
     const status = d && d.auswertung ? (d.auswertung.geprueft ? 'Geprüft' + (d.auswertung.pruefung && d.auswertung.pruefung.am ? ' am ' + datumZeit(d.auswertung.pruefung.am) : '') + ' – mit dem Original abgeglichen.'
       : 'Automatisch ausgelesen am ' + datumZeit(d.auswertung.am) + ' – noch nicht mit dem Original abgeglichen.') : '';
     const mehrTitel = [infoLang && 'Angaben zum Gerät', listeTxt && 'Liste', anmerkung && 'Hinweise der Auswertung'].filter(Boolean);
-    kopfK.innerHTML = `<div class="ez-oben"><div class="ez-bildspalte bild-${esc(bild.groesse)}">
+    kopfK.innerHTML = `${sf && L ? `<div class="ez-warn blau ez-stoffbezug"><span>Aus der Stoffsuche: <b>${esc(sf.anzeige)}</b> – die Liste unten zeigt nur die passenden Zeilen.</span>
+        <button class="knopf" type="button" id="ez-zur-liste">Zur Liste ↓</button></div>` : ''}<div class="ez-oben"><div class="ez-bildspalte bild-${esc(bild.groesse)}">
         <div class="ez-bildrahmen${bildFuellen(bild)}" style="${bildStil(bild)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="Foto ${esc(g.name)}">` : '<span class="leer">kein Foto</span>'}</div>
         ${bearbeitbar ? `<a class="knopf" href="#geraet-neu/${kodiere(g.ordner)}" data-sprung="gn-bild">${I.bild}Bild anpassen</a>` : ''}</div>
       <div style="flex:1;min-width:13rem;display:flex;flex-direction:column;gap:.35rem">
@@ -1525,12 +1544,15 @@
         <small>${esc(groesse(info && info.groesse))}</small></span></a>${info && ad().art === 'web' && ad().verfuegbarkeitSetzen ? verfWahl(info) : ''}</li>`; }).join('')}</ul>` : ''}`;
     gEl.appendChild(kopfK);
     verfBedienung(kopfK);
+    const zurListe = kopfK.querySelector('#ez-zur-liste');
+    if (zurListe) zurListe.addEventListener('click', () => { const z = document.getElementById('ez-liste-karte'); if (z) z.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     if (!d && g.quellen.length) auswertungBeobachten(g);
     fotoEinsetzen(kopfK);
     if (!L) return;
     if (L.spalten.length > 1) gEl.appendChild(spaltenwahlKarte(g));
     const t = document.createElement('section');
     t.className = 'kachel ez-karte';
+    t.id = 'ez-liste-karte';
     const sp = L.spalten;
     t.innerHTML = `<h2>Geordnete Beständigkeitsliste (${d.eintraege.length} Einträge)</h2>
       <input type="search" class="ez-db-suche" placeholder="Stoff oder CAS-Nr. suchen" aria-label="In der Liste suchen">
@@ -1543,15 +1565,22 @@
     gEl.appendChild(t);
     const tb = t.querySelector('tbody'), feld = t.querySelector('.ez-db-suche'), mehr = t.querySelector('#ez-mehr');
     let grenze = 150;
+    // aus der Stoffsuche: Suchfeld mit dem Stoff vorbelegt, Zeilen wie in „Beständigkeiten“ über CAS-Nr. und Namen zugeordnet
+    const sfTreffer = sf ? new Set(B.finde(d, sf).map(x => x.eintrag)) : null;
+    if (sf) feld.value = sf.anzeige;
     const zeilen = () => {
-      const q = B.grund(feld.value);
-      const treffer = d.eintraege.filter(e => !q || B.grund(e.stoff).includes(q) || (e.cas && e.cas.includes(feld.value.trim())));
+      const roh = feld.value.trim(), q = B.grund(roh);
+      const nurStoff = !!(sf && sfTreffer.size && roh === sf.anzeige);
+      const treffer = nurStoff ? d.eintraege.filter(e => sfTreffer.has(e)) : d.eintraege.filter(e => !q || B.grund(e.stoff).includes(q) || (e.cas && e.cas.includes(roh)));
       tb.innerHTML = treffer.slice(0, grenze).map(e => { const ges = B.gesamtStufe(e, L);
         return `<tr><td>${esc(stoffText(e.stoff))}${e.hinweis ? `<br><span class="ez-klein">${esc(e.hinweis)}</span>` : ''}</td><td>${esc(e.cas)}</td><td>${esc([e.konz, e.temp].filter(Boolean).map(x => S.wertSchoen(x)).join(' · '))}</td>
         ${sp.map(s => { const w = e.werte[s.id] || { roh: '', stufe: 'unbekannt' }; return `<td class="w ${w.roh ? esc(w.stufe) : ''}${L.relevant.includes(s.id) ? ' rel' : ''}">${esc(w.roh)}</td>`; }).join('')}
         <td class="w ${esc(ges)}">${esc(ges === 'unbekannt' ? '–' : ges === 'gut' ? '✓' : ges === 'nicht' ? '✕' : ges === 'bedingt' ? '△' : '±')}</td><td>${esc(e.seite)}</td></tr>`; }).join('');
-      mehr.innerHTML = treffer.length > grenze ? `${grenze} von ${treffer.length} Einträgen angezeigt · <a href="#" id="ez-alle">alle zeigen</a>` : `${treffer.length} Einträge`;
+      mehr.innerHTML = nurStoff ? `${treffer.length === 1 ? '1 Eintrag passt' : treffer.length + ' Einträge passen'} zu „${esc(sf.anzeige)}“ (über CAS-Nr. bzw. Namen) · <a href="#" id="ez-ganz">ganze Liste zeigen</a>`
+        : sf && !sfTreffer.size && roh === sf.anzeige ? `„${esc(sf.anzeige)}“ steht nicht in dieser Liste · <a href="#" id="ez-ganz">ganze Liste zeigen</a>`
+        : treffer.length > grenze ? `${grenze} von ${treffer.length} Einträgen angezeigt · <a href="#" id="ez-alle">alle zeigen</a>` : `${treffer.length} Einträge`;
       const al = mehr.querySelector('#ez-alle'); if (al) al.addEventListener('click', e => { e.preventDefault(); grenze = Infinity; zeilen(); });
+      const ganz = mehr.querySelector('#ez-ganz'); if (ganz) ganz.addEventListener('click', e => { e.preventDefault(); feld.value = ''; grenze = 150; zeilen(); });
     };
     feld.addEventListener('input', () => { grenze = 150; zeilen(); });
     zeilen();
@@ -1655,7 +1684,8 @@
     auswertungTimer = setInterval(runde, 4000);
     auswertungZeigen(g);
   }
-  GSZ.ansicht('geraet', { element: gEl, titel: p => dekodiere(p), anzeigen(param) { geraetSeite(dekodiere(param)); }, verlassen() { auswertungStoppen(); } });
+  GSZ.ansicht('geraet', { element: gEl, titel: p => dekodiere(String(p).split('/')[0]),
+    anzeigen(param) { const [o, k] = String(param).split('/'); geraetSeite(dekodiere(o), k ? dekodiere(k) : ''); }, verlassen() { auswertungStoppen(); } });
 
   // ---------------------------------------------------------------- Gerät oder PSA anlegen bzw. bearbeiten (#geraet-neu[/<ordner>])
   // Legt Einsatz/Beständigkeitslisten/<Nr> <Bezeichnung>/ an: Foto.jpg, Original-Liste(n), info.txt („Kategorie: …“ + Angaben).
