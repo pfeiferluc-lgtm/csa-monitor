@@ -288,6 +288,7 @@
   menue.innerHTML = `<button data-a="neu">Neu einlesen</button><button data-a="kennwort">Gespeichertes Kennwort löschen</button>
     <button data-a="pfad">Dateipfad in der Dropbox ändern</button><button data-a="verbinden">Mit Dropbox neu verbinden</button>
     <button data-a="abmelden">Von Dropbox abmelden</button>
+    <button data-a="modus">Hell / Dunkel umschalten</button>
     <button data-a="abgleich">Einsatz-Ordner abgleichen</button><button data-a="offline-weg">Offline-Dateien vom Gerät löschen</button>
     <button data-a="kurzbefehl">Kurzbefehl „GSZ Claude“ laden (iPhone)</button>
     <div class="klein">Web-App ${K.stand || ''}</div>`;
@@ -519,6 +520,8 @@
     if (!a) return;
     menue.hidden = true;
     if (a === 'neu') { laden(true); hinweis('Wird neu eingelesen …', 2500); }
+    if (a === 'modus') { const hell = document.documentElement.classList.toggle('hell'); SP.set('csa-modus', hell ? 'hell' : 'dunkel');
+      document.dispatchEvent(new Event('gsz-modus')); }
     if (a === 'kennwort') { SP.set('csa-kennwort', null); hinweis('Das gespeicherte Kennwort ist gelöscht. Beim nächsten Start fragt die Web-App wieder.'); }
     if (a === 'pfad') {
       const neu = prompt('Pfad der Kopie im App-Ordner der Dropbox (beginnt mit /):', pfad());
@@ -563,6 +566,7 @@
   const EINSATZ = '/Einsatz', AUSWERTUNG = '/Auswertung';
   const SPx = window.GSZSpeicher;
   let eintraege = null, einsatzStand = null, einsatzFehler = '', offlineRevs = null, abgleichLaeuft = null, fortschrittText = '';
+  let wahl = {};                     // path_lower → 'online' (nur online); fehlt = auch offline (Standard)
   const beobachter = [];
   function einsatzMelden() { for (const f of beobachter) { try { f(); } catch { /* weiter */ } } }
   const verbundenDbx = () => !!(appKey() && SP.get('csa-dbx-refresh'));
@@ -575,6 +579,7 @@
     eintraege = new Map(((m && m.eintraege) || []).map(e => [e.lower, e]));
     einsatzStand = (m && m.stand) || null;
     offlineRevs = (await SPx.hole('meta', 'einsatz-offline').catch(() => null)) || {};
+    wahl = (await SPx.hole('meta', 'einsatz-wahl').catch(() => null)) || {};
   }
   const relativ = e => { const d = e.path_display || e.path_lower; return d.toLowerCase().startsWith(EINSATZ.toLowerCase() + '/') ? d.slice(EINSATZ.length + 1) : null; };
   async function listeAktualisieren() {
@@ -612,11 +617,15 @@
     // Dateien, die es nicht mehr gibt, aus dem Gerätespeicher entfernen
     for (const k of Object.keys(offlineRevs)) if (!neu.has(k)) { delete offlineRevs[k]; SPx.loesche('dateien', k).catch(() => {}); }
     await SPx.setze('meta', 'einsatz-offline', offlineRevs).catch(() => {});
+    let wahlAlt = false;
+    for (const k of Object.keys(wahl)) if (!neu.has(k)) { delete wahl[k]; wahlAlt = true; }
+    if (wahlAlt) await SPx.setze('meta', 'einsatz-wahl', wahl).catch(() => {});
     return true;
   }
   async function herunterladenEinsatz(e) {
     const r = await dropbox('https://content.dropboxapi.com/2/files/download', { headers: { 'Dropbox-API-Arg': kopfJson({ path: e.lower }) } });
     const blob = new Blob([await r.arrayBuffer()], { type: mimeVon(e.name) });
+    if (wahl[e.lower] === 'online') return blob;                 // nur online: nicht auf dem Gerät speichern
     try {
       await SPx.setze('dateien', e.lower, { rev: e.rev, blob });
       offlineRevs[e.lower] = e.rev;
@@ -634,7 +643,7 @@
       try {
         await listeAktualisieren();
         einsatzMelden();
-        const fehlen = [...eintraege.values()].filter(e => !e.ordner && offlineRevs[e.lower] !== e.rev);
+        const fehlen = [...eintraege.values()].filter(e => !e.ordner && offlineRevs[e.lower] !== e.rev && wahl[e.lower] !== 'online');
         let n = 0;
         for (const e of fehlen) {
           if (navigator.onLine === false) break;
@@ -656,6 +665,7 @@
     if (!e) throw new Error('Datei nicht gefunden.');
     const gespeichert = await SPx.hole('dateien', e.lower).catch(() => null);
     if (gespeichert && (gespeichert.rev === e.rev || navigator.onLine === false || !verbundenDbx())) return gespeichert.blob;
+    if (wahl[e.lower] === 'online' && navigator.onLine === false) throw new Error('nur online verfügbar – gerade keine Verbindung');
     try { return await herunterladenEinsatz(e); }
     catch (f) { if (f.blob) return f.blob; if (gespeichert) return gespeichert.blob; throw f; }
   }
@@ -677,8 +687,43 @@
       await gespeichertLaden();
       // selbsttätig höchstens einmal je Minute (auch nach Fehlern), sonst würden sich Abgleich und Neuzeichnen gegenseitig anstoßen
       if (verbundenDbx() && navigator.onLine !== false && (frisch || Date.now() - letzterVersuch > 60 * 1000)) einsatzAbgleich(frisch);
-      return { dateien: [...eintraege.values()].map(e => ({ ...e, offline: !e.ordner && offlineRevs[e.lower] === e.rev })),
+      return { dateien: [...eintraege.values()].map(e => ({ ...e, offline: !e.ordner && offlineRevs[e.lower] === e.rev,
+                                                            wahl: e.ordner ? '' : wahl[e.lower] === 'online' ? 'online' : 'offline' })),
                stand: einsatzStand, quelle: 'dropbox', fehler: einsatzFehler };
+    },
+    // „nur online“ (vom Gerät entfernen) bzw. „auch offline“ (auf das Gerät laden) – je Datei, gilt nur für dieses Gerät
+    async verfuegbarkeitSetzen(pfade, wert) {
+      await gespeichertLaden();
+      for (const p of [].concat(pfade)) {
+        const e = [...eintraege.values()].find(x => x.pfad === p);
+        if (!e || e.ordner) continue;
+        if (wert === 'online') { wahl[e.lower] = 'online'; delete offlineRevs[e.lower]; await SPx.loesche('dateien', e.lower).catch(() => {}); }
+        else delete wahl[e.lower];
+      }
+      await SPx.setze('meta', 'einsatz-wahl', wahl);
+      await SPx.setze('meta', 'einsatz-offline', offlineRevs).catch(() => {});
+      einsatzMelden();
+      if (wert !== 'online' && verbundenDbx() && navigator.onLine !== false) { letzterVersuch = 0; einsatzAbgleich(false); }
+    },
+    // Gerät bzw. PSA in den Beständigkeitslisten anlegen oder ergänzen (Foto, Listen, info.txt); loeschen: Namen im Geräteordner
+    async geraetDateien(ordner, dateienListe, { loeschen = [] } = {}, fortschritt = () => {}) {
+      if (!verbundenDbx()) throw new Error('Nicht mit Dropbox verbunden.');
+      if (darfSchreiben() === false) throw new Error('Der Web-App fehlt das Schreibrecht in ihrem Dropbox-Ordner (⚙ › Mit Dropbox neu verbinden).');
+      if (navigator.onLine === false) throw new Error('Ohne Netz nicht möglich.');
+      const o = String(ordner || '').replace(/[\/\\]/g, '-').trim();
+      if (!o || o.startsWith('.')) throw new Error('Ungültiger Ordnername.');
+      const basis = `${EINSATZ}/Beständigkeitslisten/${o}`;
+      let n = 0;
+      for (const d of dateienListe) {
+        fortschritt(++n, dateienListe.length);
+        await hochladen(`${basis}/${String(d.name).replace(/[\/\\]/g, '-')}`, new Uint8Array(await d.blob.arrayBuffer()));
+      }
+      for (const name of loeschen) {
+        await dropbox('https://api.dropboxapi.com/2/files/delete_v2', { headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: `${basis}/${String(name).replace(/[\/\\]/g, '-')}` }), fehltOk: true }).catch(() => {});
+      }
+      letzterVersuch = 0;
+      await einsatzAbgleich(true);
     },
     datei: einsatzDatei,
     fortschritt: () => fortschrittText,

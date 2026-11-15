@@ -129,6 +129,50 @@
     return m[1] ? -z : z;
   }
 
+  // ------------------------------------------------------------------ Anzeige: Werte lesbar schreiben
+  // „30 ... 215 °C“ → „30 bis 215 °C“, „-30 C°“ → „−30 °C“, „mg/m3“ → „mg/m³“, „8,5737 bar“ → „8,57 bar“, „<50 %“ → „< 50 %“.
+  // Nur für die Anzeige – gespeichert bleibt der Originaltext.
+  const LEER_WERT = /^(?:-|–|—|\/|n\.?\s?[ab]\.?|k\.?\s?a\.?|keine?\b.*|nicht\s+(?:bestimmt|anwendbar|verfügbar|vorhanden|zutreffend|relevant|ermittelt|geprüft|bekannt)\b.*|entfällt|unbekannt|not\s+(?:determined|applicable|available).*|no\s+data.*)$/i;
+  function leerWert(t) { return !String(t || '').trim() || LEER_WERT.test(String(t).trim()); }
+  const ZAHL = '[<>≤≥]?\\s?[-−]?\\s?\\d+(?:[.,]\\d+)?';
+  function rundenText(z) {
+    const n = Number(z.replace(',', '.'));
+    if (!isFinite(n)) return z;
+    const r = Math.abs(n) >= 1 ? n.toFixed(2) : Number(n.toPrecision(3)).toString();
+    return r.replace('.', ',');
+  }
+  function wertSchoen(t) {
+    let s = String(t ?? '').replace(/\s+/g, ' ').trim();
+    if (!s) return '';
+    s = s.replace(/\s?C\s?°(?![CF])/g, ' °C').replace(/°\s+C\b/g, '°C').replace(/(\d)\s?°C/g, '$1 °C')          // Grad Celsius
+      .replace(/(\d)\s?(?:\.\.\.|…|\.\s\.\s\.)\s?/g, '$1 bis ')                                                 // Bereich mit Punkten
+      .replace(/\s(?:\.\.\.|…)\s?(?=[<>≤≥]?\s?[-−]?\d)/g, ' bis ')
+      .replace(new RegExp(`(\\d)\\s+[-–]\\s+(?=${ZAHL})`, 'g'), '$1 bis ')                                       // „100 - 102“
+      .replace(/(^|[\s(\/;:])-(?=\d)/g, '$1−')                                                                 // Minuszeichen
+      .replace(/([<>≤≥])(?=[−\d])/g, '$1 ')                                                                    // „<50“ → „< 50“
+      .replace(/\b(c|d)?m3\b/g, (m, v) => (v || '') + 'm³').replace(/\b(c|d)?m2\b/g, (m, v) => (v || '') + 'm²')
+      .replace(/(\d+,\d{4,})(?!\d)/g, z => rundenText(z))                                                     // 8,5737 → 8,57
+      .replace(/\s{2,}/g, ' ').trim();
+    // Bereich in falscher Reihenfolge („−90,5 bis −95,4“) → aufsteigend
+    s = s.replace(/(−?\d+(?:,\d+)?) bis (−?\d+(?:,\d+)?)/g, (m, a, b) => {
+      const x = Number(a.replace('−', '-').replace(',', '.')), y = Number(b.replace('−', '-').replace(',', '.'));
+      return isFinite(x) && isFinite(y) && x > y ? `${b} bis ${a}` : m;
+    });
+    return s;
+  }
+  // Hauptwert und Zusatz trennen: „1,18 g/cm³ (25 °C, 37 %ige Lösung)“ → { wert: '1,18 g/cm³', zusatz: 'bei 25 °C, 37 %ige Lösung' }
+  function wertTeilen(t) {
+    const s = wertSchoen(t);
+    const m = /^(.+?)\s*\(([^()]+)\)\s*$/.exec(s);
+    if (!m || !/\d/.test(m[1])) {
+      const b = /^(.*\d.*?)\s+(bei\s+[<>≤≥]?\s?−?\d.*)$/.exec(s);            // „ca. 1,2 g/cm³ bei 20 °C“
+      return b ? { wert: b[1], zusatz: b[2] } : { wert: s, zusatz: '' };
+    }
+    let z = m[2].trim();
+    if (/^[<>≤≥]?\s?−?\d+(?:,\d+)?\s?°C\b/.test(z)) z = 'bei ' + z;
+    return { wert: m[1].trim(), zusatz: z };
+  }
+
   // ------------------------------------------------------------------ Claude: Anweisung und Antwortformat (Sicherheitsdatenblatt)
   const T = { type: 'string' };
   const L = items => ({ type: 'array', items });
@@ -259,5 +303,5 @@
   }
 
   return { FORMAT, leer, normalisieren, istCas, zahlAus, ghsCode, SCHEMA, SDB_ANWEISUNG, anfrageText, beispielAntwort,
-           antwortLesen, zusammenfuehren, MAX_TEXT };
+           antwortLesen, zusammenfuehren, MAX_TEXT, wertSchoen, wertTeilen, leerWert };
 });

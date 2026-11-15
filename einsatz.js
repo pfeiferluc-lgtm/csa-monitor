@@ -12,7 +12,7 @@
   const css = `
   .ez { --rund: .8rem; font-size: 16px; color: var(--ink); max-width: 62rem; margin: 0 auto; display: flex; flex-direction: column; gap: .8rem;
     padding: calc(.7rem + var(--frei-oben)) calc(.8rem + var(--sicher-rechts)) calc(1.4rem + var(--sicher-unten)) calc(.8rem + var(--sicher-links)); }
-  .ez.mit-leiste { padding-bottom: calc(5.6rem + var(--sicher-unten)); }
+  .ez.mit-leiste { padding-bottom: calc(var(--leiste-h, calc(5.6rem + var(--sicher-unten))) + 1.2rem); }
   .ez .knopf { font-size: .95rem; padding: .45rem .75rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: .35rem; }
   .ez .knopf svg { width: 1.1em; height: 1.1em; flex: none; }
   .ez h2 { margin: 0 0 .55rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink2); }
@@ -20,7 +20,7 @@
   .ez-kopf img { height: 3.4rem; width: auto; aspect-ratio: 19 / 25; object-fit: cover; border-radius: .45rem; flex: none; }
   .ez-kopf .zur { flex: none; padding: .45rem .6rem; }
   .ez-titel { flex: 1; min-width: 0; }
-  .ez-titel h1 { margin: 0; font-size: 1.35rem; line-height: 1.15; overflow-wrap: anywhere; -webkit-hyphens: auto; hyphens: auto; }
+  .ez-titel h1 { margin: 0; font-size: 1.35rem; line-height: 1.15; overflow-wrap: anywhere; -webkit-hyphens: manual; hyphens: manual; }
   .ez-titel div { color: var(--muted); font-size: .8rem; line-height: 1.3; overflow-wrap: anywhere; }
   .ez-karte { padding: .8rem .9rem .9rem; }
   .ez-hinweis { font-size: .85rem; color: var(--ink2); line-height: 1.4; }
@@ -36,6 +36,8 @@
   .ez-suche input:focus { outline: 2px solid var(--akzent); outline-offset: 1px; }
   .ez-suche .los { background: var(--akzent) !important; border-color: var(--akzent) !important; color: #fff !important; font-weight: 700; padding: .6rem 1rem !important; }
   .ez-art { font-size: .8rem; color: var(--muted); margin-top: .4rem; min-height: 1.1em; }
+  .ez-import { position: relative; overflow: hidden; cursor: pointer; }
+  .ez-import input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 16px; }
   .ez-chips { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
   .ez-chip { font: inherit; font-size: .82rem; padding: .35rem .65rem; border-radius: 1rem; border: 1px solid var(--rand); background: var(--surface2);
     color: var(--ink2); cursor: pointer; text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -54,43 +56,68 @@
     box-shadow: var(--schatten); color: var(--ink); text-decoration: none; border-top: .28rem solid var(--c, var(--akzent)); min-height: 6.4rem;
     -webkit-tap-highlight-color: transparent; }
   .ez-ok svg { width: 1.9rem; height: 1.9rem; color: var(--c, var(--akzent)); }
-  .ez-ok b { font-size: 1rem; line-height: 1.2; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: break-word; }
+  .ez-ok b { font-size: 1rem; line-height: 1.2; -webkit-hyphens: manual; hyphens: manual; overflow-wrap: break-word; }
   .ez-ok small { color: var(--muted); font-size: .78rem; }
   .ez-status { font-size: .78rem; color: var(--muted); display: flex; gap: .4rem .8rem; flex-wrap: wrap; align-items: center; justify-content: center; text-align: center; }
   .ez-status .knopf { font-size: .8rem; padding: .3rem .6rem; }
   /* Dateiliste */
   .ez-dateien { list-style: none; margin: 0; padding: 0; }
-  .ez-dateien a { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto; gap: .2rem .7rem; align-items: center; padding: .6rem .45rem;
-    border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; border-radius: .4rem; }
+  .ez-dateien li { display: flex; align-items: center; gap: .3rem; border-bottom: 1px solid var(--line); }
+  .ez-dateien a { flex: 1; min-width: 0; display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto; gap: .2rem .7rem; align-items: center; padding: .6rem .45rem;
+    color: var(--ink); text-decoration: none; border-radius: .4rem; }
   .ez-dateien a:hover { background: var(--surface2); }
   .ez-dateien .typ { width: 2.2rem; height: 2.6rem; border-radius: .3rem; display: flex; align-items: center; justify-content: center; font-size: .62rem;
     font-weight: 800; color: #fff; background: var(--c, var(--muted)); letter-spacing: .02em; }
-  .ez-dateien b { font-weight: 600; overflow-wrap: anywhere; line-height: 1.25; }
+  .ez-dateien b { font-weight: 600; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; line-height: 1.25; }
   .ez-dateien small { color: var(--muted); font-size: .75rem; display: block; margin-top: .1rem; }
   .ez-dateien .off { font-size: .72rem; color: var(--good); white-space: nowrap; }
   .ez-dateien .off.nein { color: var(--muted); }
+  /* Verfügbarkeit einer Datei (Web-App): unsichtbare Auswahl über einem Schild – Antippen öffnet die Auswahl des iPhones */
+  .ez-verf { position: relative; flex: none; display: inline-flex; align-items: center; gap: .25rem; font-size: .72rem; font-weight: 600; white-space: nowrap;
+    padding: .3rem .5rem; border-radius: 1rem; border: 1px solid var(--rand); color: var(--ink2); background: var(--surface2); margin-right: .2rem; }
+  .ez-verf.an { color: var(--good); border-color: color-mix(in srgb, var(--good) 55%, var(--rand)); }
+  .ez-verf.teil { color: var(--ser); }
+  .ez-verf select { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; font-size: 16px; cursor: pointer; -webkit-appearance: none; appearance: none; }
+  .ez-verf-zeile { display: flex; gap: .4rem .6rem; flex-wrap: wrap; align-items: center; margin-top: .7rem; font-size: .8rem; color: var(--muted); }
+  .ez-verf-zeile .knopf { font-size: .8rem; padding: .3rem .6rem; }
   .ez-leer { color: var(--muted); padding: .8rem .2rem; font-size: .9rem; line-height: 1.45; }
+  /* Ausbreitung: sinkt ab / steigt auf */
+  .ez-ausbr { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: .15rem .8rem; align-items: center; padding: .75rem .9rem;
+    border-radius: var(--rund); background: color-mix(in srgb, var(--c) 16%, var(--surface)); border: 2px solid var(--c); color: var(--ink); }
+  .ez-ausbr.schwer { --c: var(--ser); } .ez-ausbr.leicht { --c: var(--akzent); } .ez-ausbr.gleich, .ez-ausbr.unbekannt { --c: #8a96a3; }
+  .ez-ausbr .pfeil { grid-row: span 3; width: 3.4rem; height: 3.4rem; border-radius: 50%; background: var(--c); color: #fff; display: flex; align-items: center; justify-content: center; }
+  .ez-ausbr .pfeil svg { width: 2.3rem; height: 2.3rem; }
+  .ez-ausbr b { font-size: 1.25rem; line-height: 1.15; letter-spacing: .02em; }
+  .ez-ausbr .was { font-size: .9rem; line-height: 1.35; color: var(--ink2); }
+  .ez-ausbr .was strong { color: var(--ink); }
+  .ez-ausbr .lvz { grid-column: 2; font-size: .8rem; color: var(--muted); }
+  .ez-ausbr ul { grid-column: 1 / -1; list-style: none; margin: .45rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; font-size: .84rem; line-height: 1.35; }
+  .ez-ausbr li { padding-left: 1.2rem; position: relative; color: var(--ink2); }
+  .ez-ausbr li::before { content: "•"; position: absolute; left: .3rem; color: var(--c); font-weight: 800; }
+  .ez-ausbr li.warn { color: var(--ink); font-weight: 600; } .ez-ausbr li.warn::before { content: "!"; color: var(--crit); }
+  .ez-ausbr li i { font-style: normal; color: var(--muted); }
   /* Einsatzbildschirm */
   .ez-oben { display: flex; gap: .9rem; align-items: flex-start; flex-wrap: wrap; }
   .ez-tafel { flex: none; }
   .ez-tafel svg { display: block; }
   .ez-symbole { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
   .ez-symbole figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: .15rem; width: 4.6rem; }
-  .ez-symbole figcaption { font-size: .62rem; color: var(--ink2); text-align: center; line-height: 1.15; }
+  .ez-symbole figcaption { font-size: .62rem; color: var(--ink2); text-align: center; line-height: 1.15; width: 100%; overflow-wrap: anywhere;
+    -webkit-hyphens: manual; hyphens: manual; }
   .ez-symbole svg { display: block; }
   .ez-signal { display: inline-block; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: .25rem .6rem; border-radius: .4rem;
     color: #fff; background: var(--crit); font-size: .85rem; }
   .ez-signal.achtung { background: var(--ser); }
-  .ez-kw { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; }
+  .ez-kw { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-flow: row dense; gap: .55rem; }
   .ez-kw div { background: var(--surface2); border: 1px solid var(--line); border-radius: .55rem; padding: .5rem .6rem; min-width: 0; }
-  .ez-kw span { display: block; font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; overflow-wrap: anywhere; }
+  .ez-kw span { display: block; font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; overflow-wrap: break-word; -webkit-hyphens: manual; hyphens: manual; }
   .ez-hand { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .45rem; }
   .ez-hand li { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; padding: .45rem .55rem; border-radius: .5rem; background: var(--surface2);
     border: 1px solid var(--line); border-left: .3rem solid var(--c, var(--rand)); }
   .ez-hand b { font-weight: 600; overflow-wrap: anywhere; }
   .ez-hand small { flex-basis: 100%; color: var(--ink2); font-size: .78rem; line-height: 1.35; }
   .ez-kw b { display: block; font-size: 1.02rem; overflow-wrap: anywhere; line-height: 1.25; margin-top: .1rem; }
-  .ez-kw small { display: block; font-size: .74rem; color: var(--ink2); margin-top: .15rem; line-height: 1.25; }
+  .ez-kw small { display: block; font-size: .74rem; color: var(--ink2); margin-top: .15rem; line-height: 1.3; overflow-wrap: anywhere; }
   .ez-kw .gross { grid-column: span 2; }
   .ez-kw .luft b { color: var(--c, var(--ink)); }
   .ez-zeilen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
@@ -100,6 +127,8 @@
   .ez-zweispaltig { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .9rem; }
   .ez-codes { list-style: none; margin: 0; padding: 0; font-size: .88rem; line-height: 1.35; display: flex; flex-direction: column; gap: .25rem; }
   .ez-codes b { display: inline-block; min-width: 3.4rem; }
+  .ez-hs li { display: grid; grid-template-columns: 4.1rem minmax(0, 1fr); gap: .5rem; }
+  .ez-hs b { min-width: 0; }
   .ez-transport { display: flex; gap: .5rem .9rem; flex-wrap: wrap; align-items: center; font-size: .92rem; }
   .ez-transport .kl { font-weight: 700; }
   .ez-unwahl { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .55rem; }
@@ -110,8 +139,9 @@
     border-top: 1px solid var(--rand); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem;
     padding: .55rem max(calc(.7rem + var(--sicher-rechts)), calc((100vw - 62rem) / 2 + .7rem)) calc(.55rem + var(--sicher-unten))
       max(calc(.7rem + var(--sicher-links)), calc((100vw - 62rem) / 2 + .7rem)); }
-  .ez-leiste a { display: flex; flex-direction: column; align-items: center; gap: .15rem; padding: .45rem .3rem; border-radius: .6rem; text-decoration: none;
-    color: var(--ink); background: var(--surface2); border: 1px solid var(--rand); font-weight: 700; font-size: .88rem; text-align: center; line-height: 1.15; }
+  .ez-leiste a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; padding: .45rem .3rem; border-radius: .6rem; text-decoration: none;
+    color: var(--ink); background: var(--surface2); border: 1px solid var(--rand); font-weight: 700; font-size: .88rem; text-align: center; line-height: 1.15; min-width: 0; }
+  .ez-leiste a span { max-width: 100%; overflow-wrap: anywhere; -webkit-hyphens: manual; hyphens: manual; }
   .ez-leiste a svg { width: 1.35rem; height: 1.35rem; color: var(--akzent); }
   .ez-leiste a.an { background: var(--akzent); border-color: var(--akzent); color: #fff; }
   .ez-leiste a.an svg { color: #fff; }
@@ -166,8 +196,24 @@
   :root.hell .ez-tabelle td.bedingt { color: #8a6100; }
   .ez-tabelle td.w.rel { outline: 2px solid var(--akzent); outline-offset: -2px; }
   .ez-legende { display: flex; gap: .4rem .8rem; flex-wrap: wrap; font-size: .78rem; color: var(--ink2); margin: .4rem 0 .6rem; }
+  /* Gerät anlegen */
+  .ez-formular { display: flex; flex-direction: column; gap: .8rem; }
+  .ez-formular label.feld { display: flex; flex-direction: column; gap: .3rem; font-size: .8rem; color: var(--ink2); font-weight: 600; }
+  .ez-formular input[type=text], .ez-formular select, .ez-formular textarea { font: inherit; font-size: 16px; padding: .6rem .7rem; border-radius: .55rem;
+    border: 1px solid var(--eingabe-rand, var(--rand)); background: var(--eingabe, var(--surface2)); color: var(--ink); width: 100%; box-sizing: border-box; margin: 0;
+    -webkit-appearance: none; appearance: none; }
+  .ez-formular textarea { min-height: 4.5rem; resize: vertical; }
+  .ez-formular select { padding-right: 2.2rem; background-repeat: no-repeat; background-position: right .8rem center; background-size: .8rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238a96a3' stroke-width='2'/%3E%3C/svg%3E"); }
+  .ez-formular .reihe { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: .6rem; }
+  .ez-wahl { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; }
+  .ez-wahl .vorschau { width: 4.6rem; height: 4.6rem; border-radius: .5rem; background: #fff; border: 1px solid var(--line); object-fit: contain; }
+  .ez-wahl .namen { font-size: .8rem; color: var(--ink2); overflow-wrap: anywhere; flex: 1; min-width: 8rem; }
+  .ez-formular .los { background: var(--akzent) !important; border-color: var(--akzent) !important; color: #fff !important; font-weight: 700; padding: .7rem 1rem !important; }
+  .ez-formular .los:disabled { opacity: .5; }
   /* Datei */
   .ez-datei-leiste { display: flex; gap: .45rem; flex-wrap: wrap; align-items: center; }
+  .ez-zoomgruppe { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
   .ez-seiten { display: flex; flex-direction: column; align-items: center; gap: .6rem; }
   .ez-seiten canvas { background: #fff; box-shadow: var(--schatten); max-width: none; display: block; }
   .ez-seite-platz { background: var(--surface2); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: .8rem; }
@@ -186,7 +232,18 @@
     .ez-symbole figure { width: 4.1rem; }
     .ez-kopf .knopf .lang { display: none; }
   }
-  @media (max-width: 380px) { .ez-ordner { gap: .5rem; } .ez-ok { padding: .75rem .65rem .7rem; } .ez-kw { gap: .4rem; } }`;
+  @media (max-width: 480px) {
+    .ez-suche .los span { display: none; }
+    .ez-suche .los { padding: .6rem .85rem !important; }
+    /* Hell/Dunkel steckt auf dem Handy im Zahnrad-Menü – mehr Platz für den Titel */
+    .ez-kopf:has(.einst:not([hidden])) .modus { display: none; }
+    .ez-titel h1 { font-size: 1.08rem; }
+    .ez-leiste a { font-size: .8rem; }
+    .ez-ausbr b { font-size: 1.12rem; }
+  }
+  @media (max-width: 360px) { .ez-suche input { font-size: 16px; padding: .7rem; } }
+  @media (max-width: 380px) { .ez-ordner { gap: .5rem; } .ez-ok { padding: .75rem .65rem .7rem; } .ez-kw { gap: .4rem; } .ez-kw div { padding: .45rem .5rem; }
+    .ez-leiste { gap: .35rem; } .ez-leiste a { font-size: .74rem; padding: .4rem .2rem; } .ez-hs li { grid-template-columns: 3.7rem minmax(0, 1fr); } }`;
   const stil = document.createElement('style');
   stil.textContent = css;
   document.head.appendChild(stil);
@@ -223,7 +280,15 @@
     teilen: SVG('<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v7h14v-7"/>'),
     extern: SVG('<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/>'),
     neu: SVG('<path d="M4 4v6h6M20 20v-6h-6"/><path d="M20 10A8 8 0 0 0 6 6L4 10M4 14a8 8 0 0 0 14 4l2-4"/>'),
+    runter: SVG('<path d="M12 4v15M5 12l7 7 7-7"/>', '0 0 24 24').replace('stroke-width="2"', 'stroke-width="2.6"'),
+    hoch: SVG('<path d="M12 20V5M5 12l7-7 7 7"/>', '0 0 24 24').replace('stroke-width="2"', 'stroke-width="2.6"'),
+    quer: SVG('<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>', '0 0 24 24').replace('stroke-width="2"', 'stroke-width="2.4"'),
+    frage: SVG('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><circle cx="12" cy="17.2" r=".7" fill="currentColor"/>'),
+    plus: SVG('<path d="M12 5v14M5 12h14"/>'),
+    bild: SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/>'),
   };
+  // Stoffnamen lesbar: „Wasserstoffperoxid 35 ... <50 %“ → „Wasserstoffperoxid 35 bis < 50 %“
+  const nameSchoen = n => String(n || '').replace(/\s?(?:\.\.\.|…)\s?/g, ' bis ').replace(/([<>≤≥])(?=\d)/g, '$1 ').replace(/\s{2,}/g, ' ').trim();
   const ORDNER_STIL = { [BL]: ['var(--good)', I.schild], 'A-Lage': ['#e3b100', SVG('<circle cx="12" cy="12" r="2"/><path d="M12 4a8 8 0 0 1 6.9 4L14 11M12 4a8 8 0 0 0-6.9 4L10 11M5.1 16A8 8 0 0 0 12 20l0-6M18.9 16A8 8 0 0 1 12 20"/>')],
     'B-Lage': ['#c25bd6', SVG('<circle cx="12" cy="12" r="3"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>')],
     'C-Lage': ['var(--ser)', SVG('<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7.5 15h9"/>')],
@@ -319,12 +384,16 @@
         catch (f) { g.fehler = 'Geordnete Fassung nicht lesbar: ' + f.message; }
       }
       if (g.daten && g.daten.geraet && g.daten.geraet.name && !g.name) g.name = g.daten.geraet.name;
+      if (g.info) {
+        try { const inf = B.infoLesen(await (await ad().datei(g.info)).text()); g.kategorieInfo = inf.kategorie; g.infoText = inf.text; }
+        catch { /* ohne Angaben */ }
+      }
       liste.push(g);
     }
     geraeteCache = liste;
     return liste;
   }
-  const kategorie = g => (g.daten && g.daten.geraet && g.daten.geraet.kategorie) || 'Sonstiges';
+  const kategorie = g => g.kategorieInfo || (g.daten && g.daten.geraet && g.daten.geraet.kategorie) || 'Sonstiges';
   const stufeBadge = (stufe, text) => `<span class="ez-stufe ${esc(stufe)}">${esc(text || B.STUFE_TEXT[stufe] || stufe)}</span>`;
   const STUFE_FARBE = { gut: 'var(--good)', bedingt: '#c48a00', nicht: 'var(--crit)', gemischt: 'var(--ser)' };
   const pruefBadge = g => !g.daten ? '' : g.daten.auswertung && g.daten.auswertung.geprueft
@@ -332,7 +401,11 @@
     : '<span class="ez-ungeprueft" title="automatisch ausgelesen – noch nicht mit dem Original abgeglichen">ungeprüft</span>';
   async function fotoEinsetzen(container) {
     for (const img of container.querySelectorAll('img[data-foto]')) {
-      try { img.src = await objektUrl(img.dataset.foto); } catch { img.replaceWith(Object.assign(document.createElement('span'), { textContent: 'kein Bild' })); }
+      // nicht ladbar oder kein lesbares Bild (z. B. HEIC am PC): Platzhalter statt kaputtem Bild
+      const ersatz = () => { if (!img.isConnected) return; const p = document.createElement('span'); p.className = img.className || 'ez-bild';
+        p.textContent = 'Bild nicht lesbar'; p.style.cssText = 'display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.72rem;min-height:3rem;text-align:center'; img.replaceWith(p); };
+      img.addEventListener('error', ersatz, { once: true });
+      try { img.src = await objektUrl(img.dataset.foto); } catch { ersatz(); }
     }
   }
 
@@ -387,12 +460,13 @@
     const k = document.createElement('section');
     k.className = 'kachel ez-karte ez-suche';
     k.innerHTML = `<h2>Stoffsuche · GESTIS</h2>
-      <form id="ez-form" role="search"><input type="search" id="ez-q" placeholder="Stoff, UN-Nr., CAS-Nr. oder Summenformel" enterkeyhint="search"
+      <form id="ez-form" role="search"><input type="search" id="ez-q" placeholder="${innerWidth <= 480 ? 'Stoff, UN- oder CAS-Nr.' : 'Stoff, UN-Nr., CAS-Nr. oder Summenformel'}" enterkeyhint="search"
         autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Stoff suchen"><button class="knopf los" type="submit">${I.suche}<span>Suchen</span></button></form>
       <div class="ez-art" id="ez-art">z. B. „Ammoniak“, „1005“, „7664-41-7“ oder „NH3“</div>
       <div id="ez-erg"></div>
       <div class="ez-chips" id="ez-letzte"></div>
-      <div class="ez-aktionen"><a class="knopf" href="#sdb-neu">${I.kamera}Eigenes Sicherheitsdatenblatt einlesen</a></div>
+      <div class="ez-aktionen"><label class="knopf ez-import">${I.blatt}<span>Sicherheitsdatenblatt importieren <small style="opacity:.75">(Bild oder PDF)</small></span>
+        <input type="file" id="ez-sdb-datei" accept="image/*,application/pdf,.pdf" multiple aria-label="Sicherheitsdatenblatt importieren (Bild oder PDF)"></label></div>
       <div id="ez-eigene"></div>`;
     eEl.appendChild(k);
     const o = document.createElement('section');
@@ -402,6 +476,12 @@
     st.className = 'ez-status'; st.id = 'ez-status';
     eEl.appendChild(st);
     const f = k.querySelector('#ez-form'), q = k.querySelector('#ez-q');
+    const imp = k.querySelector('#ez-sdb-datei');
+    imp.addEventListener('change', () => {
+      const liste = [...imp.files]; imp.value = '';
+      if (!liste.length) return;
+      if (window.GSZSdbImport && GSZSdbImport.importieren) GSZSdbImport.importieren(liste); else meldung('Import nicht verfügbar.');
+    });
     q.value = suchText;
     f.addEventListener('submit', e => { e.preventDefault(); q.blur(); suchen(q.value, true); });
     q.addEventListener('input', () => {
@@ -457,14 +537,14 @@
       return;
     }
     erg.innerHTML = (r.offline ? '<div class="ez-warn" style="margin-top:.6rem">Offline – Treffer aus den zuletzt geöffneten Stoffen.</div>' : '') +
-      `<ul class="ez-treffer">${r.treffer.map(t => `<li><a href="#stoff/${esc(t.zvg)}"><b>${esc(t.name)}</b><span class="pfeil">›</span>
+      `<ul class="ez-treffer">${r.treffer.map(t => `<li><a href="#stoff/${esc(t.zvg)}"><b>${esc(nameSchoen(t.name))}</b><span class="pfeil">›</span>
         <small>${t.cas ? 'CAS ' + esc(t.cas) : 'ohne CAS-Nr.'}${r.art === 'un' ? (t.unOk ? ` · <span class="ok">UN ${esc(r.wert)} ✓</span>` : t.unOk === false ? ' · Treffer über die GESTIS-Nr., nicht über die UN-Nr.' : '') : ''}</small></a></li>`).join('')}</ul>`;
   }
   async function letzteZeigen() {
     const el = eEl.querySelector('#ez-letzte');
     if (!el) return;
     const l = await zuletzt(10);
-    el.innerHTML = l.length ? l.map(s => `<a class="ez-chip" href="#stoff/${esc(s.zvg)}" title="zuletzt geöffnet ${esc(datumZeit(s.zeit))} – auch offline">${esc(s.name)}</a>`).join('') : '';
+    el.innerHTML = l.length ? l.map(s => `<a class="ez-chip" href="#stoff/${esc(s.zvg)}" title="zuletzt geöffnet ${esc(datumZeit(s.zeit))} – auch offline">${esc(nameSchoen(s.name))}</a>`).join('') : '';
   }
   async function eigeneZeigen() {
     const el = eEl.querySelector('#ez-eigene');
@@ -472,7 +552,7 @@
     let l = [];
     try { l = (await SP.alle('sdb')).map(x => x.wert).sort((a, b) => String(b.zeit).localeCompare(String(a.zeit))).slice(0, 6); } catch { /* ohne */ }
     el.innerHTML = l.length ? `<h2 style="margin-top:.9rem">Eigene Datenblätter</h2><ul class="ez-treffer">${l.map(d => `<li><a href="#sdb/${esc(d.id)}">
-      <b>${esc((d.claude && d.claude.name) || (d.ocr && d.ocr.name) || d.name || 'Sicherheitsdatenblatt')}</b><span class="pfeil">›</span>
+      <b>${esc(nameSchoen((d.claude && d.claude.name) || (d.ocr && d.ocr.name) || d.name || 'Sicherheitsdatenblatt'))}</b><span class="pfeil">›</span>
       <small>${esc(datumZeit(d.zeit))} · ${esc(window.GSZSdbImport ? GSZSdbImport.statusText(d) : '')}</small></a></li>`).join('')}</ul>` : '';
   }
   function ordnerZeigen() {
@@ -487,7 +567,7 @@
       const geraeteZahl = n === BL ? inhalt(BL).unter.length : 0;
       const unterText = n === BL ? (geraeteZahl ? `${geraeteZahl} Gerät${geraeteZahl === 1 ? '' : 'e'}` : 'noch leer')
         : !a ? (ad() && ad().verbunden() ? 'noch leer' : '–') : `${a} Datei${a === 1 ? '' : 'en'}`;
-      const anzeige = esc(n).replace('Führungsunterstützung', 'Führungs&shy;unterstützung');
+      const anzeige = esc(n).replace('Führungsunterstützung', 'Führungs&shy;unterstützung').replace('Beständigkeitslisten', 'Beständigkeits&shy;listen');
       return `<a class="ez-ok" href="#ordner/${kodiere(n)}" style="--c:${farbe}">${icon}<b>${anzeige}</b><small>${esc(unterText)}</small></a>`;
     }).join('');
   }
@@ -506,16 +586,17 @@
     }
     const d = dateien.filter(x => !x.ordner);
     if (a.art === 'web') {
-      const off = d.filter(x => x.offline).length;
-      teile.push(`Offline verfügbar: ${off} von ${d.length} Dateien`);
+      const off = d.filter(x => x.offline).length, nurOnline = d.filter(x => x.wahl === 'online').length;
+      teile.push(`Offline verfügbar: ${off} von ${d.length - nurOnline} Dateien` + (nurOnline ? ` · ${nurOnline} nur online` : ''));
     } else teile.push(`${d.length} Dateien im Dropbox-Ordner`);
     if (listeStand) teile.push('Stand ' + datumZeit(listeStand));
     if (listeFehler) teile.push('⚠ ' + listeFehler);
     if (a.fortschritt && a.fortschritt()) teile.push(a.fortschritt());
     el.innerHTML = teile.map(t => `<span>${esc(t)}</span>`).join('') + '<button class="knopf" id="ez-abgleich">Abgleichen</button>';
     el.querySelector('#ez-abgleich').addEventListener('click', () => { listeHolen(true); meldung('Wird abgeglichen …', 2500); });
+    const gewollt = d.filter(x => x.wahl !== 'online'), offline = gewollt.filter(x => x.offline).length;
     GSZ.kachelInfo('einsatz', `Stoffsuche · ${d.length} Datei${d.length === 1 ? '' : 'en'} in den Ordnern` +
-      (a.art === 'web' ? ` · <span class="${d.length && d.filter(x => x.offline).length === d.length ? 'gut' : 'warn'}">${d.filter(x => x.offline).length} offline</span>` : ''));
+      (a.art === 'web' ? ` · <span class="${offline === gewollt.length ? 'gut' : 'warn'}">${offline} offline</span>` : ''));
   }
   GSZ.ansicht('einsatz', {
     element: eEl, titel: () => 'Einsatz',
@@ -537,37 +618,125 @@
       `transform:rotate(45deg) scale(.7);font-size:11px"><span style="transform:rotate(-45deg)">${esc(code)}</span></span>`;
   }
   const ghsText = c => (window.GSZSymbole && GSZSymbole.GHS_TEXT && GSZSymbole.GHS_TEXT[c]) || c;
+  // kurze Unterschriften (HTML mit Trennstellen), damit sie unter dem Symbol bleiben; der volle Text steht im title
+  const GHS_KURZ = { GHS01: 'Explosiv', GHS02: 'Entzündbar', GHS03: 'Brand&shy;fördernd', GHS04: 'Gase unter Druck', GHS05: 'Ätzend', GHS06: 'Giftig',
+    GHS07: 'Reizend, gesundheits&shy;schädlich', GHS08: 'Gesundheits&shy;gefahr', GHS09: 'Umwelt&shy;gefährlich' };
   const adrText = z => (window.GSZSymbole && GSZSymbole.ADR_TEXT && GSZSymbole.ADR_TEXT[z]) || '';
-  // Luftvergleichszahl (relative Gasdichte): aus GESTIS bzw. Datenblatt, sonst aus der Molmasse berechnet (M / 28,96)
-  function luft(stoff) {
-    const k = stoff.kennwerte;
-    let w = zahl(k.luftvergleichszahl), berechnet = false;
-    if (w === null && zahl(stoff.molmasse) && !/fest/.test(stoff.aggregatzustand)) { w = Math.round(zahl(stoff.molmasse) / 28.96 * 100) / 100; berechnet = true; }
-    if (w === null) return null;
-    const art = w > 1.05 ? 'schwer' : w < 0.95 ? 'leicht' : 'gleich';
-    return { w, berechnet, art, text: berechnet ? String(w).replace('.', ',') : k.luftvergleichszahl,
-             hinweis: art === 'schwer' ? '↓ schwerer als Luft – sammelt sich am Boden, in Senken und Kanälen' : art === 'leicht' ? '↑ leichter als Luft – steigt auf' : '≈ etwa so schwer wie Luft' };
+  // ---------------------------------------------------------------- Ausbreitung: sinkt das Gas bzw. sinken die Dämpfe ab oder steigen sie auf?
+  // Grundlage: Luftvergleichszahl (relative Gas- bzw. Dampfdichte, Luft = 1) aus GESTIS bzw. Datenblatt, sonst aus der Molmasse
+  // (M / 28,96 g/mol – nur bei reinen Stoffen, die gasförmig oder flüssig sind), sonst die Aussagen im Text des Datenblatts.
+  const LUFT_SATZ = /[^.!?\n]*(?:(?:schwerer|leichter) als Luft|breite[nt] sich[^.!?\n]{0,40}(?:am|über den|in Boden)|in Bodennähe|(?:Kanalisation|Kanäle), Keller)[^.!?\n]*[.!?]?/gi;
+  function dampfdruckHpa(t) {
+    const z = zahl(t);
+    if (z === null || S.leerWert(t)) return null;
+    const e = /mbar|hpa/i.test(t) ? 1 : /kpa/i.test(t) ? 10 : /\bbar\b/i.test(t) ? 1000 : /\bpa\b/i.test(t) ? 0.01 : /mm\s?hg|torr/i.test(t) ? 1.333 : null;
+    return e === null ? null : z * e;
+  }
+  function ausbreitung(stoff) {
+    const k = stoff.kennwerte, zust = String(stoff.aggregatzustand || ''), eig = String(stoff.eigenschaften || '');
+    const gas = /gas/i.test(zust), fest = /fest/i.test(zust) && !gas && !/flüssig/i.test(zust);
+    const gemisch = /lösung|gemisch|zubereitung/i.test(zust) || stoff.bestandteile.length > 1;
+    let lvz = S.leerWert(k.luftvergleichszahl) ? null : zahl(k.luftvergleichszahl), herkunft = 'angabe';
+    if (lvz !== null && (lvz <= 0 || lvz > 60)) lvz = null;
+    const M = zahl(stoff.molmasse);
+    if (lvz === null && M && !fest && !gemisch) { lvz = Math.round(M / 28.96 * 100) / 100; herkunft = 'molmasse'; }
+    // Sätze aus dem Datenblatt
+    const saetze = [];
+    for (const kap of stoff.kapitel || []) for (const m of String(kap.text || '').match(LUFT_SATZ) || []) {
+      const t = m.replace(/\s+/g, ' ').trim();
+      if (t.length > 8 && !/^P\d{3}/.test(t) && !saetze.some(x => x.toLowerCase() === t.toLowerCase())) saetze.push(t.length > 220 ? t.slice(0, 217) + ' …' : t);
+    }
+    if (lvz === null && fest && !saetze.length) return null;           // Feststoff: keine nennenswerten Dämpfe
+    let art;
+    const grenze = String(k.luftvergleichszahl || '').trim();
+    if (lvz !== null && herkunft === 'angabe' && /^>/.test(grenze) && lvz >= 1) art = 'schwer';            // „> 1“
+    else if (lvz !== null && herkunft === 'angabe' && /^</.test(grenze) && lvz <= 1) art = 'leicht';       // „< 1“
+    else if (lvz !== null) art = lvz > 1.05 ? 'schwer' : lvz < 0.95 ? 'leicht' : 'gleich';
+    else if (saetze.some(x => /schwerer als Luft|am Boden|Bodennähe/i.test(x))) { art = 'schwer'; herkunft = 'text'; }
+    else if (saetze.some(x => /leichter als Luft/i.test(x))) { art = 'leicht'; herkunft = 'text'; }
+    else art = 'unbekannt';
+    const wer = gas ? 'Gas' : 'Dämpfe';
+    const staerke = lvz === null ? '' : art === 'schwer' ? (lvz >= 1.3 ? 'deutlich ' : 'etwas ') : art === 'leicht' ? (lvz < 0.8 ? 'deutlich ' : 'etwas ') : '';
+    const zahlText = lvz === null ? '' : herkunft === 'angabe' ? S.wertTeilen(k.luftvergleichszahl).wert : String(lvz).replace('.', ',');
+    const titel = { schwer: gas ? 'Sinkt ab' : 'Dämpfe sinken ab', leicht: gas ? 'Steigt auf' : 'Dämpfe steigen auf',
+                    gleich: gas ? 'Verteilt sich' : 'Dämpfe verteilen sich', unbekannt: 'Ausbreitung unklar' }[art];
+    const vergleich = { schwer: 'schwerer als Luft', leicht: 'leichter als Luft', gleich: 'etwa so schwer wie Luft', unbekannt: '' }[art];
+    const was = art === 'unbekannt' ? `Keine Angabe zur Dichte ${gas ? 'des Gases' : 'der Dämpfe'} im Datenblatt.`
+      : `${wer} ${gas ? 'ist' : 'sind'} <strong>${staerke}${vergleich}</strong>${herkunft === 'text' ? ' (laut Datenblatt)' : ''}`;
+    const lvzText = herkunft === 'angabe' ? `Luftvergleichszahl ${zahlText} (Luft = 1)` : herkunft === 'molmasse' ? `Luftvergleichszahl ≈ ${zahlText} (aus der Molmasse berechnet)` : '';
+    const punkte = [];
+    const v = (einzahl, mehrzahl) => gas ? einzahl : mehrzahl;          // „Gas sammelt sich“ / „Dämpfe sammeln sich“
+    if (art === 'schwer') punkte.push(staerke === 'etwas ' ? `${v('Sinkt', 'Sinken')} langsam ab, ${v('wird', 'werden')} von Wind und Luftbewegung leicht verwirbelt – Senken, Kanäle und Keller trotzdem beachten.`
+      : `${v('Sammelt', 'Sammeln')} sich am Boden, in Senken, Kanälen, Kellern und Gruben – ${v('kann', 'können')} weit fließen und dort lange stehen bleiben.`);
+    if (art === 'leicht') punkte.push(staerke === 'etwas ' ? `${v('Steigt', 'Steigen')} nur langsam auf und ${v('verteilt', 'verteilen')} sich mit der Luftbewegung.`
+      : `${v('Verdünnt', 'Verdünnen')} sich im Freien schnell – in Gebäuden Ansammlung unter Decken und Dächern möglich.`);
+    if (art === 'gleich') punkte.push(`${v('Verteilt', 'Verteilen')} sich mit der Luftbewegung in alle Richtungen.`);
+    if (art === 'unbekannt') punkte.push('Im Zweifel mit Ansammlung in Bodennähe rechnen (die meisten Gase und Dämpfe sind schwerer als Luft).');
+    // verflüssigtes Gas: kalte, schwere Wolke beim Austritt
+    const { t } = transportListe(stoff);
+    const verfluessigt = gas && ((t && /^2/.test(t.klasse || '') && /^[23]/.test(t.code || '')) || /verflüssigt|tiefkalt|tiefgekühlt/i.test(eig + ' ' + zust + ' ' + (t ? t.bezeichnung || '' : '')));
+    if (verfluessigt && art !== 'schwer') punkte.push({ warn: true, text: 'Tritt es flüssig aus, bildet sich zunächst eine kalte, schwere Wolke (oft als Nebel sichtbar) in Bodennähe.' });
+    // Flüssigkeiten: gesättigtes Dampf-Luft-Gemisch und Flüchtigkeit
+    if (!gas && !S.leerWert(k.dampfLuftGemisch)) {
+      const d = zahl(k.dampfLuftGemisch), w = S.wertTeilen(k.dampfLuftGemisch);
+      if (d !== null) punkte.push(`Gesättigtes Dampf-Luft-Gemisch: ${esc(w.wert)}${w.zusatz ? ' ' + esc(w.zusatz) : ''} – ${d > 1.05 ? 'schwerer als Luft' : d < 0.95 ? 'leichter als Luft' : 'kaum schwerer als Luft'}.`);
+    }
+    const dd = dampfdruckHpa(k.dampfdruck), siede = S.leerWert(k.siedepunkt) ? null : zahl(k.siedepunkt);
+    if (!gas && !fest && ((dd !== null && dd < 1) || (dd === null && siede !== null && siede > 150)))
+      punkte.push('Verdunstet bei Umgebungstemperatur kaum – Dämpfe vor allem bei Erwärmung oder im Brandfall.');
+    // Sätze aus dem Datenblatt; „Gas ist schwerer als Luft.“ wiederholt nur die Überschrift, wenn es eine Zahl gibt
+    const nurVergleich = /^(?:das |die |der )?(?:gas|dämpfe|dampf|dampf-luft-gemische?)\s+(?:ist|sind)\s+(?:schwerer|leichter) als luft\.?$/i;
+    for (const x of saetze.filter(x => lvz === null || !nurVergleich.test(x)).slice(0, 3)) punkte.push({ zitat: true, text: x });
+    return { art, titel, was, lvzText, punkte, lvz, herkunft, gas };
+  }
+  function ausbreitungHtml(stoff) {
+    const a = ausbreitung(stoff);
+    if (!a) return '';
+    const pfeil = { schwer: I.runter, leicht: I.hoch, gleich: I.quer, unbekannt: I.frage }[a.art];
+    const quelle = stoff.quelle === 'gestis' ? 'GESTIS' : 'Datenblatt';
+    return `<section class="ez-ausbr ${a.art}" aria-label="Ausbreitung"><span class="pfeil">${pfeil}</span><b>${esc(a.titel)}</b><div class="was">${a.was}</div>
+      ${a.lvzText ? `<div class="lvz">${esc(a.lvzText)}</div>` : ''}
+      ${a.punkte.length ? `<ul>${a.punkte.map(p => typeof p === 'string' ? `<li>${p}</li>` : p.zitat ? `<li>„${esc(p.text)}“ <i>(${quelle})</i></li>`
+        : `<li class="warn">${esc(p.text)}</li>`).join('')}</ul>` : ''}</section>`;
   }
   function kennwerteHtml(stoff) {
-    const k = stoff.kennwerte, l = luft(stoff);
-    const kachel = (titel, wert, zus = '', klasse = '') => wert ? `<div class="${klasse}"><span>${esc(titel)}</span><b>${esc(wert)}</b>${zus ? `<small>${zus}</small>` : ''}</div>` : '';
+    const k = stoff.kennwerte;
+    const da = v => !S.leerWert(v);
+    // Kachel: Hauptwert groß, Bedingung bzw. Zusatz klein darunter
+    const kachel = (titel, roh, zus = '', klasse = '') => {
+      if (!da(roh)) return '';
+      const w = S.wertTeilen(roh);
+      const z = [w.zusatz ? esc(w.zusatz) : '', zus].filter(Boolean).join(' · ');
+      return `<div class="${klasse}"><span>${esc(titel)}</span><b>${esc(w.wert)}</b>${z ? `<small>${z}</small>` : ''}</div>`;
+    };
+    const agw = () => {
+      if (!da(k.agw)) return '';
+      const t = S.wertSchoen(k.agw);
+      if (t.includes(' · ')) return `<div class="gross"><span>Grenzwert (AGW)</span><b>${esc(t)}</b></div>`;
+      const w = S.wertTeilen(k.agw);
+      const umgerechnet = w.zusatz && /ml\/m³|ppm/.test(w.wert) && /mg\/m³/.test(w.zusatz);
+      return `<div><span>Grenzwert (AGW)</span><b>${esc(w.wert)}</b>${w.zusatz ? `<small>${umgerechnet ? 'entspricht ' : ''}${esc(w.zusatz)}</small>` : ''}</div>`;
+    };
+    const wgk = () => {
+      if (!da(k.wgk)) return '';
+      const m = /^(WGK\s?\d)\s*[–-]\s*(.+)$/.exec(String(k.wgk).trim());
+      return m ? `<div><span>Wasser\u00adgefährdung</span><b>${esc(m[1])}</b><small>${esc(m[2])}</small></div>` : kachel('Wasser\u00adgefährdung', k.wgk);
+    };
+    const grenzen = [da(k.ueg) && 'UEG ' + S.wertSchoen(k.ueg), da(k.oeg) && 'OEG ' + S.wertSchoen(k.oeg)].filter(Boolean);
     const teile = [
-      kachel('Aggregatzustand', stoff.aggregatzustand, esc(stoff.eigenschaften || '')),
+      da(stoff.aggregatzustand) ? `<div><span>Aggregatzustand</span><b>${esc(stoff.aggregatzustand)}</b>${stoff.eigenschaften ? `<small>${esc(stoff.eigenschaften)}</small>` : ''}</div>` : '',
       kachel('Molare Masse', stoff.molmasse, stoff.formel ? 'Formel ' + esc(stoff.formel) : ''),
-      l ? `<div class="luft gross" style="--c:${l.art === 'schwer' ? 'var(--ser)' : l.art === 'leicht' ? 'var(--akzent)' : 'var(--ink)'}"><span>Luftvergleichszahl (Luft = 1)</span>` +
-          `<b>${esc(l.text)}</b><small>${esc(l.hinweis)}${l.berechnet ? ' · berechnet aus der Molmasse' : ''}</small></div>` : '',
-      kachel('Dampfdichte (Dampf-Luft-Gemisch)', k.dampfLuftGemisch, 'Dichteverhältnis des gesättigten Dampf-Luft-Gemisches zu Luft'),
-      kachel('Dichte', k.dichte),
       kachel('Siedepunkt', k.siedepunkt),
-      kachel('Schmelzpunkt', k.schmelzpunkt),
       kachel('Flammpunkt', k.flammpunkt),
-      kachel('Zündtemperatur', k.zuendtemperatur, k.temperaturklasse ? 'Temperaturklasse ' + esc(k.temperaturklasse) : ''),
-      (k.ueg || k.oeg) ? kachel('Explosionsgrenzen', [k.ueg && 'UEG ' + k.ueg, k.oeg && 'OEG ' + k.oeg].filter(Boolean).join(' · '), k.explosionsgruppe ? 'Explosionsgruppe ' + esc(k.explosionsgruppe) : '', 'gross') : '',
+      grenzen.length ? `<div class="gross"><span>Explosionsgrenzen</span><b>${esc(grenzen.join(' · '))}</b>${da(k.explosionsgruppe) ? `<small>Explosionsgruppe ${esc(k.explosionsgruppe)}</small>` : ''}</div>` : '',
+      kachel('Zündtemperatur', k.zuendtemperatur, da(k.temperaturklasse) ? 'Temperaturklasse ' + esc(k.temperaturklasse) : ''),
       kachel('Dampfdruck', k.dampfdruck),
+      kachel('Dichte', k.dichte),
+      kachel('Schmelzpunkt', k.schmelzpunkt),
       kachel('Wasserlöslichkeit', k.loeslichkeit),
       kachel('pH-Wert', k.ph),
-      kachel('Grenzwert (AGW)', k.agw),
-      kachel('WGK', k.wgk),
+      agw(),
+      wgk(),
     ].filter(Boolean);
     return teile.length ? `<div class="ez-kw">${teile.join('')}</div>` : '<div class="ez-leer">Keine Kennwerte vorhanden.</div>';
   }
@@ -583,7 +752,7 @@
     const wahl = T.length > 1 ? `<div class="ez-unwahl">${T.map(x => `<button data-un="${esc(x.un)}" class="${x === t ? 'an' : ''}">UN ${esc(x.un)}</button>`).join('')}</div>` : '';
     const zettel = t ? (t.gefahrzettel || []).map(z => `<figure>${symbol('adr', z, 50)}<figcaption>${esc(z)}</figcaption></figure>`).join('') +
       (t.umweltgefaehrdend === 'ja' ? `<figure>${symbol('adr', 'umwelt', 50)}<figcaption>umwelt&shy;gefährdend</figcaption></figure>` : '') : '';
-    const ghs = g.piktogramme.map(c => `<figure>${symbol('ghs', c, 54)}<figcaption>${esc(ghsText(c))}</figcaption></figure>`).join('');
+    const ghs = g.piktogramme.map(c => `<figure title="${esc(ghsText(c))}">${symbol('ghs', c, 54)}<figcaption>${GHS_KURZ[c] || esc(ghsText(c))}</figcaption></figure>`).join('');
     const tafel = t ? `<div class="ez-tafel">${window.GSZSymbole ? GSZSymbole.warntafel(t.kemler, t.un, { groesse: 128 }) : esc((t.kemler || '') + ' / ' + t.un)}</div>` : '';
     return wahl + `<div class="ez-oben">${tafel}
       <div style="flex:1;min-width:11rem;display:flex;flex-direction:column;gap:.4rem">
@@ -619,7 +788,7 @@
   function hSaetzeHtml(g) {
     const l = [...g.h, ...g.euh];
     if (!l.length) return '';
-    return `<section class="kachel ez-karte"><h2>Gefahrenhinweise (H-Sätze)</h2><ul class="ez-codes">${l.map(h => `<li><b>${esc(h.code)}</b> ${esc(h.text)}</li>`).join('')}</ul>
+    return `<section class="kachel ez-karte"><h2>Gefahrenhinweise (H-Sätze)</h2><ul class="ez-codes ez-hs">${l.map(h => `<li><b>${esc(h.code)}</b><span>${esc(h.text)}</span></li>`).join('')}</ul>
       ${g.einstufung.length ? `<details style="margin-top:.5rem"><summary class="ez-klein" style="cursor:pointer">Einstufung nach CLP</summary><ul class="ez-zeilen" style="margin-top:.4rem">${g.einstufung.map(x => `<li data-z="•">${esc(x)}</li>`).join('')}</ul></details>` : ''}</section>`;
   }
   // Der eigentliche Einsatzbildschirm
@@ -628,6 +797,7 @@
     return `
       ${stoff.offline ? `<div class="ez-warn">Offline – gespeicherter Stand vom ${esc(datumZeit(stoff.abgerufen))}.</div>` : ''}
       ${stoff.anmerkung ? `<div class="ez-warn blau">${esc(stoff.anmerkung)}</div>` : ''}
+      ${ausbreitungHtml(stoff)}
       <section class="kachel ez-karte"><div class="ez-klein" style="margin-bottom:.45rem">${esc(kurz)}${stoff.synonyme.length ? ' · auch: ' + esc(stoff.synonyme.slice(0, 4).join(', ')) : ''}</div>
         <h2>Kennzeichnung · Gefahrenklasse · GHS</h2>${kennzeichnungHtml(stoff)}</section>
       <section class="kachel ez-karte"><h2>Kennwerte</h2>${kennwerteHtml(stoff)}</section>
@@ -745,7 +915,7 @@
     sEl.innerHTML = '';
     sEl.classList.add('mit-leiste');
     const unter = teil ? TEILE[teil] : [stoff.formel, stoff.aggregatzustand].filter(Boolean).join(' · ');
-    sEl.appendChild(kopf({ titel: stoff.name || 'Unbekannter Stoff', unter: esc(unter), eltern: teil ? basis.slice(1) : eltern }));
+    sEl.appendChild(kopf({ titel: nameSchoen(stoff.name) || 'Unbekannter Stoff', unter: esc(unter), eltern: teil ? basis.slice(1) : eltern }));
     const inhaltEl = document.createElement('div');
     inhaltEl.style.cssText = 'display:flex;flex-direction:column;gap:.8rem';
     if (extra) inhaltEl.insertAdjacentHTML('beforeend', extra);
@@ -758,9 +928,10 @@
     const leiste = document.createElement('nav');
     leiste.className = 'ez-leiste';
     leiste.setAttribute('aria-label', 'Stoff');
-    leiste.innerHTML = [['datenblatt', 'Stoffdatenblatt', I.blatt], ['bestaendigkeit', 'Beständigkeiten', I.schild], ['psa', 'PSA', I.psa]]
+    leiste.innerHTML = [['datenblatt', 'Stoff&shy;datenblatt', I.blatt], ['bestaendigkeit', 'Beständig&shy;keiten', I.schild], ['psa', 'PSA', I.psa]]
       .map(([t, n, ic]) => `<a href="${teil === t ? basis : basis + '/' + t}" class="${teil === t ? 'an' : ''}"${teil ? ' data-ersetzen="1"' : ''}>${ic}<span>${n}</span></a>`).join('');
     sEl.appendChild(leiste);
+    leisteBeobachten(sEl, leiste);
     // Bedienung
     for (const b of sEl.querySelectorAll('.ez-unwahl button')) b.addEventListener('click', () => { unWahl.set(stoff.zvg || stoff.id, b.dataset.un); stoff.transport = stoff.transporte.find(t => t.un === b.dataset.un) || stoff.transport; stoffSeite(stoff, basis, teil, { eltern, extra, ziel, nachher }); });
     for (const a of sEl.querySelectorAll('a[data-cas]')) a.addEventListener('click', e => { e.preventDefault(); suchenUndZeigen(a.dataset.cas); });
@@ -769,6 +940,14 @@
     if (teil === 'bestaendigkeit') bestaendigkeitHtml(stoff, sEl.querySelector('#ez-best'));
     if (teil === 'psa') { const z = sEl.querySelector('#ez-psa-unsere .ez-leer').parentElement; bestaendigkeitHtml(stoff, z, { nurKategorie: 'Schutzkleidung' })
       .then(() => { if (!z.querySelector('.ez-geraete') && !z.querySelector('.ez-leer')) z.insertAdjacentHTML('beforeend', '<div class="ez-leer">Keine Schutzkleidung mit Beständigkeitsliste hinterlegt.</div>'); }); }
+  }
+  // Abstand unten = tatsächliche Höhe der Leiste (zweizeilige Beschriftung, Home-Balken), damit nichts darunter verschwindet
+  let leisteRO = null;
+  function leisteBeobachten(el, leiste) {
+    if (leisteRO) leisteRO.disconnect();
+    if (!window.ResizeObserver) return;
+    leisteRO = new ResizeObserver(() => { if (leiste.isConnected && leiste.offsetHeight) el.style.setProperty('--leiste-h', leiste.offsetHeight + 'px'); });
+    leisteRO.observe(leiste);
   }
   let stoffNr = 0;
   GSZ.ansicht('stoff', {
@@ -816,28 +995,62 @@
         '(am Mac, am PC oder mit der Dropbox-App am iPhone). Danach hier „Abgleichen“.</div>';
       return;
     }
-    const web = a.art === 'web';
+    const web = a.art === 'web' && !!a.verfuegbarkeitSetzen;
+    const alle = dateien.filter(d => !d.ordner && d.pfad.startsWith(pfad + '/'));
     k.innerHTML = `<ul class="ez-dateien">${unter.map(u => `<li><a href="#ordner/${kodiere(pfad + '/' + u.name)}"><span class="typ" style="--c:var(--akzent)">${I.ordner}</span>
-        <span><b>${esc(u.name)}</b><small>${u.anzahl} Datei${u.anzahl === 1 ? '' : 'en'}</small></span><span class="off"></span></a></li>`).join('')}
+        <span><b>${esc(u.name)}</b><small>${u.anzahl} Datei${u.anzahl === 1 ? '' : 'en'}</small></span><span class="off">›</span></a></li>`).join('')}
       ${liste.map(d => { const [t, c] = TYP[endung(d.name)] || [endung(d.name).toUpperCase().slice(0, 4) || 'DATEI', '#6b7480'];
         return `<li><a href="#datei/${kodiere(d.pfad)}"><span class="typ" style="--c:${c}">${esc(t)}</span>
-        <span><b>${esc(d.name.replace(/\.[^.]+$/, ''))}</b><small>${esc(groesse(d.groesse))}${d.geaendert ? ' · ' + esc(datumZeit(d.geaendert)) : ''}</small></span>
-        <span class="off ${web && !d.offline ? 'nein' : ''}">${web ? (d.offline ? '✓ offline' : 'nur online') : ''}</span></a></li>`; }).join('')}</ul>`;
+        <span><b>${esc(d.name.replace(/\.[^.]+$/, ''))}</b><small>${esc(groesse(d.groesse))}${d.geaendert ? ' · ' + esc(datumZeit(d.geaendert)) : ''}</small></span></a>${web ? verfWahl(d) : ''}</li>`; }).join('')}</ul>
+      ${web && alle.length > 1 ? `<div class="ez-verf-zeile"><span>Alle ${alle.length} Dateien dieses Ordners:</span>
+        <button class="knopf" data-alle="offline">auch offline</button><button class="knopf" data-alle="online">nur online</button></div>` : ''}
+      ${web ? '<div class="ez-klein" style="margin-top:.6rem">„Auch offline“: die Datei liegt auf diesem Gerät und öffnet sich ohne Netz. „Nur online“: spart Speicher, öffnet sich nur mit Netz. Antippen des Schilds rechts ändert die Wahl.</div>' : ''}`;
+    if (web) verfBedienung(k, alle);
+  }
+  // Verfügbarkeit einer Datei (nur Web-App): Schild mit unsichtbarer Auswahl
+  function verfWahl(d) {
+    const online = d.wahl === 'online';
+    const text = online ? 'nur online' : d.offline ? '✓ offline' : 'lädt …';
+    return `<label class="ez-verf ${online ? '' : d.offline ? 'an' : 'teil'}" title="${online ? 'Nur online – wird nicht auf dem Gerät gespeichert' : d.offline ? 'Auf dem Gerät gespeichert – auch ohne Netz' : 'Wird auf das Gerät geladen'}">${esc(text)} ▾
+      <select data-verf="${esc(d.pfad)}" aria-label="Verfügbarkeit: ${esc(d.name)}"><option value="offline"${online ? '' : ' selected'}>Auch offline (auf dem Gerät speichern)</option>
+      <option value="online"${online ? ' selected' : ''}>Nur online (nicht speichern)</option></select></label>`;
+  }
+  async function verfSetzen(pfade, wert) {
+    try {
+      await ad().verfuegbarkeitSetzen(pfade, wert);
+      const n = pfade.length === 1 ? `„${pfade[0].split('/').pop().replace(/\.[^.]+$/, '')}“` : `${pfade.length} Dateien`;
+      meldung(wert === 'online' ? `${n}: nur online – vom Gerät entfernt.` : `${n}: auch offline – ${navigator.onLine === false ? 'wird geladen, sobald Netz da ist' : 'wird auf das Gerät geladen'}.`, 4000);
+    } catch (e) { meldung('Ändern nicht möglich: ' + e.message, 6000); }
+    await listeHolen(false);
+    schilderAktualisieren();
+  }
+  // Schilder „✓ offline / nur online“ in der offenen Ansicht auf den neuen Stand bringen (Datei- und Geräteansicht werden nicht neu aufgebaut)
+  function schilderAktualisieren() {
+    for (const sel of document.querySelectorAll('select[data-verf]')) {
+      const d = dateiInfo(sel.dataset.verf), l = sel.closest('.ez-verf');
+      if (d && l && document.activeElement !== sel) l.outerHTML = verfWahl(d);
+    }
+  }
+  function verfBedienung(el, alle = []) {
+    el.addEventListener('change', e => { const sel = e.target.closest('select[data-verf]'); if (sel) verfSetzen([sel.dataset.verf], sel.value); });
+    el.addEventListener('click', e => { const b = e.target.closest('[data-alle]'); if (b) verfSetzen(alle.map(d => d.pfad), b.dataset.alle); });
   }
   // Beständigkeitslisten: Geräte als Bilder
   async function geraeteSeite(k) {
     k.innerHTML = '<div class="ez-leer">wird geladen …</div>';
     const G_ = await geraete();
+    const neuKnopf = ad() && ad().geraetDateien ? `<div class="ez-aktionen" style="margin:0 0 .8rem"><a class="knopf" href="#geraet-neu" style="font-weight:700">${I.plus}Gerät oder PSA anlegen</a></div>` : '';
     if (!G_.length) {
-      k.innerHTML = `<div class="ez-leer">Noch keine Geräte. Je Gerät einen Ordner anlegen (z. B. „27 ELRO Schlauchpumpe“) mit Foto (Dateiname beginnt mit „Foto“) und ` +
-        'Original-Beständigkeitsliste (PDF oder Fotos). Der Mac-Helfer erstellt daraus die geordnete Fassung. Anleitung: LIESMICH.txt im Ordner.</div>';
+      k.innerHTML = neuKnopf + `<div class="ez-leer">Noch keine Geräte. ${neuKnopf ? '„Gerät oder PSA anlegen“ antippen: Name, Gruppe, Foto und die Original-Beständigkeitsliste (PDF oder Fotos) wählen – fertig.' :
+        'Je Gerät einen Ordner anlegen (z. B. „27 ELRO Schlauchpumpe“) mit Foto (Dateiname beginnt mit „Foto“) und Original-Beständigkeitsliste (PDF oder Fotos).'}` +
+        ' Der Mac-Helfer erstellt daraus die geordnete Fassung.</div>';
       return;
     }
     const kats = ['Alle', ...B.KATEGORIEN.filter(c => G_.some(g => kategorie(g) === c))];
     let f = 'Alle';
     const zeigen = () => {
       const sicht = G_.filter(g => f === 'Alle' || kategorie(g) === f).sort((a, b) => (Number(a.nr) || 999) - (Number(b.nr) || 999) || a.name.localeCompare(b.name, 'de'));
-      k.innerHTML = `<div class="ez-filter">${kats.map(c => `<button class="${c === f ? 'an' : ''}" data-k="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+      k.innerHTML = neuKnopf + `<div class="ez-filter">${kats.map(c => `<button class="${c === f ? 'an' : ''}" data-k="${esc(c)}">${esc(c)}</button>`).join('')}</div>
         <div class="ez-raster">${sicht.map(g => `<a href="#geraet/${kodiere(g.ordner)}"><div class="foto">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="">` : 'kein Bild'}</div>
           <div class="unter"><b>${esc((g.nr ? g.nr + ' · ' : '') + g.name)}</b><small>${esc(kategorie(g))} · ${g.daten ? `${g.daten.eintraege.length} Einträge` : g.quellen.length ? 'noch nicht ausgewertet' : 'keine Liste'}</small>
           <span>${pruefBadge(g)}</span></div></a>`).join('')}</div>`;
@@ -864,27 +1077,30 @@
     kopfK.className = 'kachel ez-karte';
     kopfK.innerHTML = `<div class="ez-oben"><div style="width:min(14rem,100%)">${g.foto ? `<img class="ez-bildansicht" data-foto="${esc(g.foto)}" alt="Foto ${esc(g.name)}">` : '<div class="ez-leer">kein Foto</div>'}</div>
       <div style="flex:1;min-width:13rem;display:flex;flex-direction:column;gap:.35rem">
-        <div class="zeile" style="display:flex;gap:.4rem;flex-wrap:wrap">${d ? `<span class="ez-chip">${esc(kategorie(g))}</span>` : ''}${pruefBadge(g)}</div>
+        <div class="zeile" style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">${d || g.kategorieInfo ? `<span class="ez-chip">${esc(kategorie(g))}</span>` : ''}${pruefBadge(g)}</div>
         ${d && d.geraet.hersteller ? `<div class="ez-hinweis">Hersteller: ${esc(d.geraet.hersteller)}</div>` : ''}
         ${d && d.geraet.werkstoffe.length ? `<div class="ez-hinweis">Werkstoffe: ${esc(d.geraet.werkstoffe.join(', '))}</div>` : ''}
-        ${d && d.geraet.info ? `<div class="ez-hinweis">${esc(d.geraet.info)}</div>` : ''}
+        ${d && d.geraet.info ? `<div class="ez-hinweis">${esc(d.geraet.info)}</div>` : !d && g.infoText ? `<div class="ez-hinweis">${esc(g.infoText)}</div>` : ''}
         ${L ? `<div class="ez-klein">${esc([L.titel, L.stand && 'Stand ' + L.stand, L.bedingungen].filter(Boolean).join(' · '))}</div>` : ''}
         ${d && d.auswertung ? `<div class="ez-klein">${d.auswertung.geprueft ? 'Geprüft' + (d.auswertung.pruefung && d.auswertung.pruefung.am ? ' am ' + esc(datumZeit(d.auswertung.pruefung.am)) : '') :
           'Automatisch ausgelesen am ' + esc(datumZeit(d.auswertung.am)) + ' – noch nicht mit dem Original abgeglichen.'}${d.auswertung.anmerkung ? ' ' + esc(d.auswertung.anmerkung) : ''}</div>` : ''}
         ${g.fehler ? `<div class="ez-warn rot">${esc(g.fehler)}</div>` : ''}
         ${!d && g.quellen.length ? '<div class="ez-warn">Die Liste ist noch nicht ausgewertet – der Mac-Helfer erstellt die geordnete Fassung, sobald er läuft. Bis dahin gilt das Original.</div>' : ''}
+        ${!g.quellen.length ? '<div class="ez-warn">Noch keine Beständigkeitsliste hinterlegt.</div>' : ''}
+        ${ad() && ad().geraetDateien ? `<div><a class="knopf" href="#geraet-neu/${kodiere(g.ordner)}">${I.bild}Bearbeiten: Foto, Liste, Gruppe</a></div>` : ''}
       </div></div>
       ${g.quellen.length ? `<h2 style="margin-top:.8rem">Original</h2><ul class="ez-dateien">${g.quellen.map(q => { const [t, c] = TYP[endung(q)] || ['DATEI', '#6b7480'];
-        const info = dateiInfo(q); return `<li><a href="#datei/${kodiere(q)}"><span class="typ" style="--c:${c}">${esc(t)}</span><span><b>${esc(q.split('/').pop())}</b>
-        <small>${esc(groesse(info && info.groesse))}</small></span><span class="off"></span></a></li>`; }).join('')}</ul>` : ''}`;
+        const info = dateiInfo(q); return `<li><a href="#datei/${kodiere(q)}"><span class="typ" style="--c:${c}">${esc(t)}</span><span><b>${esc(q.split('/').pop().replace(/\.[^.]+$/, ''))}</b>
+        <small>${esc(groesse(info && info.groesse))}</small></span></a>${info && ad().art === 'web' && ad().verfuegbarkeitSetzen ? verfWahl(info) : ''}</li>`; }).join('')}</ul>` : ''}`;
     gEl.appendChild(kopfK);
+    verfBedienung(kopfK);
     fotoEinsetzen(kopfK);
     if (!L) return;
     const t = document.createElement('section');
     t.className = 'kachel ez-karte';
     const sp = L.spalten;
     t.innerHTML = `<h2>Geordnete Beständigkeitsliste (${d.eintraege.length} Einträge)</h2>
-      <input type="search" class="ez-db-suche" placeholder="Stoff oder CAS-Nr. in der Liste suchen" aria-label="In der Liste suchen">
+      <input type="search" class="ez-db-suche" placeholder="Stoff oder CAS-Nr. suchen" aria-label="In der Liste suchen">
       <div class="ez-legende">${L.legende.map(l => `<span>${stufeBadge(l.stufe, l.zeichen || '–')} ${esc(l.text)}</span>`).join('')}
         ${L.art === 'permeation' && L.schwellen ? `<span>Durchbruchzeit: ab ${esc(L.schwellen.gut_ab_minuten)} min beständig, ab ${esc(L.schwellen.bedingt_ab_minuten)} min bedingt</span>` : ''}
         ${L.relevant.length ? `<span>Für das Gerät gelten: <b>${esc(L.relevant.join(', '))}</b> (umrandet)</span>` : ''}</div>
@@ -908,6 +1124,109 @@
     zeilen();
   }
   GSZ.ansicht('geraet', { element: gEl, titel: p => dekodiere(p), anzeigen(param) { geraetSeite(dekodiere(param)); } });
+
+  // ---------------------------------------------------------------- Gerät oder PSA anlegen bzw. bearbeiten (#geraet-neu[/<ordner>])
+  // Legt Einsatz/Beständigkeitslisten/<Nr> <Bezeichnung>/ an: Foto.jpg, Original-Liste(n), info.txt („Kategorie: …“ + Angaben).
+  // Den Rest (geordnete Fassung) erledigt der Mac-Helfer.
+  const neuEl = ansichtElement('geraetneu');
+  const dateiName = n => String(n || '').normalize('NFC').replace(/[\/\\:*?"<>|\u0000-\u001f]/g, '-').replace(/^[.\s]+/, '').replace(/\s+/g, ' ').trim().slice(0, 100);
+  async function fotoVerkleinern(datei, max = 1600) {
+    try {
+      const bmp = await createImageBitmap(datei);
+      const f = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * f); c.height = Math.round(bmp.height * f);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      if (bmp.close) bmp.close();
+      return await new Promise((ok, nein) => c.toBlob(b => b ? ok(b) : nein(new Error('Bild nicht lesbar')), 'image/jpeg', 0.85));
+    } catch { return datei; }          // z. B. HEIC am Rechner: unverändert hochladen
+  }
+  async function geraetNeuSeite(ordner) {
+    neuEl.innerHTML = '';
+    const a = ad();
+    if (a && a.verbunden() && !dateien.length) await listeHolen(false);
+    const alle = a && a.verbunden() ? await geraete() : [];
+    const g = ordner ? alle.find(x => x.ordner === ordner) : null;
+    neuEl.appendChild(kopf({ titel: g ? 'Gerät bearbeiten' : 'Gerät oder PSA anlegen', unter: g ? esc((g.nr ? g.nr + ' · ' : '') + g.name) : BL,
+                             eltern: g ? 'geraet/' + kodiere(ordner) : 'ordner/' + kodiere(BL) }));
+    const k = document.createElement('section');
+    k.className = 'kachel ez-karte';
+    neuEl.appendChild(k);
+    if (!a || !a.geraetDateien) { k.innerHTML = '<div class="ez-leer">Hier nicht möglich.</div>'; return; }
+    if (!a.verbunden()) {
+      k.innerHTML = '<div class="ez-leer">Die Geräte liegen im Dropbox-App-Ordner – dazu einmal mit Dropbox verbinden.</div>' + (a.verbinden ? '<button class="knopf" id="gn-verb">Mit Dropbox verbinden</button>' : '');
+      const v = k.querySelector('#gn-verb'); if (v) v.addEventListener('click', () => a.verbinden());
+      return;
+    }
+    if (ordner && !g) { k.innerHTML = '<div class="ez-leer">Gerät nicht gefunden.</div>'; return; }
+    const nummern = alle.map(x => Number(x.nr)).filter(Boolean);
+    const vorschlag = String(nummern.length ? Math.max(...nummern) + 1 : 1);
+    const katJetzt = g ? kategorie(g) : '';
+    k.innerHTML = `<form class="ez-formular" id="gn-form" novalidate>
+      ${g ? '' : `<div class="reihe"><label class="feld">Nr.<input type="text" id="gn-nr" inputmode="numeric" maxlength="3" placeholder="${vorschlag}"></label>
+        <label class="feld">Bezeichnung<input type="text" id="gn-name" maxlength="80" placeholder="z. B. Tychem TK Gasschutzanzug" autocomplete="off"></label></div>`}
+      <label class="feld">Gruppe<select id="gn-kat">${B.KATEGORIEN.map(c => `<option${c === (katJetzt || 'Schutzkleidung') ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>
+        <span class="ez-klein" style="font-weight:400">„Schutzkleidung“ erscheint im Einsatzbildschirm auch unter PSA.</span></label>
+      <div class="feld" style="display:flex;flex-direction:column;gap:.35rem"><span class="ez-klein" style="font-weight:600;color:var(--ink2)">Foto</span>
+        <div class="ez-wahl"><img class="vorschau" id="gn-foto-bild" alt=""${g && g.foto ? ` data-foto="${esc(g.foto)}"` : ' hidden'}>
+          <label class="knopf ez-import">${I.kamera}<span>${g && g.foto ? 'Foto ersetzen' : 'Foto aufnehmen oder wählen'}</span><input type="file" id="gn-foto" accept="image/*"></label></div></div>
+      <div class="feld" style="display:flex;flex-direction:column;gap:.35rem"><span class="ez-klein" style="font-weight:600;color:var(--ink2)">Beständigkeitsliste des Herstellers</span>
+        <div class="ez-wahl"><label class="knopf ez-import">${I.blatt}<span>${g && g.quellen.length ? 'Weitere Liste hinzufügen' : 'Liste wählen (PDF oder Fotos)'}</span>
+          <input type="file" id="gn-liste" accept="application/pdf,.pdf,image/*" multiple></label>
+          <div class="namen" id="gn-liste-namen">${g && g.quellen.length ? 'vorhanden: ' + esc(g.quellen.map(q => q.split('/').pop()).join(', ')) : ''}</div></div></div>
+      <label class="feld">Werkstoffe und Hinweise (freiwillig)<textarea id="gn-info" placeholder="z. B. Werkstoff Schlauch: CSM (Hypalon)">${esc(g ? g.infoText || '' : '')}</textarea>
+        <span class="ez-klein" style="font-weight:400">Hilft der Auswertung, die passende Spalte der Liste zu wählen.</span></label>
+      <button class="knopf los" type="submit" id="gn-los">${g ? 'Speichern' : 'Gerät anlegen'}</button>
+      <div class="ez-klein" id="gn-status"></div></form>`;
+    fotoEinsetzen(k);
+    const form = k.querySelector('#gn-form'), fotoFeld = k.querySelector('#gn-foto'), listeFeld = k.querySelector('#gn-liste');
+    let foto = null, listen = [];
+    fotoFeld.addEventListener('change', () => {
+      foto = fotoFeld.files[0] || null;
+      const img = k.querySelector('#gn-foto-bild');
+      if (foto) { img.src = URL.createObjectURL(foto); img.hidden = false; }
+    });
+    listeFeld.addEventListener('change', () => {
+      listen = [...listeFeld.files];
+      k.querySelector('#gn-liste-namen').textContent = listen.length ? 'gewählt: ' + listen.map(f => f.name || 'Foto').join(', ') : '';
+    });
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const los = k.querySelector('#gn-los'), status = k.querySelector('#gn-status');
+      const name = g ? '' : dateiName(k.querySelector('#gn-name').value);
+      if (!g && !name) { meldung('Bitte eine Bezeichnung eingeben.'); k.querySelector('#gn-name').focus(); return; }
+      const nr = g ? '' : (k.querySelector('#gn-nr').value.replace(/\D/g, '') || vorschlag);
+      const ziel = g ? g.ordner : dateiName(`${nr.padStart(2, '0')} ${name}`);
+      if (!g && alle.some(x => x.ordner.toLowerCase() === ziel.toLowerCase())) { meldung('Ein Gerät mit diesem Namen gibt es schon.'); return; }
+      const vorhanden = new Set(dateien.filter(d => !d.ordner && ordnerVon(d.pfad) === BL + '/' + ziel).map(d => d.name.toLowerCase()));
+      const frei = n => { let x = n, i = 2; const p = n.lastIndexOf('.'); while (vorhanden.has(x.toLowerCase())) x = p > 0 ? `${n.slice(0, p)} (${i++})${n.slice(p)}` : `${n} (${i++})`; vorhanden.add(x.toLowerCase()); return x; };
+      const hoch = [], weg = [];
+      if (foto) {
+        const b = await fotoVerkleinern(foto);
+        const fn = 'Foto.' + (b.type === 'image/jpeg' ? 'jpg' : (endung(foto.name) || 'jpg'));
+        if (g && g.foto && g.foto.split('/').pop() !== fn) weg.push(g.foto.split('/').pop());
+        hoch.push({ name: fn, blob: b });
+      }
+      let seite = dateien.filter(d => ordnerVon(d.pfad) === BL + '/' + ziel && /^Liste Seite \d+/i.test(d.name)).length;
+      for (const l of listen) {
+        const bild = /^image\//.test(l.type) || istBild(l.name);
+        const n = bild ? `Liste Seite ${++seite}.${endung(l.name) || 'jpg'}` : dateiName(l.name) || 'Liste.pdf';
+        hoch.push({ name: frei(/^(foto|bild|ger(ä|ae)t|photo|image)/i.test(n) ? 'Liste ' + n : n), blob: l });
+      }
+      const kat = k.querySelector('#gn-kat').value, info = k.querySelector('#gn-info').value.trim();
+      if (!g || kat !== katJetzt || info !== (g.infoText || '')) hoch.push({ name: g && g.info ? g.info.split('/').pop() : 'info.txt', blob: new Blob([`Kategorie: ${kat}\n${info ? info + '\n' : ''}`], { type: 'text/plain' }) });
+      if (g && !hoch.length) { meldung('Nichts geändert.'); return; }
+      los.disabled = true; status.textContent = 'Wird gespeichert …';
+      try {
+        await a.geraetDateien(ziel, hoch, { loeschen: weg }, (n, von) => { status.textContent = `Wird hochgeladen … ${n} von ${von}`; });
+      } catch (f) { los.disabled = false; status.textContent = ''; meldung('Speichern nicht möglich: ' + f.message, 8000); return; }
+      geraeteCache = null; urlCache.clear();
+      await listeHolen(true);
+      GSZ.zeige('geraet/' + kodiere(ziel), true);
+      meldung(g ? 'Gespeichert.' : listen.length ? `„${name}“ angelegt – der Mac-Helfer wertet die Liste aus, sobald er läuft.` : `„${name}“ angelegt. Die Beständigkeitsliste lässt sich über „Bearbeiten“ nachreichen.`, 7000);
+    });
+  }
+  GSZ.ansicht('geraet-neu', { element: neuEl, titel: p => p ? 'Gerät bearbeiten' : 'Gerät anlegen', anzeigen(param) { geraetNeuSeite(dekodiere(param || '')); } });
 
   // Datei anzeigen: PDF (pdf.js), Bild, Text; sonst teilen bzw. mit Standardprogramm öffnen
   const dEl = ansichtElement('dateiansicht');
@@ -940,7 +1259,10 @@
     if (ad() && ad().oeffnenExtern && pfad) knoepfe.push(['extern', 'Mit Standardprogramm öffnen', I.extern]);
     if (navigator.canShare && navigator.canShare({ files: [new File([blob], name, { type: typ })] })) knoepfe.push(['teilen', 'Teilen / öffnen in …', I.teilen]);
     else if (!ad() || !ad().oeffnenExtern) knoepfe.push(['laden', 'Herunterladen', I.teilen]);
-    leiste.innerHTML = knoepfe.map(([a, t, ic]) => `<button class="knopf" data-a="${a}">${ic}${esc(t)}</button>`).join('') + `<span class="ez-klein">${esc(groesse(blob.size))}</span>`;
+    const info = pfad && dateiInfo(pfad);
+    leiste.innerHTML = knoepfe.map(([a, t, ic]) => `<button class="knopf" data-a="${a}">${ic}${esc(t)}</button>`).join('') +
+      (info && ad() && ad().art === 'web' && ad().verfuegbarkeitSetzen ? verfWahl(info) : '') + `<span class="ez-klein">${esc(groesse(blob.size))}</span>`;
+    if (info) verfBedienung(leiste);
     leiste.addEventListener('click', async e => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.a === 'extern') ad().oeffnenExtern(pfad);
@@ -966,8 +1288,9 @@
     try { lib = await pdfjs(); } catch (e) { flaeche.innerHTML = `<div class="ez-warn">PDF-Anzeige nicht verfügbar (${esc(e.message)}). Über „Teilen / öffnen in …“ öffnen.</div>`; return; }
     const doc = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()), isEvalSupported: false, disableFontFace: false }).promise;
     let zoom = 1;
-    leiste.insertAdjacentHTML('beforeend', `<span style="flex:1"></span><button class="knopf" data-z="-">−</button><span class="ez-klein" id="ez-zoom">100 %</span><button class="knopf" data-z="+">+</button>
-      <span class="ez-klein" id="ez-seitenzahl">${doc.numPages} Seite${doc.numPages === 1 ? '' : 'n'}</span>`);
+    leiste.insertAdjacentHTML('beforeend', `<span style="flex:1"></span><span class="ez-zoomgruppe"><button class="knopf" data-z="-" aria-label="kleiner">−</button>
+      <span class="ez-klein" id="ez-zoom">100 %</span><button class="knopf" data-z="+" aria-label="größer">+</button>
+      <span class="ez-klein" id="ez-seitenzahl">${doc.numPages} Seite${doc.numPages === 1 ? '' : 'n'}</span></span>`);
     flaeche.innerHTML = '<div class="ez-pdf-rahmen"><div class="ez-seiten"></div></div>';
     const seiten = flaeche.querySelector('.ez-seiten');
     const breite = () => Math.max(260, flaeche.clientWidth - 28);
@@ -1028,6 +1351,7 @@
     if (a.ansicht === 'einsatz') { ordnerZeigen(); statusZeigen(); }
     else if (a.ansicht === 'ordner') ordnerSeite(dekodiere(a.param));
     else statusZeigen();
+    schilderAktualisieren();
   }
 
   // Einsatz-Seite öffnen und suchen (eindeutige CAS/UN öffnet den Stoff direkt)

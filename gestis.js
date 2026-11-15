@@ -195,8 +195,14 @@
     dichteAuswerten(zeilen('0604'), kw);
     // Grenzwerte, Wassergefährdung, Gasflasche
     const agw = zeilen('1201').filter(z => !/^TRGS 900/.test(z));
-    const werte = agw.filter(z => /(ml\/m³|mg\/m³|ppm|mg\/m3)/.test(z) && /^(\d|[<>≤])/.test(z)).slice(0, 2);
-    kw.agw = werte.length === 2 ? `${werte[0]} (${werte[1]})` : werte.join('');
+    // „20 ml/m³“ + „14 mg/m³“ → „20 ml/m³ (14 mg/m³)“; Stäube, Nebel: „0,02 mg/m³“ + „bezogen auf die alveolengängige Fraktion“ → „0,02 mg/m³ (A-Fraktion)“
+    const werte = [];
+    agw.forEach((z, i) => {
+      if (werte.length >= 2 || !/(ml\/m³|mg\/m³|ppm|mg\/m3)/.test(z) || !/^(\d|[<>≤])/.test(z)) return;
+      const bez = /^bezogen auf (?:die )?(alveolengängige|einatembare)/i.exec(agw[i + 1] || '');
+      werte.push({ w: z, f: bez ? (/alveolen/i.test(bez[1]) ? 'A-Fraktion' : 'E-Fraktion') : '' });
+    });
+    kw.agw = werte.length === 2 && !werte[0].f && !werte[1].f ? `${werte[0].w} (${werte[1].w})` : werte.map(x => x.w + (x.f ? ` (${x.f})` : '')).join(' · ');
     const wgk = zeilen('1106').find(z => /WGK\s*\d|nicht wassergefährdend|awg/i.test(z));
     kw.wgk = wgk ? wgk.replace(/\s*-\s*/, ' – ') : '';
     const gf = zeilen('1105').filter(z => !/^FARBKENNZEICHNUNG/.test(z));

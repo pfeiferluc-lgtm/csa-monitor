@@ -36,6 +36,22 @@
     const info = namen.find(n => /^info\.(txt|md)$/i.test(n)) || null;
     return { foto, quellen, info };
   }
+  // info.txt: „Kategorie: Pumpen“ (oder „Gruppe:“) legt die Gruppe in der App fest (z. B. Schutzkleidung → erscheint unter PSA);
+  // der Rest sind Angaben zum Gerät (Werkstoffe, Hinweise) für die Auswertung
+  const KAT_ZEILE = /^[ \t]*(?:kategorie|gruppe)[ \t]*:[ \t]*(.*?)[ \t]*$/im;
+  function kategorieAus(wort) {
+    const w = String(wort || '').trim().toLowerCase();
+    if (!w) return '';
+    return KATEGORIEN.find(k => k.toLowerCase() === w) || KATEGORIEN.find(k => w.startsWith(k.toLowerCase().slice(0, 5))) ||
+      (/psa|schutz|anzug|handschuh|stiefel|kleid|maske/.test(w) ? 'Schutzkleidung' : /schlauch/.test(w) ? 'Schläuche' : /pumpe/.test(w) ? 'Pumpen' : '');
+  }
+  function infoLesen(t) {
+    const roh = String(t || '').replace(/\r/g, '');
+    const m = KAT_ZEILE.exec(roh);
+    return { kategorie: m ? kategorieAus(m[1]) : '', text: roh.replace(new RegExp(KAT_ZEILE.source + '\\n?', 'gim'), '').trim() };
+  }
+  // für die Prüfsumme des Mac-Helfers: eine geänderte Kategorie ist kein Grund, die Liste neu auszuwerten
+  function infoOhneKategorie(t) { return String(t || '').replace(new RegExp(KAT_ZEILE.source + '\\r?\\n?', 'gim'), ''); }
   // Ordnername „27 ELRO Schlauchpumpe“ bzw. „Nr.27 ELRO …“ → { nr: '27', name: 'ELRO Schlauchpumpe' }
   function ordnerName(ordner) {
     const m = /^\s*(?:nr\.?\s*)?(\d{1,3})[\s._-]+(.+)$/i.exec(String(ordner || ''));
@@ -126,14 +142,14 @@
                        seite: text(e.seite), hinweis: text(e.hinweis) });
     }
     const relevant = (kopf.relevant || []).map(text).filter(id => spalten.some(s => s.id === id));
-    const g = ordnerName(ordner);
+    const g = ordnerName(ordner), inf = infoLesen(info);
     const anmerkungen = teile.map(t => text(t.anmerkung)).filter(Boolean);
     if (unsicher.length) anmerkungen.push('Unsicher gelesen: ' + [...new Set(unsicher)].slice(0, 30).join(', '));
     return {
       format: FORMAT,
-      geraet: { nr: g.nr, name: g.name, kategorie: KATEGORIEN.includes(text(kopf.kategorie)) ? text(kopf.kategorie) : 'Sonstiges',
+      geraet: { nr: g.nr, name: g.name, kategorie: inf.kategorie || (KATEGORIEN.includes(text(kopf.kategorie)) ? text(kopf.kategorie) : 'Sonstiges'),
                 hersteller: text(kopf.hersteller), werkstoffe: (kopf.werkstoffe || []).map(text).filter(Boolean),
-                info: text(info) },
+                info: text(inf.text) },
       liste: { titel: text(kopf.titel), dateien, art: k.art, stand: text(kopf.stand), bedingungen: text(kopf.bedingungen),
                spalten, relevant, legende, schwellen: k.art === 'permeation' ? { gut_ab_minuten: text(k.schwellen.gut_ab_minuten) || '480',
                bedingt_ab_minuten: text(k.schwellen.bedingt_ab_minuten) || '30' } : null,
@@ -225,6 +241,6 @@
       String(a.geraet.ordner).localeCompare(String(b.geraet.ordner), 'de', { numeric: true }));
   }
 
-  return { FORMAT, DATEI, STUFEN, STUFE_TEXT, KATEGORIEN, ordnerEinteilen, ordnerName, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
+  return { FORMAT, DATEI, STUFEN, STUFE_TEXT, KATEGORIEN, ordnerEinteilen, ordnerName, infoLesen, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
            pruefen, gesamtStufe, grund, kern, finde, fuerStoff };
 });

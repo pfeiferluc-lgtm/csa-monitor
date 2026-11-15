@@ -1,6 +1,6 @@
-// Eigenes Sicherheitsdatenblatt einlesen (Foto, Bild, PDF, Kamera) – Einsatz-Teil der App „Gefahrstoffzug TE Miehlen“.
+// Eigenes Sicherheitsdatenblatt importieren (Bild oder PDF) – Einsatz-Teil der App „Gefahrstoffzug TE Miehlen“.
 // Ablauf:
-//   1. Dateien wählen bzw. Seiten fotografieren (#sdb-neu)
+//   1. Ein Knopf „Sicherheitsdatenblatt importieren“ (Einsatz-Seite bzw. #sdb-neu): Bild(er) oder PDF wählen – am iPhone auch Foto aufnehmen
 //   2. Sofort: Auftrag in den Dropbox-App-Ordner (Auswertung/<id>/) → der Mac-Helfer lässt ihn von Claude auswerten (Max-Abo)
 //   3. Parallel auf dem Gerät: Text lesen (PDF-Textebene bzw. Texterkennung) und mit sdb-parser.js auswerten → erstes Ergebnis
 //   4. Antwortet der Mac-Helfer nicht (Mac aus): „Mit Claude auf diesem iPhone auswerten“ – Kurzbefehl „GSZ Claude“ fragt die
@@ -16,18 +16,10 @@
   const istIphone = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const ad = () => (GSZ.adapter && GSZ.adapter.einsatz) || null;
   const css = `
-  .sdb-quellen { display: flex; gap: .5rem; flex-wrap: wrap; }
-  .sdb-quellen label { cursor: pointer; }
-  .sdb-quellen input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-  .sdb-seiten { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr)); gap: .55rem; margin-top: .8rem; }
-  .sdb-seite { position: relative; border-radius: .5rem; overflow: hidden; background: #fff; aspect-ratio: 3 / 4; display: flex; align-items: center;
-    justify-content: center; border: 1px solid var(--rand); color: #555; font-size: .75rem; text-align: center; }
-  .sdb-seite img { width: 100%; height: 100%; object-fit: cover; }
-  .sdb-seite button { position: absolute; top: .25rem; right: .25rem; width: 1.8rem; height: 1.8rem; border-radius: 50%; border: 0; background: rgba(0,0,0,.65);
-    color: #fff; font-size: 1rem; cursor: pointer; }
-  .sdb-seite span { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.55); color: #fff; font-size: .68rem; padding: .15rem .3rem; }
-  .sdb-los { width: 100%; margin-top: .9rem; background: var(--akzent) !important; border-color: var(--akzent) !important; color: #fff !important;
-    font-weight: 700; padding: .75rem 1rem !important; font-size: 1.05rem !important; }
+  .sdb-los { width: 100%; box-sizing: border-box; background: var(--akzent) !important; border-color: var(--akzent) !important; color: #fff !important;
+    font-weight: 700; padding: .85rem 1rem !important; font-size: 1.05rem !important; }
+  .sdb-mehr { margin-top: .55rem; font-size: .85rem; }
+  .sdb-mehr summary { cursor: pointer; color: var(--ink2); }
   .sdb-los:disabled { opacity: .45; }
   .sdb-balken { height: .45rem; border-radius: .3rem; background: var(--surface2); border: 1px solid var(--line); overflow: hidden; margin-top: .45rem; }
   .sdb-balken i { display: block; height: 100%; background: var(--akzent); transition: width .3s; }
@@ -141,55 +133,34 @@
   }
   const kurzbefehlLink = eingabe => `shortcuts://run-shortcut?name=${encodeURIComponent(KURZBEFEHL)}&input=text&text=${encodeURIComponent(eingabe)}`;
 
-  // ---------------------------------------------------------------- Ansicht: neues Datenblatt
+  // ---------------------------------------------------------------- Importieren: Dateien wählen → gleich auswerten
+  async function importieren(liste) {
+    liste = [...(liste || [])].filter(f => f && f.size);
+    if (!liste.length) return null;
+    const id = neueId();
+    const dateien = liste.map((f, i) => ({ name: f.name || `Seite ${i + 1}.jpg`, typ: f.type || (/\.pdf$/i.test(f.name) ? 'application/pdf' : 'image/jpeg'), blob: f, groesse: f.size }));
+    const d = { id, zeit: new Date().toISOString(), name: dateien[0].name, status: 'liest', dateien, text: '', ocr: null, claude: null, auftrag: null, fehler: '' };
+    try { await speichern(d); } catch (e) { meldung('Speichern auf dem Gerät nicht möglich: ' + e.message, 8000); return null; }
+    GSZ.zeige('sdb/' + id, GSZ.aktuell.ansicht === 'sdb-neu');
+    verarbeiten(id);
+    return id;
+  }
   const nEl = E.ansichtElement('sdbneu');
-  let auswahl = [];                 // [{ name, typ, blob, url }]
   function neuZeichnen() {
     nEl.innerHTML = '';
-    nEl.appendChild(E.kopf({ titel: 'Sicherheitsdatenblatt einlesen', unter: 'Einsatz', eltern: 'einsatz' }));
+    nEl.appendChild(E.kopf({ titel: 'Datenblatt importieren', unter: 'Einsatz', eltern: 'einsatz' }));
     const k = document.createElement('section');
     k.className = 'kachel ez-karte';
-    const iphone = istIphone();
-    k.innerHTML = `<div class="ez-hinweis">Alle Seiten fotografieren (oder Bilder bzw. das PDF wählen). Die App liest Kennwerte, GHS, UN-Nummer, Löschmittel und PSA aus –
-      sofort auf dem Gerät per Texterkennung und genauer mit Claude, sobald dein Mac oder die Claude-App auf dem iPhone antwortet.</div>
-      <div class="sdb-quellen" style="margin-top:.8rem">
-        ${iphone || 'mediaDevices' in navigator ? `<label class="knopf">${I.kamera}Seite fotografieren<input type="file" accept="image/*" capture="environment" id="sdb-kamera"></label>` : ''}
-        <label class="knopf">${I.blatt}Bilder oder PDF wählen<input type="file" accept="image/*,application/pdf,.pdf" multiple id="sdb-dateien"></label>
-      </div>
-      <div class="sdb-seiten" id="sdb-seiten"></div>
-      <button class="knopf sdb-los" id="sdb-los" ${auswahl.length ? '' : 'disabled'}>Auswerten</button>
-      <div class="ez-klein" style="margin-top:.6rem">Das Datenblatt bleibt auf diesem Gerät gespeichert. Mit Dropbox-Verbindung geht es zur Auswertung zusätzlich in den
-        App-Ordner (Auswertung) – nur dein Mac bzw. deine Claude-App lesen es.</div>`;
+    k.innerHTML = `<label class="knopf ez-import sdb-los">${I.blatt}<span>Bild oder PDF wählen</span>
+        <input type="file" id="sdb-dateien" accept="image/*,application/pdf,.pdf" multiple aria-label="Sicherheitsdatenblatt importieren (Bild oder PDF)"></label>
+      <div class="ez-hinweis" style="margin-top:.8rem">Das Sicherheitsdatenblatt als PDF wählen oder die Seiten als Bilder (am iPhone auch direkt fotografieren).
+        Die App liest Kennwerte, GHS, UN-Nummer, Löschmittel und PSA aus und zeigt sie wie einen GESTIS-Stoff an.</div>
+      <div class="ez-klein" style="margin-top:.6rem">Bleibt auf diesem Gerät gespeichert. Mit Dropbox-Verbindung wertet zusätzlich Claude über deinen Mac aus.</div>`;
     nEl.appendChild(k);
-    const seiten = k.querySelector('#sdb-seiten');
-    const zeigen = () => {
-      seiten.innerHTML = auswahl.map((a, i) => `<div class="sdb-seite">${a.url ? `<img src="${a.url}" alt="">` : `<b>PDF</b>`}<button data-weg="${i}" aria-label="entfernen">×</button>
-        <span>${esc(a.name)}</span></div>`).join('');
-      k.querySelector('#sdb-los').disabled = !auswahl.length;
-    };
-    zeigen();
-    const nehmen = liste => {
-      for (const f of liste) {
-        const typ = f.type || (/\.pdf$/i.test(f.name) ? 'application/pdf' : 'image/jpeg');
-        auswahl.push({ name: f.name || `Seite ${auswahl.length + 1}.jpg`, typ, blob: f, url: /^image\//.test(typ) ? URL.createObjectURL(f) : null });
-      }
-      zeigen();
-    };
-    for (const id of ['sdb-kamera', 'sdb-dateien']) { const inp = k.querySelector('#' + id); if (inp) inp.addEventListener('change', () => { nehmen([...inp.files]); inp.value = ''; }); }
-    seiten.addEventListener('click', e => { const b = e.target.closest('[data-weg]'); if (!b) return; auswahl.splice(Number(b.dataset.weg), 1); zeigen(); });
-    k.querySelector('#sdb-los').addEventListener('click', async () => {
-      if (!auswahl.length) return;
-      const id = neueId();
-      const d = { id, zeit: new Date().toISOString(), name: auswahl[0].name, status: 'liest', dateien: auswahl.map(a => ({ name: a.name, typ: a.typ, blob: a.blob, groesse: a.blob.size })),
-                  text: '', ocr: null, claude: null, auftrag: null, fehler: '' };
-      try { await speichern(d); } catch (e) { meldung('Speichern auf dem Gerät nicht möglich: ' + e.message, 8000); return; }
-      for (const a of auswahl) if (a.url) URL.revokeObjectURL(a.url);
-      auswahl = [];
-      GSZ.zeige('sdb/' + id, true);
-      verarbeiten(id);
-    });
+    const inp = k.querySelector('#sdb-dateien');
+    inp.addEventListener('change', () => { const l = [...inp.files]; inp.value = ''; importieren(l); });
   }
-  GSZ.ansicht('sdb-neu', { element: nEl, titel: () => 'Sicherheitsdatenblatt einlesen', anzeigen() { neuZeichnen(); } });
+  GSZ.ansicht('sdb-neu', { element: nEl, titel: () => 'Datenblatt importieren', anzeigen() { neuZeichnen(); } });
 
   // ---------------------------------------------------------------- Ansicht: Ergebnis (Einsatzbildschirm)
   const rEl = E.ansichtElement('sdbansicht');
@@ -208,16 +179,16 @@
     if (d.status === 'fehler') teile.push(`<div class="ez-warn rot">Text nicht lesbar: ${esc(d.fehler)}</div>`);
     const a = ad();
     if (d.claude) {
-      teile.push(`<div class="ez-warn" style="border-left-color:var(--good);background:var(--good-t)">✓ Ausgewertet von Claude (${d.claudeVon === 'iphone' ? 'Claude-App auf dem iPhone' : 'Mac-Helfer'})` +
-        `${d.claudeZeit ? ' am ' + esc(datumZeit(d.claudeZeit)) : ''}. Leere Angaben ergänzt die Texterkennung.</div>`);
+      teile.push(`<div class="ez-warn" style="border-left-color:var(--good);background:var(--good-t)">✓ Von Claude ausgewertet (${d.claudeVon === 'iphone' ? 'iPhone' : 'Mac'})` +
+        `${d.claudeZeit ? ', ' + esc(datumZeit(d.claudeZeit)) : ''}.</div>`);
     } else if (!f) {
       const mac = d.auftrag && d.auftrag.abgelegt;
       let t = '';
-      if (mac && helferLebt()) t = 'Claude (Mac-Helfer) wertet das Datenblatt aus – meist in unter einer Minute. Bis dahin gilt die Texterkennung.';
-      else if (mac) t = 'Der Mac-Helfer meldet sich gerade nicht (Mac aus oder ohne Netz). Bis er antwortet, gilt die Texterkennung.';
-      else if (a && a.verbunden && !a.verbunden()) t = 'Ohne Dropbox-Verbindung geht das Datenblatt nicht an den Mac – angezeigt wird die Texterkennung.';
-      else if (navigator.onLine === false) t = 'Ohne Netz: Ergebnis der Texterkennung. Mit Netz wertet Claude nach.';
-      else t = 'Angezeigt wird die Texterkennung.';
+      if (mac && helferLebt()) t = 'Erste Auswertung per Texterkennung – Claude prüft gerade nach (meist unter einer Minute).';
+      else if (mac) t = 'Ausgewertet per Texterkennung. Claude prüft nach, sobald dein Mac wieder erreichbar ist.';
+      else if (a && a.verbunden && !a.verbunden()) t = 'Ausgewertet per Texterkennung (ohne Dropbox-Verbindung keine Prüfung durch Claude).';
+      else if (navigator.onLine === false) t = 'Ausgewertet per Texterkennung (ohne Netz). Mit Netz prüft Claude nach.';
+      else t = 'Ausgewertet per Texterkennung.';
       if (d.auftrag && d.auftrag.fehler) t += ' ' + d.auftrag.fehler;
       const knoepfe = [];
       if (istIphone() && d.text) {
@@ -225,8 +196,9 @@
         knoepfe.push('<button class="knopf" id="sdb-einfuegen">Antwort aus der Zwischenablage übernehmen</button>');
       }
       if (d.text) knoepfe.push('<button class="knopf" id="sdb-kopieren">Anfrage für Claude kopieren</button>');
-      teile.push(`<div class="ez-warn">${esc(t)}${knoepfe.length ? `<div class="sdb-zeile">${knoepfe.join('')}</div>` : ''}
-        ${istIphone() ? '<div class="ez-klein" style="margin-top:.4rem">Fehlt der Kurzbefehl „GSZ Claude“? <a href="GSZ-Claude.shortcut" download="GSZ Claude.shortcut">Hier laden</a> (einmalig, braucht die Claude-App).</div>' : ''}</div>`);
+      const mehr = knoepfe.length && !(mac && helferLebt()) ? `<details class="sdb-mehr"><summary>Ohne Mac mit Claude auswerten</summary><div class="sdb-zeile">${knoepfe.join('')}</div>
+        ${istIphone() ? '<div class="ez-klein" style="margin-top:.4rem">Braucht einmalig den Kurzbefehl „GSZ Claude“: <a href="GSZ-Claude.shortcut" download="GSZ Claude.shortcut">hier laden</a>.</div>' : ''}</details>` : '';
+      teile.push(`<div class="ez-warn blau">${esc(t)}${mehr}</div>`);
     }
     const s = stoffVon(d);
     const cas = s.cas[0] || (s.bestandteile.find(b => b.cas) || {}).cas;
@@ -315,5 +287,5 @@
     } catch { /* später */ }
   }, 20000);
 
-  window.GSZSdbImport = { statusText, verarbeiten, ergebnisHolen, antwortUebernehmen, anfrageFuer };
+  window.GSZSdbImport = { statusText, verarbeiten, ergebnisHolen, antwortUebernehmen, anfrageFuer, importieren };
 })();
