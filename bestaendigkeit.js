@@ -203,19 +203,27 @@
     for (const [a, b] of ERSETZEN) t = t.replace(a, b);
     return t.replace(/[^a-z0-9%]+/g, ' ').replace(/\s+/g, ' ').trim();
   }
-  // Kern des Namens ohne Zusätze (Konzentration, wässrig, Lösung …) für den Vergleich
-  const ZUSAETZE = /\b(waessrig|wasserfrei|loesung|loesungen|konz|konzentriert|verduennt|techn|technisch|rein|reinst|gesaettigt|fluessig|fest|gasfoermig|gas|dampf|dampfe|ca|bis|und|oder|in|wasser|ige?|iger)\b/g;
-  // Prozentangaben („30 %“, „10 % ige“) zuerst, dann Zusätze
-  function kern(s) { return grund(s).replace(/\d+(?:\s\d+)?\s?%/g, ' ').replace(/\b\d+\b/g, ' ').replace(ZUSAETZE, ' ').replace(/\s+/g, ' ').trim(); }
+  // Kern des Namens ohne Zusätze (Konzentration, Temperatur, wässrig, Lösung …) für den Vergleich
+  const ZUSAETZE = /\b(waessrig|wasserfrei|loesung|loesungen|konz|konzentriert|verduennt|techn|technisch|rein|reinst|gesaettigt|fluessig|fest|gasfoermig|gas|dampf|dampfe|ca|bis|und|oder|in|wasser|ige?|iger|minus)\b/g;
+  // Mengen und Temperaturen samt Zahl: „30 %“, „30,5 %ige“, „10 bis 30 %“, „65 proz.“, „1 M“, „0,1 N“, „20 °C“, „minus 196 °C“
+  const ZAHL = String.raw`\b\d+(?:\s\d+)?(?:\s(?:bis|und|oder)\s\d+(?:\s\d+)?)?\s?`;
+  const MENGE = new RegExp(ZAHL + String.raw`(?:%|(?:proz\w*|gew\w*|vol\w*|ppm|mol\w*|m|n|c|grad\w*)(?=\s|$))`, 'g');
+  // Andere Zahlen gehören zum Namen und bleiben stehen: „Freon 30“ (= Dichlormethan) ist nicht „Freon 11“,
+  // „1,1,1-Trichlorethan“ nicht „1,1,2-Trichlorethan“ (15.11.2026: Dichlormethan zeigte alle Freon-Zeilen der TESIMAX-Liste).
+  function kern(s) { return grund(s).replace(MENGE, ' ').replace(ZUSAETZE, ' ').replace(/\s+/g, ' ').trim(); }
+  // CAS-Nummer nur als Ziffern ohne führende Nullen – so passen auch gedruckte Varianten wie „1330--20-7“ oder „000075-44-5“;
+  // eine Zelle kann mehrere Nummern enthalten („75-35-4, 540-59-0“)
+  const casZiffern = c => String(c || '').replace(/\D/g, '').replace(/^0+/, '');
+  const casAus = zelle => String(zelle || '').split(/[,;/]|\s+(?:und|u\.)\s+/).map(casZiffern).filter(z => z.length >= 5);
 
   // stoff: { name, synonyme[], cas[] } → Treffer [{ eintrag, art: 'cas'|'name'|'aehnlich' }]
   function finde(liste, stoff) {
-    const cas = new Set((stoff.cas || []).map(c => String(c).trim()));
+    const cas = new Set((stoff.cas || []).map(casZiffern).filter(z => z.length >= 5));
     const namen = [stoff.name, ...(stoff.synonyme || [])].filter(Boolean);
     const voll = new Set(namen.map(grund)), kerne = new Set(namen.map(kern).filter(k => k.length >= 3));
     const treffer = [];
     for (const e of liste.eintraege) {
-      if (e.cas && cas.has(e.cas)) { treffer.push({ eintrag: e, art: 'cas' }); continue; }
+      if (e.cas && casAus(e.cas).some(z => cas.has(z))) { treffer.push({ eintrag: e, art: 'cas' }); continue; }
       const g = grund(e.stoff), k = kern(e.stoff);
       if (voll.has(g) || (k.length >= 3 && kerne.has(k))) treffer.push({ eintrag: e, art: 'name' });
     }
