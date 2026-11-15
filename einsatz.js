@@ -1234,7 +1234,9 @@
       const L = g.daten.liste;
       const ids = L.relevant.length ? L.relevant : L.spalten.map(s => s.id);
       const werte = ids.map(id => { const w = t.eintrag.werte[id]; const sp = L.spalten.find(s => s.id === id);
-        return w && w.roh ? `${esc(sp ? sp.id : id)}: <b>${esc(w.roh)}</b>` : ''; }).filter(Boolean).slice(0, 6).join(' · ');
+        // Durchbruchzeiten mit Einheit („Sykan 2: >480 min“) – bei Permeationslisten zählt die Zeit, nicht die Farbe
+        const min = L.art === 'permeation' && w && /\d/.test(w.roh) && !/min/i.test(w.roh) ? ' min' : '';
+        return w && w.roh ? `${esc(sp ? sp.id : id)}: <b>${esc(w.roh)}${min}</b>` : ''; }).filter(Boolean).slice(0, 6).join(' · ');
       // Konzentration/Temperatur nur, wenn sie nicht schon im Stoffnamen steht („Salzsäure 37 %“ + „37 %“)
       const name = S.wertSchoen(stoffText(t.eintrag.stoff)).replace(/\s+/g, '');
       const zusatz = [t.eintrag.konz, t.eintrag.temp].filter(Boolean).map(x => S.wertSchoen(x)).filter(x => !name.includes(x.replace(/\s+/g, ''))).join(' · ');
@@ -1468,7 +1470,7 @@
     t.innerHTML = `<h2>Geordnete Beständigkeitsliste (${d.eintraege.length} Einträge)</h2>
       <input type="search" class="ez-db-suche" placeholder="Stoff oder CAS-Nr. suchen" aria-label="In der Liste suchen">
       <div class="ez-legende">${L.legende.map(l => `<span>${stufeBadge(l.stufe, l.zeichen || '–')} ${esc(l.text)}</span>`).join('')}
-        ${L.art === 'permeation' && L.schwellen ? `<span>Durchbruchzeit: ab ${esc(L.schwellen.gut_ab_minuten)} min beständig, ab ${esc(L.schwellen.bedingt_ab_minuten)} min bedingt</span>` : ''}
+        ${L.art === 'permeation' ? '<span>Durchbruchzeiten in Minuten: Jede eingetragene Zeit gilt als beständig, ob kurz oder lang – die Zeit steht dabei.</span>' : ''}
         ${L.relevant.length ? `<span>Für das Gerät gelten: <b>${esc(L.relevant.join(', '))}</b> (umrandet)</span>` : ''}</div>
       <div class="ez-tabelle-rahmen"><table class="ez-tabelle"><thead><tr><th>Stoff</th><th>CAS</th><th>Konz./Temp.</th>${sp.map(s => `<th title="${esc(s.name)}">${esc(s.id)}</th>`).join('')}<th>Gerät</th><th>S.</th></tr></thead>
       <tbody></tbody></table></div><div class="ez-klein" id="ez-mehr" style="margin-top:.5rem"></div>

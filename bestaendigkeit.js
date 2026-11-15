@@ -76,7 +76,6 @@
     spalten: L(O({ id: T, name: T })),
     relevant: L(T),
     legende: L(O({ zeichen: T, text: T, stufe: T })),
-    schwellen: O({ gut_ab_minuten: T, bedingt_ab_minuten: T }),
     werkstoffe: L(T),
     hinweise: L(T),
   });
@@ -99,7 +98,6 @@
     '- kopf.spalten: die Bewertungsspalten der Liste in der Reihenfolge der Tabelle, je { id: kurze Kennung wie "NBR", "PTFE", "Edelstahl 316L" oder "Durchbruchzeit", name: ausgeschriebener Name, z. B. "NBR (Nitrilkautschuk)" }.',
     '- kopf.relevant: die ids der Spalten, die für das Gerät gelten, soweit bekannt (aus den Angaben zum Gerät, z. B. Werkstoff des Schlauchs); sonst [] (dann gelten alle).',
     '- kopf.legende: alle Bewertungszeichen bzw. -klassen mit Bedeutung und stufe: "gut" (beständig/sehr gut/gut/geeignet), "bedingt" (bedingt/eingeschränkt beständig), "nicht" (nicht beständig/ungeeignet) oder "unbekannt" (nicht geprüft/keine Angabe).',
-    '- kopf.schwellen: nur bei art "permeation": ab wie vielen Minuten Durchbruchzeit "gut" bzw. "bedingt" gilt, wenn die Liste das vorgibt; sonst "480" und "30".',
     '- kopf.werkstoffe: Werkstoffe des Geräts, falls aus Liste oder Geräteangaben ersichtlich; kopf.hinweise: wichtige allgemeine Hinweise der Liste (Konzentration, Temperatur, Gewährleistung) in kurzen Sätzen.',
     '- eintraege: jede Zeile der Tabelle ein Eintrag: stoff (Name wie in der Liste, mit Zusätzen wie "wässrig"), cas (nur, wenn in der Liste angegeben), konz (Konzentration, falls angegeben), temp (Temperatur, falls angegeben), werte (ein Wert je Spalte in der Reihenfolge von kopf.spalten: das Zeichen bzw. die Klasse oder die Durchbruchzeit in Minuten wie ">480"; "" für leer), seite (Seitennummer der Vorlage), hinweis (Fußnote oder Bemerkung zur Zeile). Verweiszeilen wie "Bleichlauge – siehe Natriumhypochloritlauge" als Eintrag mit leeren werten und dem Verweis in hinweis.',
     '- anmerkung: was unsicher oder unleserlich war; leer, wenn alles eindeutig war.',
@@ -111,21 +109,17 @@
     const m = /(\d+(?:[.,]\d+)?)/.exec(String(roh || ''));
     return m ? Number(m[1].replace(',', '.')) : null;
   }
-  // Stufe eines Rohwerts nach Legende bzw. Durchbruchzeit
+  // Stufe eines Rohwerts nach Legende bzw. Durchbruchzeit.
+  // Festlegung der TE (Lucas, 15.11.2026): Bei Permeationslisten gilt jede eingetragene Durchbruchzeit als beständig –
+  // ob kurz oder lang. Die Zeit steht in der App immer daneben. Leer heißt „keine Angabe“.
+  const OHNE_ANGABE = /^(nicht\s+(geprüft|getestet|untersucht|bekannt)|keine\s+angaben?|k\.\s?a\.?)$/i;
   function stufeAus(roh, kopf) {
     const r = text(roh);
-    if (!r || r === '-' || r === '–') return 'unbekannt';
-    if (r === '?') return 'unbekannt';
+    if (!r || r === '-' || r === '–' || r === '?') return 'unbekannt';
+    if (kopf.art === 'permeation' && minutenAus(r) !== null) return 'gut';
     const leg = (kopf.legende || []).find(l => text(l.zeichen) && text(l.zeichen) === r);
     if (leg && STUFEN.includes(leg.stufe)) return leg.stufe;
-    if (kopf.art === 'permeation') {
-      const min = minutenAus(r);
-      if (min === null) return 'unbekannt';
-      const gut = Number(kopf.schwellen && kopf.schwellen.gut_ab_minuten) || 480;
-      const bed = Number(kopf.schwellen && kopf.schwellen.bedingt_ab_minuten) || 30;
-      if (/^</.test(r)) return min <= bed ? 'nicht' : 'bedingt';
-      return min >= gut ? 'gut' : min >= bed ? 'bedingt' : 'nicht';
-    }
+    if (OHNE_ANGABE.test(r)) return 'unbekannt';                  // „nicht geprüft“ ist keine Bewertung
     if (/^(nicht|ungeeignet|nein|unbeständig|x|✕|✗|×)/i.test(r)) return 'nicht';
     if (/^(bedingt|eingeschränkt|begrenzt)/i.test(r)) return 'bedingt';
     if (/^(beständig|sehr gut|gut|geeignet|ja|\+)/i.test(r)) return 'gut';
@@ -138,8 +132,11 @@
     const kopf = teile[0].kopf;
     const spalten = (kopf.spalten || []).map(s => ({ id: text(s.id), name: text(s.name) || text(s.id) })).filter(s => s.id);
     if (!spalten.length) throw new Error('In der Liste wurden keine Bewertungsspalten erkannt.');
-    const legende = (kopf.legende || []).map(l => ({ zeichen: text(l.zeichen), text: text(l.text), stufe: STUFEN.includes(l.stufe) ? l.stufe : 'unbekannt' }));
-    const k = { art: ['werkstoff', 'permeation', 'eignung'].includes(kopf.art) ? kopf.art : 'werkstoff', legende, schwellen: kopf.schwellen || {} };
+    const art = ['werkstoff', 'permeation', 'eignung'].includes(kopf.art) ? kopf.art : 'werkstoff';
+    // In der Legende wie bei den Werten: bei Permeationslisten ist jede Zeitangabe „beständig“ (siehe stufeAus)
+    const legende = (kopf.legende || []).map(l => ({ zeichen: text(l.zeichen), text: text(l.text),
+      stufe: art === 'permeation' && minutenAus(l.zeichen) !== null ? 'gut' : STUFEN.includes(l.stufe) ? l.stufe : 'unbekannt' }));
+    const k = { art, legende };
     const eintraege = [], unsicher = [];
     for (const t of teile) for (const e of t.eintraege || []) {
       const stoff = text(e.stoff);
@@ -159,9 +156,7 @@
                 hersteller: text(kopf.hersteller), werkstoffe: (kopf.werkstoffe || []).map(text).filter(Boolean),
                 info: text(inf.text) },
       liste: { titel: text(kopf.titel), dateien, art: k.art, stand: text(kopf.stand), bedingungen: text(kopf.bedingungen),
-               spalten, relevant, legende, schwellen: k.art === 'permeation' ? { gut_ab_minuten: text(k.schwellen.gut_ab_minuten) || '480',
-               bedingt_ab_minuten: text(k.schwellen.bedingt_ab_minuten) || '30' } : null,
-               hinweise: (kopf.hinweise || []).map(text).filter(Boolean) },
+               spalten, relevant, legende, hinweise: (kopf.hinweise || []).map(text).filter(Boolean) },
       eintraege,
       auswertung: { von: 'Mac-Helfer (Claude)', am: jetzt.toISOString(), modell, geprueft: false, pruefung: null,
                     quelle_hash: quelleHash, anmerkung: anmerkungen.join(' ') },
