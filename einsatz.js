@@ -33,37 +33,98 @@
   .ez-warn.rot { border-left-color: var(--crit); background: var(--crit-t); }
   .ez-warn.blau { border-left-color: var(--akzent); background: color-mix(in srgb, var(--akzent) 12%, var(--surface)); }
   .ez-warn .knopf { margin-top: .5rem; margin-right: .4rem; }
-  /* Suche */
-  .ez-suche form { display: flex; gap: .5rem; }
-  .ez-suche input { flex: 1; min-width: 0; font: inherit; font-size: 18px; padding: .75rem .85rem; border-radius: .6rem; border: 2px solid var(--eingabe-rand);
-    background: var(--eingabe); color: var(--ink); -webkit-appearance: none; appearance: none; margin: 0; }
-  .ez-suche input:focus { outline: 2px solid var(--akzent); outline-offset: 1px; }
-  .ez-suche .los { background: var(--akzent) !important; border-color: var(--akzent) !important; color: #fff !important; font-weight: 700; padding: .6rem 1rem !important; }
-  .ez-art { font-size: .8rem; color: var(--muted); margin-top: .4rem; min-height: 1.1em; }
-  .ez-import { position: relative; overflow: hidden; cursor: pointer; }
-  .ez-import input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 16px; }
+  /* Einsatz-Seite: Suche */
+  .ez-held { border-radius: 1.1rem; padding: 1rem 1rem 1.05rem; box-shadow: var(--schatten);
+    background: radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--akzent) 20%, transparent) 0%, transparent 62%), var(--surface); }
+  .ez-held-kopf { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin: 0 .1rem .75rem; }
+  .ez-held-kopf b { font-size: 1.2rem; letter-spacing: .01em; }
+  .ez-held-kopf small { font-size: .68rem; font-weight: 800; letter-spacing: .08em; color: var(--akzent); border: 1px solid color-mix(in srgb, var(--akzent) 55%, transparent);
+    border-radius: 1rem; padding: .15rem .55rem; }
+  .ez-suchfeld { display: flex; align-items: center; gap: .3rem; min-height: 3.7rem; padding: .3rem .3rem .3rem .85rem; border-radius: .95rem;
+    border: 2px solid var(--eingabe-rand); background: var(--eingabe); transition: border-color .15s, box-shadow .15s; }
+  .ez-suchfeld:focus-within { border-color: var(--akzent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--akzent) 25%, transparent); }
+  .ez-suchfeld .lupe { color: var(--muted); display: flex; flex: none; } .ez-suchfeld .lupe svg { width: 1.35rem; height: 1.35rem; }
+  .ez-suchfeld input { flex: 1; min-width: 0; font: inherit; font-size: 20px; font-weight: 600; border: 0; background: transparent; color: var(--ink);
+    padding: .55rem .2rem; -webkit-appearance: none; appearance: none; margin: 0; outline: none; border-radius: 0; }
+  .ez-suchfeld input::placeholder { color: var(--muted); font-weight: 400; }
+  .ez-suchfeld input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+  .ez-leeren { flex: none; width: 2.3rem; height: 2.3rem; border-radius: 50%; border: 0; background: color-mix(in srgb, var(--ink) 12%, transparent);
+    color: var(--ink2); font-size: 1.3rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .ez-leeren[hidden] { display: none; }
+  .ez-los { flex: none; width: 3.05rem; height: 3.05rem; border-radius: .75rem; border: 0; background: var(--akzent); color: #fff; display: flex;
+    align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+  .ez-los svg { width: 1.5rem; height: 1.5rem; }
+  .ez-held-unter { display: flex; align-items: center; gap: .55rem .7rem; margin-top: .65rem; flex-wrap: wrap; }
+  .ez-un { flex: none; font: inherit; font-size: .82rem; font-weight: 700; display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .75rem; min-height: 2.4rem;
+    border-radius: 2rem; border: 1px solid var(--rand); background: var(--surface2); color: var(--ink2); cursor: pointer; box-sizing: border-box; }
+  .ez-un svg { width: 1.05rem; height: 1.05rem; }
+  .ez-un[aria-pressed="true"] { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+  .ez-art { flex: 1; min-width: 9rem; font-size: .8rem; color: var(--muted); line-height: 1.3; }
+  .ez-art b { color: var(--good); font-weight: 700; }
+  .ez-import-zeile { margin-top: .9rem; padding-top: .85rem; border-top: 1px dashed var(--rand); }
+  .ez-import-knopf { display: flex; align-items: center; gap: .75rem; width: 100%; box-sizing: border-box; padding: .65rem .8rem; border-radius: .85rem; min-height: 3.6rem;
+    background: var(--surface2); border: 1px solid var(--rand); color: var(--ink); cursor: pointer; position: relative; overflow: hidden; }
+  .ez-import-knopf .sym { width: 2.4rem; height: 2.4rem; border-radius: .65rem; display: flex; align-items: center; justify-content: center; flex: none;
+    background: color-mix(in srgb, var(--akzent) 18%, transparent); color: var(--akzent); }
+  .ez-import-knopf .sym svg { width: 1.35rem; height: 1.35rem; }
+  .ez-import-knopf b { display: block; font-size: .95rem; line-height: 1.2; } .ez-import-knopf small { display: block; font-size: .75rem; color: var(--muted); line-height: 1.3; margin-top: .1rem; }
+  .ez-import-knopf .pfeil { margin-left: auto; color: var(--muted); font-size: 1.4rem; flex: none; }
+  .ez-import, .ez-import-knopf { position: relative; overflow: hidden; cursor: pointer; }
+  .ez-import input, .ez-import-knopf input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 16px; }
   .ez-chips { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
   .ez-chip { font: inherit; font-size: .82rem; padding: .35rem .65rem; border-radius: 1rem; border: 1px solid var(--rand); background: var(--surface2);
     color: var(--ink2); cursor: pointer; text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ez-aktionen { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; }
-  .ez-treffer { list-style: none; margin: .6rem 0 0; padding: 0; display: flex; flex-direction: column; }
-  .ez-treffer a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem .6rem; padding: .6rem .5rem; border-bottom: 1px solid var(--line);
-    color: var(--ink); text-decoration: none; border-radius: .4rem; }
-  .ez-treffer a:hover { background: var(--surface2); }
-  .ez-treffer b { font-weight: 600; overflow-wrap: anywhere; }
+  .ez-treffer { list-style: none; margin: .7rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+  .ez-treffer a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .15rem .6rem; padding: .65rem .75rem; border-radius: .75rem;
+    background: var(--surface2); border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+  .ez-treffer a:hover { border-color: var(--akzent); }
+  .ez-treffer b { font-weight: 700; overflow-wrap: anywhere; }
   .ez-treffer small { grid-column: 1; color: var(--muted); font-size: .78rem; }
-  .ez-treffer .pfeil { grid-row: 1 / span 2; grid-column: 2; align-self: center; color: var(--muted); font-size: 1.3rem; }
+  .ez-treffer .pfeil { grid-row: 1 / span 2; grid-column: 2; align-self: center; color: var(--akzent); font-size: 1.4rem; }
   .ez-treffer .ok { color: var(--good); font-weight: 600; }
-  /* Ordner */
-  .ez-ordner { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .7rem; }
-  .ez-ok { display: flex; flex-direction: column; gap: .35rem; padding: .9rem .85rem .8rem; border-radius: var(--rund); background: var(--surface);
-    box-shadow: var(--schatten); color: var(--ink); text-decoration: none; border-top: .28rem solid var(--c, var(--akzent)); min-height: 6.4rem;
-    -webkit-tap-highlight-color: transparent; }
-  .ez-ok svg { width: 1.9rem; height: 1.9rem; color: var(--c, var(--akzent)); }
-  .ez-ok b { font-size: 1rem; line-height: 1.2; -webkit-hyphens: manual; hyphens: manual; overflow-wrap: break-word; }
-  .ez-ok small { color: var(--muted); font-size: .78rem; }
-  .ez-status { font-size: .78rem; color: var(--muted); display: flex; gap: .4rem .8rem; flex-wrap: wrap; align-items: center; justify-content: center; text-align: center; }
-  .ez-status .knopf { font-size: .8rem; padding: .3rem .6rem; }
+  /* Bereiche der Einsatz-Seite */
+  .ez-bereich[hidden] { display: none; }
+  .ez-bereich > h2 { display: flex; align-items: baseline; gap: .5rem; margin: .15rem .25rem .55rem; }
+  .ez-bereich > h2 small { font-size: .72rem; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0; }
+  /* zuletzt geöffnet: Karten mit kleiner Warntafel */
+  .ez-letzte { display: flex; gap: .6rem; overflow-x: auto; scroll-snap-type: x proximity; padding: .15rem .15rem .55rem; margin: 0 -.15rem;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .ez-letzte::-webkit-scrollbar { display: none; }
+  .ez-zuletzt { flex: none; width: 9.4rem; scroll-snap-align: start; display: flex; flex-direction: column; gap: .5rem; padding: .7rem .7rem .65rem; border-radius: .95rem;
+    background: var(--surface); box-shadow: var(--schatten); color: var(--ink); text-decoration: none; box-sizing: border-box; }
+  .ez-zuletzt .name { font-weight: 700; font-size: .9rem; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden; }
+  .ez-zuletzt small { font-size: .7rem; color: var(--muted); margin-top: auto; }
+  .ez-mini-tafel { display: inline-grid; grid-template-rows: auto auto; width: 4.5rem; background: #ec7c26; border: 2px solid #121212; border-radius: .2rem; overflow: hidden; }
+  .ez-mini-tafel b { font: 800 .95rem/1.25 'DIN Alternate', Bahnschrift, Arial, Helvetica, sans-serif; color: #121212; text-align: center; letter-spacing: .05em; }
+  .ez-mini-tafel b + b { border-top: 2px solid #121212; }
+  .ez-mini-tafel.leer { background: var(--surface2); border-color: var(--rand); } .ez-mini-tafel.leer b { color: var(--muted); } .ez-mini-tafel.leer b + b { border-top-color: var(--rand); }
+  /* Unterlagen */
+  .ez-ordner { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; }
+  .ez-ok { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; gap: .1rem .75rem; padding: .85rem;
+    border-radius: 1rem; background: var(--surface); box-shadow: var(--schatten); color: var(--ink); text-decoration: none; min-height: 4.7rem;
+    -webkit-tap-highlight-color: transparent; box-sizing: border-box; min-width: 0; }
+  .ez-ok .sym { grid-row: 1 / span 2; width: 2.8rem; height: 2.8rem; border-radius: .8rem; display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--c, var(--akzent)) 18%, transparent); color: var(--c, var(--akzent)); }
+  .ez-ok .sym svg { width: 1.6rem; height: 1.6rem; }
+  .ez-ok b { grid-column: 2; grid-row: 1; font-size: 1rem; line-height: 1.2; -webkit-hyphens: manual; hyphens: manual; overflow-wrap: break-word; align-self: end; min-width: 0; }
+  .ez-ok small { grid-column: 2; grid-row: 2; color: var(--muted); font-size: .76rem; align-self: start; line-height: 1.3; min-width: 0; }
+  .ez-ok small .gut { color: var(--good); font-weight: 700; }
+  .ez-ok.breit { grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr) auto; }
+  .ez-ok .fotos { grid-row: 1 / span 2; grid-column: 3; display: flex; gap: .35rem; }
+  .ez-ok .fotos:empty { display: none; }
+  .ez-ok .fotos img, .ez-ok .fotos .ez-bild { width: 2.8rem; height: 2.8rem; border-radius: .55rem; object-fit: cover; background: #fff; border: 1px solid var(--line); }
+  /* Stand der Unterlagen */
+  .ez-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .45rem .8rem; padding: .7rem .85rem; border-radius: .95rem;
+    background: var(--surface); box-shadow: var(--schatten); font-size: .78rem; color: var(--ink2); line-height: 1.35; }
+  .ez-status .text { display: flex; flex-direction: column; gap: .1rem; min-width: 0; flex: 1; }
+  .ez-status .knopf { font-size: .8rem; padding: .4rem .75rem; }
+  .ez-status .fehler { color: var(--crit); }
+  .ez-punkt { display: inline-block; width: .55rem; height: .55rem; border-radius: 50%; background: var(--good); margin-right: .4rem; vertical-align: .05em;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 25%, transparent); }
+  .ez-punkt.aus { background: var(--ser); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ser) 25%, transparent); }
+  .ez-punkt.warte { background: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 25%, transparent); }
   /* Dateiliste */
   .ez-dateien { list-style: none; margin: 0; padding: 0; }
   .ez-dateien li { display: flex; align-items: center; gap: .3rem; border-bottom: 1px solid var(--line); }
@@ -86,15 +147,18 @@
   .ez-verf-zeile .knopf { font-size: .8rem; padding: .3rem .6rem; }
   .ez-leer { color: var(--muted); padding: .8rem .2rem; font-size: .9rem; line-height: 1.45; }
   /* Ausbreitung: sinkt ab / steigt auf */
-  .ez-ausbr { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: .15rem .8rem; align-items: center; padding: .75rem .9rem;
-    border-radius: var(--rund); background: color-mix(in srgb, var(--c) 16%, var(--surface)); border: 2px solid var(--c); color: var(--ink); }
+  .ez-ausbr { display: grid; grid-template-columns: 3.1rem minmax(0, 1fr); gap: .1rem .75rem; align-items: center; padding: .65rem .75rem;
+    border-radius: .65rem; background: color-mix(in srgb, var(--c) 14%, var(--surface2)); border: 2px solid var(--c); color: var(--ink); min-width: 0; }
+  .ez-kw > .ez-ausbr { grid-column: 1 / -1; }
   .ez-ausbr.schwer { --c: var(--ser); } .ez-ausbr.leicht { --c: var(--akzent); } .ez-ausbr.gleich, .ez-ausbr.unbekannt { --c: #8a96a3; }
-  .ez-ausbr .pfeil { grid-row: span 3; width: 3.4rem; height: 3.4rem; border-radius: 50%; background: var(--c); color: #fff; display: flex; align-items: center; justify-content: center; }
-  .ez-ausbr .pfeil svg { width: 2.3rem; height: 2.3rem; }
-  .ez-ausbr b { font-size: 1.25rem; line-height: 1.15; letter-spacing: .02em; }
+  .ez-ausbr .pfeil { grid-row: span 3; width: 3.1rem; height: 3.1rem; border-radius: 50%; background: var(--c); color: #fff; display: flex; align-items: center; justify-content: center; }
+  .ez-ausbr .pfeil svg { width: 2.1rem; height: 2.1rem; }
+  .ez-ausbr .ueber { grid-column: 2; font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .ez-ausbr b { font-size: 1.2rem; line-height: 1.15; letter-spacing: .02em; }
   .ez-ausbr .was { font-size: .9rem; line-height: 1.35; color: var(--ink2); }
   .ez-ausbr .was strong { color: var(--ink); }
   .ez-ausbr .lvz { grid-column: 2; font-size: .8rem; color: var(--muted); }
+  .ez-ausbr .was { grid-column: 2; }
   .ez-ausbr ul { grid-column: 1 / -1; list-style: none; margin: .45rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; font-size: .84rem; line-height: 1.35; }
   .ez-ausbr li { padding-left: 1.2rem; position: relative; color: var(--ink2); }
   .ez-ausbr li::before { content: "•"; position: absolute; left: .3rem; color: var(--c); font-weight: 800; }
@@ -113,17 +177,32 @@
     color: #fff; background: var(--crit); font-size: .85rem; }
   .ez-signal.achtung { background: var(--ser); }
   .ez-kw { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-flow: row dense; gap: .55rem; }
-  .ez-kw div { background: var(--surface2); border: 1px solid var(--line); border-radius: .55rem; padding: .5rem .6rem; min-width: 0; }
-  .ez-kw span { display: block; font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; overflow-wrap: break-word; -webkit-hyphens: manual; hyphens: manual; }
+  .ez-kw > div:not(.ez-ausbr) { background: var(--surface2); border: 1px solid var(--line); border-radius: .55rem; padding: .5rem .6rem; min-width: 0; }
+  .ez-kw > div:not(.ez-ausbr) > span { display: block; font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; overflow-wrap: break-word; -webkit-hyphens: manual; hyphens: manual; }
   .ez-hand { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .45rem; }
   .ez-hand li { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; padding: .45rem .55rem; border-radius: .5rem; background: var(--surface2);
     border: 1px solid var(--line); border-left: .3rem solid var(--c, var(--rand)); }
   .ez-hand b { font-weight: 600; overflow-wrap: anywhere; }
   .ez-hand small { flex-basis: 100%; color: var(--ink2); font-size: .78rem; line-height: 1.35; }
-  .ez-kw b { display: block; font-size: 1.02rem; overflow-wrap: anywhere; line-height: 1.25; margin-top: .1rem; }
-  .ez-kw small { display: block; font-size: .74rem; color: var(--ink2); margin-top: .15rem; line-height: 1.3; overflow-wrap: anywhere; }
-  .ez-kw .gross { grid-column: span 2; }
-  .ez-kw .luft b { color: var(--c, var(--ink)); }
+  .ez-kw > div:not(.ez-ausbr) > b { display: block; font-size: 1.02rem; overflow-wrap: anywhere; line-height: 1.25; margin-top: .1rem; }
+  .ez-kw > div:not(.ez-ausbr) > small { display: block; font-size: .74rem; color: var(--ink2); margin-top: .15rem; line-height: 1.3; overflow-wrap: anywhere; }
+  .ez-kw > .gross { grid-column: span 2; }
+  .ez-kw > .voll { grid-column: 1 / -1; }
+  /* AEGL-Tabelle */
+  .ez-aegl table { width: 100%; border-collapse: collapse; margin-top: .4rem; font-variant-numeric: tabular-nums; table-layout: fixed; }
+  .ez-aegl th, .ez-aegl td { padding: .3rem .15rem; text-align: right; font-size: .84rem; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  .ez-aegl th { font-size: .68rem; color: var(--muted); font-weight: 600; text-transform: none; }
+  .ez-aegl th:first-child, .ez-aegl td:first-child { text-align: left; width: 3.6rem; }
+  .ez-aegl td:first-child b { display: inline-block; font-size: .72rem; font-weight: 800; color: #fff; background: var(--c); border-radius: .3rem; padding: .1rem .35rem; }
+  .ez-aegl tr.a1 { --c: #b88a00; } .ez-aegl tr.a2 { --c: var(--ser); } .ez-aegl tr.a3 { --c: var(--crit); }
+  .ez-aegl td.etw { background: color-mix(in srgb, var(--ser) 16%, transparent); font-weight: 700; }
+  .ez-aegl tr:last-child td { border-bottom: 0; }
+  .ez-aegl .legende { display: flex; flex-direction: column; gap: .2rem; margin-top: .5rem; font-size: .74rem; color: var(--ink2); line-height: 1.3; }
+  .ez-aegl .legende i { font-style: normal; font-weight: 800; color: var(--c); white-space: nowrap; }
+  .ez-aegl .kopfzeile { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .2rem .6rem; }
+  .ez-aegl .kopfzeile > span { display: block; font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .ez-aegl .kopfzeile small { font-size: .7rem; color: var(--muted); }
+  .ez-aegl a { color: var(--akzent); }
   .ez-zeilen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
   .ez-zeilen li { font-size: .92rem; line-height: 1.35; padding-left: 1.4rem; position: relative; }
   .ez-zeilen li::before { content: attr(data-z); position: absolute; left: 0; top: 0; width: 1.1rem; text-align: center; font-weight: 800; color: var(--c, var(--muted)); }
@@ -237,6 +316,14 @@
   .ez-text { white-space: pre-wrap; font-size: .85rem; line-height: 1.45; overflow-wrap: anywhere; }
   @media (max-width: 900px) { .ez-ordner { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ez-kw { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 640px) {
+    .ez-held { padding: .9rem .8rem .95rem; }
+    .ez-ordner { gap: .6rem; }
+    .ez-ok:not(.breit) { display: flex; flex-direction: column; align-items: flex-start; gap: .45rem; min-height: 7.2rem; padding: .85rem .8rem .8rem; }
+    .ez-ok:not(.breit) b { align-self: auto; } .ez-ok:not(.breit) small { align-self: auto; }
+    .ez-ok.breit { grid-template-columns: auto minmax(0, 1fr); }
+    .ez-ok.breit .fotos { grid-row: 3; grid-column: 1 / -1; margin-top: .45rem; }
+  }
+  @media (max-width: 640px) {
     .ez { padding-left: calc(.5rem + var(--sicher-links)); padding-right: calc(.5rem + var(--sicher-rechts)); gap: .65rem; }
     .ez-kopf { gap: .5rem; padding: .3rem .5rem .3rem .4rem; }
     .ez-kopf img { height: 3.1rem; }
@@ -247,16 +334,14 @@
     .ez-kopf .knopf .lang { display: none; }
   }
   @media (max-width: 480px) {
-    .ez-suche .los span { display: none; }
-    .ez-suche .los { padding: .6rem .85rem !important; }
     /* Hell/Dunkel steckt auf dem Handy im Zahnrad-Menü – mehr Platz für den Titel */
     .ez-kopf:has(.einst:not([hidden])) .modus { display: none; }
     .ez-titel h1 { font-size: 1.08rem; }
     .ez-leiste a { font-size: .8rem; }
     .ez-ausbr b { font-size: 1.12rem; }
   }
-  @media (max-width: 360px) { .ez-suche input { font-size: 16px; padding: .7rem; } }
-  @media (max-width: 380px) { .ez-ordner { gap: .5rem; } .ez-ok { padding: .75rem .65rem .7rem; } .ez-kw { gap: .4rem; } .ez-kw div { padding: .45rem .5rem; }
+  @media (max-width: 360px) { .ez-suchfeld input { font-size: 17px; } .ez-suchfeld { padding-left: .6rem; } .ez-zuletzt { width: 8.6rem; } }
+  @media (max-width: 380px) { .ez-ordner { gap: .5rem; } .ez-ok { padding: .75rem .65rem .7rem; } .ez-kw { gap: .4rem; } .ez-kw > div:not(.ez-ausbr) { padding: .45rem .5rem; } .ez-aegl th, .ez-aegl td { font-size: .76rem; padding: .28rem .1rem; } .ez-aegl th:first-child, .ez-aegl td:first-child { width: 3.3rem; }
     .ez-leiste { gap: .35rem; } .ez-leiste a { font-size: .74rem; padding: .4rem .2rem; } .ez-hs li { grid-template-columns: 3.7rem minmax(0, 1fr); } }`;
   const stil = document.createElement('style');
   stil.textContent = css;
@@ -323,6 +408,8 @@
     dusche: SVG('<path d="M5 21V8a4 4 0 0 1 4-4h1a4 4 0 0 1 4 4"/><path d="M10 8h8"/><path d="M11 12v1.5M14 12v2.5M17 12v1.5M12.5 16v1.5M15.5 16v2"/>'),
     welle: SVG('<path d="M2 9c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 15c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/>'),
     tonne: SVG('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>'),
+    pfeil: SVG('<path d="M5 12h14M13 6l6 6-6 6"/>').replace('stroke-width="2"', 'stroke-width="2.6"'),
+    ziffern: SVG('<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>').replace('stroke-width="2"', 'stroke-width="2.4"'),
   };
   // Stoffnamen lesbar: „Wasserstoffperoxid 35 ... <50 %“ → „Wasserstoffperoxid 35 bis < 50 %“
   const nameSchoen = n => String(n || '').replace(/\s?(?:\.\.\.|…)\s?/g, ' bis ').replace(/([<>≤≥])(?=\d)/g, '$1 ').replace(/\s{2,}/g, ' ').trim();
@@ -491,42 +578,78 @@
   // ---------------------------------------------------------------- Ansicht: Einsatz (Start)
   const eEl = ansichtElement('einsatz');
   let suchErgebnis = null, suchText = '';
+  const ART_HINWEIS = 'Name, UN-Nr., CAS-Nr. oder Formel – z. B. 1005, 7664-41-7, NH3';
+  const platzhalter = zahl => zahl ? (innerWidth <= 360 ? 'UN-Nummer' : 'UN-Nummer, z. B. 1005') : (innerWidth <= 360 ? 'Stoff oder Nummer' : 'Name, UN- oder CAS-Nr.');
   function einsatzAufbauen() {
     eEl.innerHTML = '';
-    eEl.appendChild(kopf({ titel: 'Einsatz', unter: 'Gefahrstoffzug · Teileinheit Miehlen', logo: true }));
-    const k = document.createElement('section');
-    k.className = 'kachel ez-karte ez-suche';
-    k.innerHTML = `<h2>Stoffsuche · GESTIS</h2>
-      <form id="ez-form" role="search"><input type="search" id="ez-q" placeholder="${innerWidth <= 480 ? 'Stoff, UN- oder CAS-Nr.' : 'Stoff, UN-Nr., CAS-Nr. oder Summenformel'}" enterkeyhint="search"
-        autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Stoff suchen"><button class="knopf los" type="submit">${I.suche}<span>Suchen</span></button></form>
-      <div class="ez-art" id="ez-art">z. B. „Ammoniak“, „1005“, „7664-41-7“ oder „NH3“</div>
+    const kp = kopf({ titel: 'Einsatz', unter: 'Gefahrstoffzug · Teileinheit Miehlen', logo: true });
+    const kpUnter = kp.querySelector('.ez-titel div');
+    if (kpUnter) kpUnter.id = 'ez-kopf-status';
+    eEl.appendChild(kp);
+    // Stoffsuche
+    const held = document.createElement('section');
+    held.className = 'ez-held ez-suche';
+    held.setAttribute('aria-label', 'Stoffsuche');
+    held.innerHTML = `<div class="ez-held-kopf"><b>Stoff suchen</b><small>GESTIS</small></div>
+      <form id="ez-form" class="ez-suchfeld" role="search"><span class="lupe">${I.suche}</span>
+        <input type="search" id="ez-q" placeholder="${platzhalter(false)}" enterkeyhint="search" autocomplete="off" autocapitalize="off" autocorrect="off"
+          spellcheck="false" aria-label="Stoff suchen: Name, UN-Nummer, CAS-Nummer oder Summenformel">
+        <button type="button" class="ez-leeren" id="ez-leeren" aria-label="Eingabe löschen" hidden>×</button>
+        <button type="submit" class="ez-los" aria-label="Suchen">${I.pfeil}</button></form>
+      <div class="ez-held-unter"><button type="button" class="ez-un" id="ez-zahlen" aria-pressed="false" title="Zifferntastatur für UN-Nummern">${I.ziffern}UN-Nr.</button>
+        <span class="ez-art" id="ez-art">${ART_HINWEIS}</span></div>
       <div id="ez-erg"></div>
-      <div class="ez-chips" id="ez-letzte"></div>
-      <div class="ez-aktionen"><label class="knopf ez-import">${I.blatt}<span>Sicherheitsdatenblatt importieren <small style="opacity:.75">(Bild oder PDF)</small></span>
-        <input type="file" id="ez-sdb-datei" accept="image/*,application/pdf,.pdf" multiple aria-label="Sicherheitsdatenblatt importieren (Bild oder PDF)"></label></div>
-      <div id="ez-eigene"></div>`;
-    eEl.appendChild(k);
+      <div class="ez-import-zeile"><label class="ez-import-knopf"><span class="sym">${I.blatt}</span>
+        <span><b>Sicherheitsdatenblatt importieren</b><small>Foto oder PDF – Kennwerte, GHS, UN-Nr., Löschmittel und PSA</small></span><span class="pfeil">›</span>
+        <input type="file" id="ez-sdb-datei" accept="image/*,application/pdf,.pdf" multiple aria-label="Sicherheitsdatenblatt importieren (Bild oder PDF)"></label></div>`;
+    eEl.appendChild(held);
+    // zuletzt geöffnet, eigene Datenblätter, Unterlagen, Stand
+    const zl = document.createElement('section');
+    zl.className = 'ez-bereich'; zl.id = 'ez-letzte-bereich'; zl.hidden = true;
+    zl.innerHTML = '<h2>Zuletzt geöffnet <small>auch ohne Netz</small></h2><div class="ez-letzte" id="ez-letzte"></div>';
+    eEl.appendChild(zl);
+    const eg = document.createElement('section');
+    eg.className = 'ez-bereich'; eg.id = 'ez-eigene';
+    eEl.appendChild(eg);
     const o = document.createElement('section');
-    o.innerHTML = '<nav class="ez-ordner" id="ez-ordner" aria-label="Einsatz-Ordner"></nav>';
+    o.className = 'ez-bereich';
+    o.innerHTML = '<h2>Unterlagen</h2><nav class="ez-ordner" id="ez-ordner" aria-label="Einsatz-Ordner"></nav>';
     eEl.appendChild(o);
     const st = document.createElement('div');
     st.className = 'ez-status'; st.id = 'ez-status';
     eEl.appendChild(st);
-    const f = k.querySelector('#ez-form'), q = k.querySelector('#ez-q');
-    const imp = k.querySelector('#ez-sdb-datei');
+    // Bedienung
+    const f = held.querySelector('#ez-form'), q = held.querySelector('#ez-q'), leeren = held.querySelector('#ez-leeren'), zahlen = held.querySelector('#ez-zahlen');
+    const imp = held.querySelector('#ez-sdb-datei');
     imp.addEventListener('change', () => {
       const liste = [...imp.files]; imp.value = '';
       if (!liste.length) return;
       if (window.GSZSdbImport && GSZSdbImport.importieren) GSZSdbImport.importieren(liste); else meldung('Import nicht verfügbar.');
     });
+    const artZeigen = () => {
+      const a = G.anfrageArt(q.value);
+      held.querySelector('#ez-art').innerHTML = a ? `erkannt: <b>${esc(G.ART_TEXT[a.art])}${a.art !== 'name' ? ' ' + esc(a.wert) : ''}</b>` : esc(ART_HINWEIS);
+      leeren.hidden = !q.value;
+      return a;
+    };
     q.value = suchText;
+    artZeigen();
     f.addEventListener('submit', e => { e.preventDefault(); q.blur(); suchen(q.value, true); });
     q.addEventListener('input', () => {
       suchText = q.value;
-      const a = G.anfrageArt(q.value);
-      k.querySelector('#ez-art').textContent = a ? `erkannt: ${G.ART_TEXT[a.art]}` + (a.art !== 'name' ? ` ${a.wert}` : '') : 'z. B. „Ammoniak“, „1005“, „7664-41-7“ oder „NH3“';
+      const a = artZeigen();
       clearTimeout(suchen.t);
+      if (!q.value.trim()) { held.querySelector('#ez-erg').innerHTML = ''; suchErgebnis = null; return; }
       if (a && (a.art === 'name' ? q.value.trim().length >= 3 : a.art === 'formel' ? q.value.trim().length >= 2 : true)) suchen.t = setTimeout(() => suchen(q.value, false), 650);
+    });
+    leeren.addEventListener('click', () => { q.value = ''; suchText = ''; suchErgebnis = null; held.querySelector('#ez-erg').innerHTML = ''; artZeigen(); q.focus(); });
+    // Zifferntastatur für UN-Nummern (am iPhone), wieder umschaltbar
+    zahlen.addEventListener('click', () => {
+      const an = zahlen.getAttribute('aria-pressed') !== 'true';
+      zahlen.setAttribute('aria-pressed', String(an));
+      q.setAttribute('inputmode', an ? 'numeric' : 'text');
+      q.placeholder = platzhalter(an);
+      q.focus();
     });
     if (suchErgebnis) trefferZeigen(suchErgebnis);
   }
@@ -535,7 +658,12 @@
     const nr = ++suchNr;
     if (!eEl.firstChild) einsatzAufbauen();
     const feld = eEl.querySelector('#ez-q');
-    if (feld && feld.value !== text) { feld.value = text; suchText = text; }
+    if (feld && feld.value !== text) {
+      feld.value = text; suchText = text;
+      const l = eEl.querySelector('#ez-leeren'), art = eEl.querySelector('#ez-art'), aa = G.anfrageArt(text);
+      if (l) l.hidden = !text;
+      if (art) art.innerHTML = aa ? `erkannt: <b>${esc(G.ART_TEXT[aa.art])}${aa.art !== 'name' ? ' ' + esc(aa.wert) : ''}</b>` : esc(ART_HINWEIS);
+    }
     const erg = eEl.querySelector('#ez-erg');
     const a = G.anfrageArt(text);
     if (!a) { erg.innerHTML = ''; suchErgebnis = null; return; }
@@ -577,18 +705,28 @@
       `<ul class="ez-treffer">${r.treffer.map(t => `<li><a href="#stoff/${esc(t.zvg)}"><b>${esc(nameSchoen(t.name))}</b><span class="pfeil">›</span>
         <small>${t.cas ? 'CAS ' + esc(t.cas) : 'ohne CAS-Nr.'}${r.art === 'un' ? (t.unOk ? ` · <span class="ok">UN ${esc(r.wert)} ✓</span>` : t.unOk === false ? ' · Treffer über die GESTIS-Nr., nicht über die UN-Nr.' : '') : ''}</small></a></li>`).join('')}</ul>`;
   }
+  const datumKurz = d => { d = new Date(d); if (isNaN(d)) return ''; const h = new Date();
+    const tag = d.toDateString() === h.toDateString() ? 'heute' : new Date(h - 864e5).toDateString() === d.toDateString() ? 'gestern' : `${p2(d.getDate())}.${p2(d.getMonth() + 1)}.`;
+    return `${tag}, ${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+  function miniTafel(t) {
+    return t && t.un ? `<span class="ez-mini-tafel" aria-label="Warntafel ${esc(t.kemler || '')} ${esc(t.un)}"><b>${esc(t.kemler || '–')}</b><b>${esc(t.un)}</b></span>`
+      : '<span class="ez-mini-tafel leer" aria-label="kein Gefahrgut-Eintrag"><b>–</b><b>–</b></span>';
+  }
   async function letzteZeigen() {
-    const el = eEl.querySelector('#ez-letzte');
+    const el = eEl.querySelector('#ez-letzte'), bereich = eEl.querySelector('#ez-letzte-bereich');
     if (!el) return;
-    const l = await zuletzt(10);
-    el.innerHTML = l.length ? l.map(s => `<a class="ez-chip" href="#stoff/${esc(s.zvg)}" title="zuletzt geöffnet ${esc(datumZeit(s.zeit))} – auch offline">${esc(nameSchoen(s.name))}</a>`).join('') : '';
+    const l = await zuletzt(12);
+    if (bereich) bereich.hidden = !l.length;
+    el.innerHTML = l.map(s => `<a class="ez-zuletzt" href="#stoff/${esc(s.zvg)}" title="zuletzt geöffnet ${esc(datumZeit(s.zeit))} – auch offline">
+      ${miniTafel(s.stoff && s.stoff.transport)}<span class="name">${esc(nameSchoen(s.name))}</span><small>${esc(datumKurz(s.zeit))}</small></a>`).join('');
   }
   async function eigeneZeigen() {
     const el = eEl.querySelector('#ez-eigene');
     if (!el) return;
     let l = [];
     try { l = (await SP.alle('sdb')).map(x => x.wert).sort((a, b) => String(b.zeit).localeCompare(String(a.zeit))).slice(0, 6); } catch { /* ohne */ }
-    el.innerHTML = l.length ? `<h2 style="margin-top:.9rem">Eigene Datenblätter</h2><ul class="ez-treffer">${l.map(d => `<li><a href="#sdb/${esc(d.id)}">
+    el.hidden = !l.length;
+    el.innerHTML = l.length ? `<h2>Eigene Datenblätter <small>auf diesem Gerät</small></h2><ul class="ez-treffer" style="margin-top:0">${l.map(d => `<li><a href="#sdb/${esc(d.id)}">
       <b>${esc(nameSchoen((d.claude && d.claude.name) || (d.ocr && d.ocr.name) || d.name || 'Sicherheitsdatenblatt'))}</b><span class="pfeil">›</span>
       <small>${esc(datumZeit(d.zeit))} · ${esc(window.GSZSdbImport ? GSZSdbImport.statusText(d) : '')}</small></a></li>`).join('')}</ul>` : '';
   }
@@ -597,44 +735,73 @@
     if (!el) return;
     const { unter } = inhalt('');
     const namen = [...new Set([...ORDNER_REIHE, ...unter.map(u => u.name)])];
-    const anzahl = n => { const u = unter.find(x => x.name === n); return u ? u.anzahl : null; };
+    const a = ad(), web = !!(a && a.art === 'web');
+    const verbunden = !!(a && a.verbunden());
     el.innerHTML = namen.map(n => {
       const [farbe, icon] = ORDNER_STIL[n] || ['var(--akzent)', I.ordner];
-      const a = anzahl(n);
-      const geraeteZahl = n === BL ? inhalt(BL).unter.length : 0;
-      const unterText = n === BL ? (geraeteZahl ? `${geraeteZahl} Gerät${geraeteZahl === 1 ? '' : 'e'}` : 'noch leer')
-        : !a ? (ad() && ad().verbunden() ? 'noch leer' : '–') : `${a} Datei${a === 1 ? '' : 'en'}`;
+      const dd = dateien.filter(d => !d.ordner && d.pfad.startsWith(n + '/') && !/(^|\/)(\.|liesmich\.txt$|bestaendigkeit.*\.json$|info\.(txt|md)$)/i.test(d.pfad));
+      let meta;
+      if (n === BL) { const g = inhalt(BL).unter.length; meta = g ? `${g} Gerät${g === 1 ? '' : 'e'} und PSA` : verbunden ? 'noch leer – Gerät anlegen' : '–'; }
+      else meta = dd.length ? `${dd.length} Datei${dd.length === 1 ? '' : 'en'}` : verbunden ? 'noch leer' : '–';
+      meta = esc(meta);
+      if (web && dd.length) {
+        const gewollt = dd.filter(d => d.wahl !== 'online'), off = gewollt.filter(d => d.offline).length;
+        if (gewollt.length) meta += off === gewollt.length ? ' · <span class="gut">✓ offline</span>' : ` · ${off}/${gewollt.length} offline`;
+      }
       const anzeige = esc(n).replace('Führungsunterstützung', 'Führungs&shy;unterstützung').replace('Beständigkeitslisten', 'Beständigkeits&shy;listen');
-      return `<a class="ez-ok" href="#ordner/${kodiere(n)}" style="--c:${farbe}">${icon}<b>${anzeige}</b><small>${esc(unterText)}</small></a>`;
+      return `<a class="ez-ok${n === BL ? ' breit' : ''}" href="#ordner/${kodiere(n)}" style="--c:${farbe}"><span class="sym">${icon}</span><b>${anzeige}</b><small>${meta}</small>` +
+        `${n === BL ? '<span class="fotos" id="ez-bl-fotos"></span>' : ''}</a>`;
     }).join('');
+    blFotos();
+  }
+  // Beständigkeitslisten-Kachel: Fotos der ersten Geräte
+  async function blFotos() {
+    const box = eEl.querySelector('#ez-bl-fotos');
+    if (!box || !ad() || !ad().verbunden() || !dateien.length) return;
+    let g = [];
+    try { g = (await geraete()).filter(x => x.foto).slice(0, innerWidth <= 360 ? 3 : 4); } catch { return; }
+    if (!box.isConnected) return;
+    box.innerHTML = g.map(x => `<img data-foto="${esc(x.foto)}" alt="">`).join('');
+    fotoEinsetzen(box);
   }
   function statusZeigen() {
-    const el = eEl.querySelector('#ez-status');
-    if (!el) return;
+    const el = eEl.querySelector('#ez-status'), kp = eEl.querySelector('#ez-kopf-status');
     const a = ad();
-    if (!a) { el.textContent = ''; return; }
-    const teile = [];
+    const online = navigator.onLine !== false;
+    const kopfText = (punkt, text) => { if (kp) kp.innerHTML = `<span class="ez-punkt ${punkt}"></span>${esc(text)}`; };
+    if (!el) return;
+    if (!a) { el.textContent = ''; kopfText(online ? '' : 'aus', online ? 'Online' : 'Offline'); return; }
     if (!a.verbunden()) {
-      el.innerHTML = `<span>Ordner: ${a.art === 'web' ? 'nicht mit Dropbox verbunden' : 'Dropbox-Ordner auf diesem Rechner nicht gefunden'}</span>` +
+      kopfText(online ? 'warte' : 'aus', online ? 'Online · Unterlagen nicht verbunden' : 'Offline · nur gespeicherte Stoffe');
+      el.innerHTML = `<span class="text"><span>${a.art === 'web' ? 'Unterlagen: nicht mit Dropbox verbunden' : 'Dropbox-Ordner auf diesem Rechner nicht gefunden'}</span></span>` +
         (a.verbinden ? '<button class="knopf" id="ez-verbinden">Mit Dropbox verbinden</button>' : '');
       const v = el.querySelector('#ez-verbinden');
       if (v) v.addEventListener('click', () => a.verbinden());
       return;
     }
     const d = dateien.filter(x => !x.ordner);
+    const teile = [];
+    let gewollt = d, off = d.length;
     if (a.art === 'web') {
-      const off = d.filter(x => x.offline).length, nurOnline = d.filter(x => x.wahl === 'online').length;
-      teile.push(`Offline verfügbar: ${off} von ${d.length - nurOnline} Dateien` + (nurOnline ? ` · ${nurOnline} nur online` : ''));
+      gewollt = d.filter(x => x.wahl !== 'online'); off = gewollt.filter(x => x.offline).length;
+      const nurOnline = d.length - gewollt.length;
+      teile.push(`Offline verfügbar: ${off} von ${gewollt.length} Dateien` + (nurOnline ? ` · ${nurOnline} nur online` : ''));
     } else teile.push(`${d.length} Dateien im Dropbox-Ordner`);
     if (listeStand) teile.push('Stand ' + datumZeit(listeStand));
-    if (listeFehler) teile.push('⚠ ' + listeFehler);
-    if (a.fortschritt && a.fortschritt()) teile.push(a.fortschritt());
-    el.innerHTML = teile.map(t => `<span>${esc(t)}</span>`).join('') + '<button class="knopf" id="ez-abgleich">Abgleichen</button>';
+    const lauf = a.fortschritt && a.fortschritt();
+    if (lauf) teile.push('Abgleich: ' + lauf);
+    el.innerHTML = `<span class="text">${teile.map(t => `<span>${esc(t)}</span>`).join('')}${listeFehler ? `<span class="fehler">⚠ ${esc(listeFehler)}</span>` : ''}</span>` +
+      '<button class="knopf" id="ez-abgleich">Abgleichen</button>';
     el.querySelector('#ez-abgleich').addEventListener('click', () => { listeHolen(true); meldung('Wird abgeglichen …', 2500); });
-    const gewollt = d.filter(x => x.wahl !== 'online'), offline = gewollt.filter(x => x.offline).length;
+    if (!online) kopfText('aus', 'Offline · gespeicherte Daten');
+    else if (lauf) kopfText('warte', 'Online · Unterlagen werden geladen');
+    else if (a.art === 'web') kopfText(off === gewollt.length ? '' : 'warte', off === gewollt.length ? 'Online · Unterlagen offline bereit' : `Online · ${off} von ${gewollt.length} Unterlagen offline`);
+    else kopfText('', 'Online · Dropbox-Ordner verbunden');
     GSZ.kachelInfo('einsatz', `Stoffsuche · ${d.length} Datei${d.length === 1 ? '' : 'en'} in den Ordnern` +
-      (a.art === 'web' ? ` · <span class="${offline === gewollt.length ? 'gut' : 'warn'}">${offline} offline</span>` : ''));
+      (a.art === 'web' ? ` · <span class="${off === gewollt.length ? 'gut' : 'warn'}">${off} offline</span>` : ''));
   }
+  addEventListener('online', () => { if (GSZ.aktuell.ansicht === 'einsatz') statusZeigen(); });
+  addEventListener('offline', () => { if (GSZ.aktuell.ansicht === 'einsatz') statusZeigen(); });
   GSZ.ansicht('einsatz', {
     element: eEl, titel: () => 'Einsatz',
     anzeigen() { if (!eEl.firstChild) einsatzAufbauen(); letzteZeigen(); eigeneZeigen(); ordnerZeigen(); statusZeigen(); listeHolen(false); },
@@ -731,10 +898,11 @@
     if (!a) return '';
     const pfeil = { schwer: I.runter, leicht: I.hoch, gleich: I.quer, unbekannt: I.frage }[a.art];
     const quelle = stoff.quelle === 'gestis' ? 'GESTIS' : 'Datenblatt';
-    return `<section class="ez-ausbr ${a.art}" aria-label="Ausbreitung"><span class="pfeil">${pfeil}</span><b>${esc(a.titel)}</b><div class="was">${a.was}</div>
+    return `<div class="ez-ausbr ${a.art}" role="group" aria-label="Ausbreitung von Gas bzw. Dämpfen"><span class="pfeil">${pfeil}</span>
+      <span class="ueber">Ausbreitung · ${a.gas ? 'Gas' : 'Dämpfe'}</span><b>${esc(a.titel)}</b><div class="was">${a.was}</div>
       ${a.lvzText ? `<div class="lvz">${esc(a.lvzText)}</div>` : ''}
       ${a.punkte.length ? `<ul>${a.punkte.map(p => typeof p === 'string' ? `<li>${p}</li>` : p.zitat ? `<li>„${esc(p.text)}“ <i>(${quelle})</i></li>`
-        : `<li class="warn">${esc(p.text)}</li>`).join('')}</ul>` : ''}</section>`;
+        : `<li class="warn">${esc(p.text)}</li>`).join('')}</ul>` : ''}</div>`;
   }
   function kennwerteHtml(stoff) {
     const k = stoff.kennwerte;
@@ -761,6 +929,7 @@
     };
     const grenzen = [da(k.ueg) && 'UEG ' + S.wertSchoen(k.ueg), da(k.oeg) && 'OEG ' + S.wertSchoen(k.oeg)].filter(Boolean);
     const teile = [
+      ausbreitungHtml(stoff),
       da(stoff.aggregatzustand) ? `<div><span>Aggregatzustand</span><b>${esc(stoff.aggregatzustand)}</b>${stoff.eigenschaften ? `<small>${esc(stoff.eigenschaften)}</small>` : ''}</div>` : '',
       kachel('Molare Masse', stoff.molmasse, stoff.formel ? 'Formel ' + esc(stoff.formel) : ''),
       kachel('Siedepunkt', k.siedepunkt),
@@ -773,9 +942,40 @@
       kachel('Wasserlöslichkeit', k.loeslichkeit),
       kachel('pH-Wert', k.ph),
       agw(),
+      aeglHtml(stoff),
       wgk(),
     ].filter(Boolean);
     return teile.length ? `<div class="ez-kw">${teile.join('')}</div>` : '<div class="ez-leer">Keine Kennwerte vorhanden.</div>';
+  }
+  // AEGL (US EPA): Tabelle AEGL-1/2/3 × 10 min … 8 h; bei Gemischen für die Bestandteile (höchstens 3)
+  const AEGL_TEXT = { 1: 'spürbares Unwohlsein, Reizung – vorübergehend', 2: 'schwere oder bleibende Gesundheitsschäden, Flucht erschwert', 3: 'Lebensgefahr' };
+  function aeglHtml(stoff) {
+    const A = window.GSZAegl;
+    if (!A) return '';
+    const liste = [];
+    const eigene = A.fuer(stoff.cas || []);
+    if (eigene) liste.push({ a: eigene, titel: '' });
+    else for (const b of (stoff.bestandteile || [])) {
+      const a = b.cas && A.fuer(b.cas);
+      if (a && !liste.some(x => x.a.cas === a.cas)) liste.push({ a, titel: b.name + (b.anteil ? ` (${b.anteil})` : '') });
+      if (liste.length >= 3) break;
+    }
+    if (!liste.length) return '';
+    const etwDatei = dateien.find(d => !d.ordner && /einsatztoleranz|\betw\b/i.test(d.name));
+    const zelle = (w, etw) => {
+      const t = w === 'NR' ? '–' : w === 'ND' ? 'n. b.' : w;
+      return `<td${etw ? ' class="etw"' : ''}${w === 'NR' ? ' title="nicht empfohlen (zu wenige Daten)"' : w === 'ND' ? ' title="nicht bestimmt"' : ''}>${esc(t)}</td>`;
+    };
+    const sterne = liste.some(x => x.a.werte.flat().some(w => /\*/.test(w)));
+    return liste.map(({ a, titel }) => `<div class="voll ez-aegl"><div class="kopfzeile"><span>AEGL-Werte (US EPA)</span>
+        <small>in ${esc(a.einheit === 'ppm' ? 'ppm (= ml/m³)' : a.einheit)} · ${esc(a.status)}${titel ? ' · ' + esc(titel) : ''}</small></div>
+      <table><thead><tr><th></th>${A.ZEITEN.map(z => `<th>${esc(z)}</th>`).join('')}</tr></thead>
+      <tbody>${a.werte.map((r, i) => `<tr class="a${i + 1}"><td><b>AEGL-${i + 1}</b></td>${r.map((w, j) => zelle(w, i === 1 && (j === 2 || j === 3))).join('')}</tr>`).join('')}</tbody></table>
+      <div class="legende">${[1, 2, 3].map(n => `<span style="--c:${n === 1 ? '#b88a00' : n === 2 ? 'var(--ser)' : 'var(--crit)'}"><i>AEGL-${n}</i> ${AEGL_TEXT[n]}</span>`).join('')}
+        <span>Hervorgehoben: AEGL-2 für 1 h und 4 h – der Einsatztoleranzwert (ETW, vfdb 10/01) entspricht meist diesen Werten.${etwDatei ? ` <a href="#datei/${kodiere(etwDatei.pfad)}">ETW-Liste öffnen</a>` : ''}</span>
+        ${a.geruch ? `<span>Deutlich zu riechen ab ${esc(a.geruch)}.</span>` : ''}
+        ${sterne ? `<span>* ≥ 10 %, ** ≥ 50 %, *** ≥ 100 % der unteren Explosionsgrenze${a.ueg ? ` (UEG laut EPA ${esc(a.ueg)})` : ''} – Explosionsgefahr beachten.</span>` : ''}
+        <span>– = nicht empfohlen (zu wenige Daten) · Werte für die Bevölkerung, Stand ${esc(A.stand)}</span></div></div>`).join('');
   }
   // gewählter Transport-Eintrag (ein Stoff kann mehrere UN-Nummern haben)
   function transportListe(stoff) {
@@ -834,7 +1034,6 @@
     return `
       ${stoff.offline ? `<div class="ez-warn">Offline – gespeicherter Stand vom ${esc(datumZeit(stoff.abgerufen))}.</div>` : ''}
       ${stoff.anmerkung ? `<div class="ez-warn blau">${esc(stoff.anmerkung)}</div>` : ''}
-      ${ausbreitungHtml(stoff)}
       <section class="kachel ez-karte"><div class="ez-klein" style="margin-bottom:.45rem">${esc(kurz)}${stoff.synonyme.length ? ' · auch: ' + esc(stoff.synonyme.slice(0, 4).join(', ')) : ''}</div>
         <h2>Kennzeichnung · Gefahrenklasse · GHS</h2>${kennzeichnungHtml(stoff)}</section>
       <section class="kachel ez-karte"><h2>Kennwerte</h2>${kennwerteHtml(stoff)}</section>

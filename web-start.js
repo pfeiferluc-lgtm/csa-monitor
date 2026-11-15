@@ -624,10 +624,12 @@
   }
   async function herunterladenEinsatz(e) {
     const r = await dropbox('https://content.dropboxapi.com/2/files/download', { headers: { 'Dropbox-API-Arg': kopfJson({ path: e.lower }) } });
-    const blob = new Blob([await r.arrayBuffer()], { type: mimeVon(e.name) });
+    const daten = await r.arrayBuffer();
+    const blob = new Blob([daten], { type: mimeVon(e.name) });
     if (wahl[e.lower] === 'online') return blob;                 // nur online: nicht auf dem Gerät speichern
     try {
-      await SPx.setze('dateien', e.lower, { rev: e.rev, blob });
+      // als Bytes (ArrayBuffer), nicht als Blob: Safari speichert Blobs in manchen Modi (privat, flüchtig) nicht
+      await SPx.setze('dateien', e.lower, { rev: e.rev, daten, typ: blob.type });
       offlineRevs[e.lower] = e.rev;
       await SPx.setze('meta', 'einsatz-offline', offlineRevs);
     } catch (f) { const x = new Error('Gerätespeicher voll – Datei nur online verfügbar.'); x.voll = true; x.blob = blob; throw x; }
@@ -664,10 +666,11 @@
     const e = [...eintraege.values()].find(x => x.pfad === pfad) || [...eintraege.values()].find(x => x.pfad.toLowerCase() === String(pfad).toLowerCase());
     if (!e) throw new Error('Datei nicht gefunden.');
     const gespeichert = await SPx.hole('dateien', e.lower).catch(() => null);
-    if (gespeichert && (gespeichert.rev === e.rev || navigator.onLine === false || !verbundenDbx())) return gespeichert.blob;
+    const alsBlob = g => g && (g.blob || (g.daten ? new Blob([g.daten], { type: g.typ || mimeVon(e.name) }) : null));   // bis 2.0.2 als Blob gespeichert
+    if (gespeichert && (gespeichert.rev === e.rev || navigator.onLine === false || !verbundenDbx())) return alsBlob(gespeichert);
     if (wahl[e.lower] === 'online' && navigator.onLine === false) throw new Error('nur online verfügbar – gerade keine Verbindung');
     try { return await herunterladenEinsatz(e); }
-    catch (f) { if (f.blob) return f.blob; if (gespeichert) return gespeichert.blob; throw f; }
+    catch (f) { if (f.blob) return f.blob; if (gespeichert) return alsBlob(gespeichert); throw f; }
   }
   async function hochladen(pfadM, inhalt) {
     const r = await dropbox('https://content.dropboxapi.com/2/files/upload', { headers: { 'Content-Type': 'application/octet-stream',
