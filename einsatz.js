@@ -289,6 +289,28 @@
   :root.hell .ez-tabelle td.bedingt { color: #8a6100; }
   .ez-tabelle td.w.rel { outline: 2px solid var(--akzent); outline-offset: -2px; }
   .ez-legende { display: flex; gap: .4rem .8rem; flex-wrap: wrap; font-size: .78rem; color: var(--ink2); margin: .4rem 0 .6rem; }
+  /* Auswertung durch den Mac-Helfer: Fortschritt */
+  .ez-fortschritt { display: flex; flex-direction: column; gap: .35rem; }
+  .ez-fortschritt .titel { display: flex; align-items: center; gap: .5rem; font-weight: 700; flex-wrap: wrap; }
+  .ez-fortschritt .titel svg { width: 1.25rem; height: 1.25rem; flex: none; color: var(--akzent); }
+  .ez-fortschritt .titel svg.dreht { animation: ez-drehen 1.8s linear infinite; }
+  @keyframes ez-drehen { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .ez-fortschritt .titel svg.dreht { animation: none; } }
+  .ez-fortschritt .balken { height: .75rem; border-radius: .5rem; background: var(--surface2); border: 1px solid var(--line); overflow: hidden; position: relative; }
+  .ez-fortschritt .balken i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, var(--akzent), color-mix(in srgb, var(--akzent) 65%, #fff)); transition: width .8s ease; }
+  .ez-fortschritt .balken.unbestimmt i { width: 32%; animation: ez-laufen 1.5s ease-in-out infinite; }
+  @keyframes ez-laufen { 0% { left: -32%; } 100% { left: 100%; } }
+  @media (prefers-reduced-motion: reduce) { .ez-fortschritt .balken.unbestimmt i { animation: none; left: 0; width: 100%; opacity: .45; } }
+  .ez-fortschritt .zeile { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .2rem .8rem; font-size: .8rem; color: var(--ink2); }
+  .ez-fortschritt .gross { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--akzent); }
+  .ez-raster .auswertung { font-size: .7rem; font-weight: 700; color: var(--akzent); }
+  /* Spaltenwahl: welcher Werkstoff bzw. welche Ausführung gilt für unser Gerät */
+  .ez-spalten { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .65rem; }
+  .ez-spalte { font: inherit; display: flex; flex-direction: column; align-items: flex-start; gap: .05rem; padding: .45rem .75rem; min-height: 2.75rem; box-sizing: border-box;
+    border-radius: .75rem; border: 2px solid var(--rand); background: var(--surface2); color: var(--ink); cursor: pointer; text-align: left; max-width: 100%; }
+  .ez-spalte b { font-size: .92rem; overflow-wrap: anywhere; } .ez-spalte small { font-size: .7rem; color: var(--muted); overflow-wrap: anywhere; }
+  .ez-spalte.an { border-color: var(--akzent); background: color-mix(in srgb, var(--akzent) 16%, var(--surface2)); }
+  .ez-spalte.an b::before { content: "✓ "; color: var(--akzent); }
   /* Gerät anlegen */
   .ez-formular { display: flex; flex-direction: column; gap: .8rem; }
   .ez-formular label.feld { display: flex; flex-direction: column; gap: .3rem; font-size: .8rem; color: var(--ink2); font-weight: 600; }
@@ -509,13 +531,23 @@
       }
       if (g.daten && g.daten.geraet && g.daten.geraet.name && !g.name) g.name = g.daten.geraet.name;
       if (g.info) {
-        try { const inf = B.infoLesen(await (await ad().datei(g.info)).text()); g.kategorieInfo = inf.kategorie; g.infoText = inf.text; }
+        try { const inf = B.infoLesen(await (await ad().datei(g.info)).text()); g.kategorieInfo = inf.kategorie; g.infoText = inf.text; g.spaltenWahl = inf.spalten; }
         catch { /* ohne Angaben */ }
       }
+      spaltenAnwenden(g);
       liste.push(g);
     }
     geraeteCache = liste;
     return liste;
+  }
+  // „Spalten:“ aus info.txt (unsere Werkstoffe bzw. Ausführung) geht vor dem Vorschlag der Auswertung
+  function spaltenAnwenden(g) {
+    const L = g.daten && g.daten.liste;
+    if (!L) return;
+    if (!g.relevantClaude) g.relevantClaude = [...(L.relevant || [])];
+    const wahl = (g.spaltenWahl || []).filter(id => L.spalten.some(s => s.id === id));
+    L.relevant = wahl.length ? wahl : [...g.relevantClaude];
+    g.relevantVon = wahl.length ? 'wahl' : L.relevant.length ? 'auswertung' : '';
   }
   const kategorie = g => g.kategorieInfo || (g.daten && g.daten.geraet && g.daten.geraet.kategorie) || 'Sonstiges';
   const stufeBadge = (stufe, text) => `<span class="ez-stufe ${esc(stufe)}">${esc(text || B.STUFE_TEXT[stufe] || stufe)}</span>`;
@@ -1350,15 +1382,37 @@
       const sicht = G_.filter(g => f === 'Alle' || kategorie(g) === f).sort((a, b) => (Number(a.nr) || 999) - (Number(b.nr) || 999) || a.name.localeCompare(b.name, 'de'));
       k.innerHTML = neuKnopf + `<div class="ez-filter">${kats.map(c => `<button class="${c === f ? 'an' : ''}" data-k="${esc(c)}">${esc(c)}</button>`).join('')}</div>
         <div class="ez-raster">${sicht.map(g => `<a href="#geraet/${kodiere(g.ordner)}"><div class="foto">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="">` : 'kein Bild'}</div>
-          <div class="unter"><b>${esc((g.nr ? g.nr + ' · ' : '') + g.name)}</b><small>${esc(kategorie(g))} · ${g.daten ? `${g.daten.eintraege.length} Einträge` : g.quellen.length ? 'noch nicht ausgewertet' : 'keine Liste'}</small>
+          <div class="unter"><b>${esc((g.nr ? g.nr + ' · ' : '') + g.name)}</b><small>${esc(kategorie(g))} · ${g.daten ? `${g.daten.eintraege.length} Einträge` : g.quellen.length ? `<span data-auswertung="${esc(nfc(g.ordner))}">noch nicht ausgewertet</span>` : 'keine Liste'}</small>
           <span>${pruefBadge(g)}</span></div></a>`).join('')}</div>`;
       for (const b of k.querySelectorAll('.ez-filter button')) b.addEventListener('click', () => { f = b.dataset.k; zeigen(); });
       fotoEinsetzen(k);
     };
     zeigen();
+    if (G_.some(g => !g.daten && g.quellen.length)) rasterBeobachten(k);
+  }
+  // Beständigkeitslisten-Übersicht: „wird ausgewertet · 40 %“ auf den Kacheln noch nicht ausgewerteter Geräte
+  let rasterTimer = null;
+  function rasterBeobachten(k) {
+    clearInterval(rasterTimer);
+    const runde = async () => {
+      if (!k.isConnected || GSZ.aktuell.ansicht !== 'ordner') { clearInterval(rasterTimer); return; }
+      if (document.hidden) return;
+      let h = null;
+      try { h = ad() && ad().helfer ? await ad().helfer() : null; } catch { h = null; }
+      const w = h && h.arbeit && h.arbeit.art === 'bestaendigkeit' ? h.arbeit : null;
+      const lebt = !!(h && h.zeit && Date.now() - Date.parse(h.zeit) < 3 * 60 * 1000);
+      for (const el of k.querySelectorAll('[data-auswertung]')) {
+        const dran = w && nfc(w.ordner) === el.dataset.auswertung;
+        const pz = dran && w.teile ? Math.round(((Number(w.fertig) || 0) / w.teile) * 100) : 0;
+        el.className = dran ? 'auswertung' : '';
+        el.textContent = dran ? (w.teile ? `wird ausgewertet · Teil ${w.teil || 1}/${w.teile} (${pz} %)` : 'wird vorbereitet …') : lebt ? 'wartet auf Auswertung' : 'noch nicht ausgewertet (Mac-Helfer aus)';
+      }
+    };
+    rasterTimer = setInterval(runde, 6000);
+    runde();
   }
   GSZ.ansicht('ordner', {
-    element: oEl, titel: p => dekodiere(p).split('/').pop(),
+    element: oEl, titel: p => dekodiere(p).split('/').pop(), verlassen() { clearInterval(rasterTimer); },
     async anzeigen(param) { const pfad = dekodiere(param); if (!dateien.length && ad() && ad().verbunden()) await listeHolen(false); ordnerSeite(pfad); },
   });
 
@@ -1383,7 +1437,7 @@
         ${d && d.auswertung ? `<div class="ez-klein">${d.auswertung.geprueft ? 'Geprüft' + (d.auswertung.pruefung && d.auswertung.pruefung.am ? ' am ' + esc(datumZeit(d.auswertung.pruefung.am)) : '') :
           'Automatisch ausgelesen am ' + esc(datumZeit(d.auswertung.am)) + ' – noch nicht mit dem Original abgeglichen.'}${d.auswertung.anmerkung ? ' ' + esc(d.auswertung.anmerkung) : ''}</div>` : ''}
         ${g.fehler ? `<div class="ez-warn rot">${esc(g.fehler)}</div>` : ''}
-        ${!d && g.quellen.length ? '<div class="ez-warn">Die Liste ist noch nicht ausgewertet – der Mac-Helfer erstellt die geordnete Fassung, sobald er läuft. Bis dahin gilt das Original.</div>' : ''}
+        ${!d && g.quellen.length ? '<div class="ez-warn" id="ez-auswertung"><div class="ez-fortschritt"><div class="titel">Auswertung durch den Mac-Helfer</div><div class="ez-klein">wird abgefragt …</div></div></div>' : ''}
         ${!g.quellen.length ? '<div class="ez-warn">Noch keine Beständigkeitsliste hinterlegt.</div>' : ''}
         ${ad() && ad().geraetDateien ? `<div><a class="knopf" href="#geraet-neu/${kodiere(g.ordner)}">${I.bild}Bearbeiten: Foto, Liste, Gruppe</a></div>` : ''}
       </div></div>
@@ -1392,8 +1446,10 @@
         <small>${esc(groesse(info && info.groesse))}</small></span></a>${info && ad().art === 'web' && ad().verfuegbarkeitSetzen ? verfWahl(info) : ''}</li>`; }).join('')}</ul>` : ''}`;
     gEl.appendChild(kopfK);
     verfBedienung(kopfK);
+    if (!d && g.quellen.length) auswertungBeobachten(g);
     fotoEinsetzen(kopfK);
     if (!L) return;
+    if (L.spalten.length > 1) gEl.appendChild(spaltenwahlKarte(g));
     const t = document.createElement('section');
     t.className = 'kachel ez-karte';
     const sp = L.spalten;
@@ -1421,7 +1477,106 @@
     feld.addEventListener('input', () => { grenze = 150; zeilen(); });
     zeilen();
   }
-  GSZ.ansicht('geraet', { element: gEl, titel: p => dekodiere(p), anzeigen(param) { geraetSeite(dekodiere(param)); } });
+  // Karte „Für unser Gerät gilt“: Spalten der Liste antippen (Werkstoff bzw. Ausführung) → info.txt „Spalten: …“
+  function spaltenwahlKarte(g) {
+    const L = g.daten.liste, k = document.createElement('section');
+    k.className = 'kachel ez-karte'; k.id = 'ez-spaltenwahl';
+    let auswahl = new Set(g.relevantVon === 'wahl' ? L.relevant : []);
+    const kannSpeichern = !!(ad() && ad().geraetDateien);
+    const hinweis = () => g.relevantVon === 'wahl' ? 'Festgelegt von euch.' : g.relevantVon === 'auswertung' ? `Vorschlag der Auswertung: ${L.relevant.join(', ')} – antippen und speichern, um es festzulegen.`
+      : 'Noch nichts festgelegt – bewertet wird bis dahin die ungünstigste aller Spalten.';
+    const zeichnen = () => {
+      const anzeigen = auswahl.size ? auswahl : new Set(L.relevant);
+      k.innerHTML = `<h2>Für unser Gerät gilt</h2>
+        <div class="ez-hinweis">Die Liste bewertet mehrere Werkstoffe bzw. Ausführungen. Wähle, was unser Gerät betrifft – im Einsatz (Beständigkeiten, PSA) zählt dann nur das.</div>
+        <div class="ez-spalten">${L.spalten.map(s => `<button type="button" class="ez-spalte${anzeigen.has(s.id) ? ' an' : ''}" data-id="${esc(s.id)}" aria-pressed="${anzeigen.has(s.id)}"${kannSpeichern ? '' : ' disabled'}>
+          <b>${esc(s.id)}</b>${s.name && s.name !== s.id ? `<small>${esc(s.name)}</small>` : ''}</button>`).join('')}</div>
+        <div class="ez-aktionen">${kannSpeichern ? `<button class="knopf los" id="ez-spalten-speichern" style="background:var(--akzent);border-color:var(--akzent);color:#fff;font-weight:700" disabled>Speichern</button>
+          ${g.relevantVon === 'wahl' ? '<button class="knopf" id="ez-spalten-weg">Festlegung aufheben</button>' : ''}` : ''}</div>
+        <div class="ez-klein" style="margin-top:.4rem" id="ez-spalten-hinweis">${esc(hinweis())}</div>`;
+      for (const b of k.querySelectorAll('.ez-spalte')) b.addEventListener('click', () => {
+        if (!auswahl.size) auswahl = new Set(L.relevant);           // vom Vorschlag aus weiter anpassen
+        auswahl.has(b.dataset.id) ? auswahl.delete(b.dataset.id) : auswahl.add(b.dataset.id);
+        const sp = k.querySelector('#ez-spalten-speichern');
+        b.classList.toggle('an', auswahl.has(b.dataset.id)); b.setAttribute('aria-pressed', String(auswahl.has(b.dataset.id)));
+        if (sp) sp.disabled = false;
+        k.querySelector('#ez-spalten-hinweis').textContent = auswahl.size ? `Gewählt: ${[...auswahl].join(', ')} – noch nicht gespeichert.` : 'Nichts gewählt – speichern hebt die Festlegung auf.';
+      });
+      const sp = k.querySelector('#ez-spalten-speichern'), weg = k.querySelector('#ez-spalten-weg');
+      if (sp) sp.addEventListener('click', () => speichern([...auswahl].filter(id => L.spalten.some(s => s.id === id))));
+      if (weg) weg.addEventListener('click', () => speichern([]));
+    };
+    async function speichern(wahl) {
+      const infoName = g.info ? g.info.split('/').pop() : 'info.txt';
+      const inhalt = B.infoText({ kategorie: g.kategorieInfo || '', spalten: L.spalten.filter(s => wahl.includes(s.id)).map(s => s.id), text: g.infoText || '' });
+      try { await ad().geraetDateien(g.ordner, [{ name: infoName, blob: new Blob([inhalt], { type: 'text/plain' }) }]); }
+      catch (e) { meldung('Speichern nicht möglich: ' + e.message, 7000); return; }
+      g.spaltenWahl = wahl; spaltenAnwenden(g);
+      auswahl = new Set(g.relevantVon === 'wahl' ? L.relevant : []);
+      meldung(wahl.length ? `Gespeichert: für unser Gerät gilt ${wahl.join(', ')}.` : 'Festlegung aufgehoben.', 4500);
+      geraetSeite(g.ordner);                                         // Tabelle (umrandete Spalten) neu zeichnen
+      listeHolen(true);
+    }
+    zeichnen();
+    return k;
+  }
+
+  // Fortschritt der Auswertung (Lebenszeichen des Mac-Helfers in Auswertung/mac-helfer.json, Fehlervermerk im Geräteordner)
+  let auswertungTimer = null, auswertungLief = false;
+  function auswertungStoppen() { clearInterval(auswertungTimer); auswertungTimer = null; }
+  const nfc = t => String(t || '').normalize('NFC');
+  const uhr = d => { d = new Date(d); return isNaN(d) ? '' : `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+  function fortschrittHtml(w) {
+    const dreht = I.neu.replace('<svg ', '<svg class="dreht" ');
+    if (!w || w.phase === 'vorbereiten' || !w.teile) return `<div class="ez-fortschritt"><div class="titel">${dreht}Liste wird vorbereitet …</div>
+      <div class="balken unbestimmt"><i></i></div><div class="zeile"><span>Herunterladen und in Teile aufteilen</span><span>seit ${esc(uhr(w && w.seit))}</span></div></div>`;
+    const lauf = w.teil_seit ? Date.now() - Date.parse(w.teil_seit) : 0;
+    const schnitt = Number(w.schnitt_ms) || 0;
+    const imTeil = schnitt ? Math.min(.9, lauf / schnitt) : Math.min(.5, lauf / 240000);
+    const anteil = Math.max(0, Math.min(.99, ((Number(w.fertig) || 0) + (w.fertig >= w.teil ? 0 : imTeil)) / w.teile));
+    const rest = schnitt ? Math.max(1, Math.round(((w.teile - (Number(w.fertig) || 0)) * schnitt - (w.fertig >= w.teil ? 0 : lauf)) / 60000)) : 0;
+    return `<div class="ez-fortschritt"><div class="titel">${dreht}Wird ausgewertet <span class="gross">${Math.round(anteil * 100)} %</span></div>
+      <div class="balken" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(anteil * 100)}"><i style="width:${(anteil * 100).toFixed(1)}%"></i></div>
+      <div class="zeile"><span>Teil ${esc(w.teil || 1)} von ${esc(w.teile)}${w.fertig ? ` · ${esc(w.fertig)} fertig` : ''}</span><span>${rest ? `noch etwa ${rest} min · ` : ''}seit ${esc(uhr(w.seit))}</span></div></div>`;
+  }
+  async function auswertungZeigen(g) {
+    const box = gEl.querySelector('#ez-auswertung');
+    if (!box || GSZ.aktuell.ansicht !== 'geraet') { auswertungStoppen(); return; }
+    const a = ad();
+    let h = null;
+    try { h = a && a.helfer ? await a.helfer() : null; } catch { h = null; }
+    const lebt = !!(h && h.zeit && Date.now() - Date.parse(h.zeit) < 3 * 60 * 1000);
+    const w = h && h.arbeit && h.arbeit.art === 'bestaendigkeit' && nfc(h.arbeit.ordner) === nfc(g.ordner) ? h.arbeit : null;
+    let f = null;
+    const fp = `${BL}/${g.ordner}/bestaendigkeit.fehler.json`;
+    if (dateiInfo(fp)) { try { f = JSON.parse(await (await a.datei(fp)).text()); } catch { f = null; } }
+    if (!box.isConnected) return;
+    let html;
+    if (w) html = fortschrittHtml(w);
+    else if (auswertungLief) html = `<div class="ez-fortschritt"><div class="titel">${I.neu}Fertig – die geordnete Liste wird geladen …</div><div class="balken"><i style="width:100%"></i></div></div>`;
+    else if (!lebt) html = `<b>Der Mac-Helfer meldet sich nicht</b> (Mac aus, im Ruhezustand oder ohne Netz${h && h.zeit ? `, zuletzt ${esc(datumZeit(h.zeit))}` : ''}). Die Auswertung startet, sobald er läuft. Bis dahin gilt das Original.`;
+    else if (h.claude && h.claude.angemeldet === false) html = `<b>Claude ist auf dem Mac nicht angemeldet</b> – im Terminal „claude“ starten und anmelden. ${esc(h.claude.grund || '')}`;
+    else if (h.pause_bis && Date.parse(h.pause_bis) > Date.now()) html = `<b>Pause bis ${esc(uhr(h.pause_bis))}</b> – das Kontingent des Claude-Abos ist gerade erschöpft. Danach geht es automatisch weiter.`;
+    else if (f && f.anzahl) html = `<b>${f.naechster ? 'Letzter Versuch fehlgeschlagen' : 'Auswertung aufgegeben'}</b> (${esc(f.anzahl)}. Versuch): ${esc(f.fehler || '')}` +
+      (f.naechster ? ` – nächster Versuch ab ${esc(uhr(f.naechster))}.` : ' – die Liste oder info.txt ändern, dann versucht es der Mac-Helfer erneut.');
+    else if (h.arbeit) html = `<div class="ez-fortschritt"><div class="titel">In der Warteschlange</div><div class="balken"><i style="width:0"></i></div>
+      <div class="zeile"><span>Der Mac-Helfer wertet gerade ${h.arbeit.art === 'sdb' ? 'ein Sicherheitsdatenblatt' : `„${esc(h.arbeit.ordner || '')}“`} aus – diese Liste ist danach dran.</span></div></div>`;
+    else html = `<div class="ez-fortschritt"><div class="titel">In der Warteschlange</div><div class="balken unbestimmt"><i></i></div>
+      <div class="zeile"><span>Der Mac-Helfer beginnt in Kürze (er wartet, bis die Dateien vollständig in der Dropbox sind).</span></div></div>`;
+    box.innerHTML = html;
+    box.className = 'ez-warn ' + (w || auswertungLief ? 'blau' : !lebt || (f && f.anzahl) ? (f && f.anzahl ? 'rot' : '') : 'blau');
+    if (w) auswertungLief = true;
+    else if (auswertungLief) { auswertungLief = false; await listeHolen(true); }
+    if (dateiInfo(`${BL}/${g.ordner}/${B.DATEI}`)) { auswertungStoppen(); geraeteCache = null; if (GSZ.aktuell.ansicht === 'geraet') geraetSeite(g.ordner); }
+  }
+  function auswertungBeobachten(g) {
+    auswertungStoppen(); auswertungLief = false;
+    let n = 0;
+    const runde = () => { if (document.hidden) return; if (++n % 5 === 0) listeHolen(true); auswertungZeigen(g); };
+    auswertungTimer = setInterval(runde, 4000);
+    auswertungZeigen(g);
+  }
+  GSZ.ansicht('geraet', { element: gEl, titel: p => dekodiere(p), anzeigen(param) { geraetSeite(dekodiere(param)); }, verlassen() { auswertungStoppen(); } });
 
   // ---------------------------------------------------------------- Gerät oder PSA anlegen bzw. bearbeiten (#geraet-neu[/<ordner>])
   // Legt Einsatz/Beständigkeitslisten/<Nr> <Bezeichnung>/ an: Foto.jpg, Original-Liste(n), info.txt („Kategorie: …“ + Angaben).
@@ -1472,8 +1627,8 @@
         <div class="ez-wahl"><label class="knopf ez-import">${I.blatt}<span>${g && g.quellen.length ? 'Weitere Liste hinzufügen' : 'Liste wählen (PDF oder Fotos)'}</span>
           <input type="file" id="gn-liste" accept="application/pdf,.pdf,image/*" multiple></label>
           <div class="namen" id="gn-liste-namen">${g && g.quellen.length ? 'vorhanden: ' + esc(g.quellen.map(q => q.split('/').pop()).join(', ')) : ''}</div></div></div>
-      <label class="feld">Werkstoffe und Hinweise (freiwillig)<textarea id="gn-info" placeholder="z. B. Werkstoff Schlauch: CSM (Hypalon)">${esc(g ? g.infoText || '' : '')}</textarea>
-        <span class="ez-klein" style="font-weight:400">Hilft der Auswertung, die passende Spalte der Liste zu wählen.</span></label>
+      <label class="feld">Werkstoff bzw. Ausführung unseres Geräts, Hinweise (freiwillig)<textarea id="gn-info" placeholder="z. B. „Anzug: SYKAN 2“ oder „Dichtung FKM, Gehäuse Edelstahl 1.4571“">${esc(g ? g.infoText || '' : '')}</textarea>
+        <span class="ez-klein" style="font-weight:400">Enthält die Liste mehrere Werkstoffe oder Ausführungen, wählt die Auswertung damit die passende Spalte. Nach der Auswertung lässt sich die Spalte auf der Geräteseite auch direkt antippen („Für unser Gerät gilt“).</span></label>
       <button class="knopf los" type="submit" id="gn-los">${g ? 'Speichern' : 'Gerät anlegen'}</button>
       <div class="ez-klein" id="gn-status"></div></form>`;
     fotoEinsetzen(k);
@@ -1512,7 +1667,8 @@
         hoch.push({ name: frei(/^(foto|bild|ger(ä|ae)t|photo|image)/i.test(n) ? 'Liste ' + n : n), blob: l });
       }
       const kat = k.querySelector('#gn-kat').value, info = k.querySelector('#gn-info').value.trim();
-      if (!g || kat !== katJetzt || info !== (g.infoText || '')) hoch.push({ name: g && g.info ? g.info.split('/').pop() : 'info.txt', blob: new Blob([`Kategorie: ${kat}\n${info ? info + '\n' : ''}`], { type: 'text/plain' }) });
+      if (!g || kat !== katJetzt || info !== (g.infoText || '')) hoch.push({ name: g && g.info ? g.info.split('/').pop() : 'info.txt',
+        blob: new Blob([B.infoText({ kategorie: kat, spalten: g ? g.spaltenWahl || [] : [], text: info })], { type: 'text/plain' }) });
       if (g && !hoch.length) { meldung('Nichts geändert.'); return; }
       los.disabled = true; status.textContent = 'Wird gespeichert …';
       try {

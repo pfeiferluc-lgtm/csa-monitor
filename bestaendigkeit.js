@@ -37,8 +37,11 @@
     return { foto, quellen, info };
   }
   // info.txt: „Kategorie: Pumpen“ (oder „Gruppe:“) legt die Gruppe in der App fest (z. B. Schutzkleidung → erscheint unter PSA);
-  // der Rest sind Angaben zum Gerät (Werkstoffe, Hinweise) für die Auswertung
+  // „Spalten: FKM; PTFE“ legt fest, welche Spalten (Werkstoffe bzw. Ausführungen) der Liste für unser Gerät gelten.
+  // Der Rest sind Angaben zum Gerät (Werkstoffe, Hinweise) für die Auswertung.
   const KAT_ZEILE = /^[ \t]*(?:kategorie|gruppe)[ \t]*:[ \t]*(.*?)[ \t]*$/im;
+  const SPALTEN_ZEILE = /^[ \t]*spalten[ \t]*:[ \t]*(.*?)[ \t]*$/im;
+  const APP_ZEILE = /^[ \t]*(?:kategorie|gruppe|spalten)[ \t]*:.*$/im;
   function kategorieAus(wort) {
     const w = String(wort || '').trim().toLowerCase();
     if (!w) return '';
@@ -47,11 +50,16 @@
   }
   function infoLesen(t) {
     const roh = String(t || '').replace(/\r/g, '');
-    const m = KAT_ZEILE.exec(roh);
-    return { kategorie: m ? kategorieAus(m[1]) : '', text: roh.replace(new RegExp(KAT_ZEILE.source + '\\n?', 'gim'), '').trim() };
+    const m = KAT_ZEILE.exec(roh), sp = SPALTEN_ZEILE.exec(roh);
+    const spalten = sp ? sp[1].split(sp[1].includes(';') ? ';' : ',').map(x => x.trim()).filter(Boolean) : [];
+    return { kategorie: m ? kategorieAus(m[1]) : '', spalten, text: roh.replace(new RegExp(APP_ZEILE.source + '\\n?', 'gim'), '').trim() };
   }
-  // für die Prüfsumme des Mac-Helfers: eine geänderte Kategorie ist kein Grund, die Liste neu auszuwerten
-  function infoOhneKategorie(t) { return String(t || '').replace(new RegExp(KAT_ZEILE.source + '\\r?\\n?', 'gim'), ''); }
+  // info.txt aus den Angaben der App zusammensetzen
+  function infoText({ kategorie = '', spalten = [], text = '' } = {}) {
+    return (kategorie ? `Kategorie: ${kategorie}\n` : '') + (spalten.length ? `Spalten: ${spalten.join('; ')}\n` : '') + (String(text).trim() ? String(text).trim() + '\n' : '');
+  }
+  // für die Prüfsumme des Mac-Helfers: geänderte Kategorie bzw. Spaltenwahl ist kein Grund, die Liste neu auszuwerten
+  function infoOhneKategorie(t) { return String(t || '').replace(new RegExp(APP_ZEILE.source + '\\r?\\n?', 'gim'), ''); }
   // Ordnername „27 ELRO Schlauchpumpe“ bzw. „Nr.27 ELRO …“ → { nr: '27', name: 'ELRO Schlauchpumpe' }
   function ordnerName(ordner) {
     const m = /^\s*(?:nr\.?\s*)?(\d{1,3})[\s._-]+(.+)$/i.exec(String(ordner || ''));
@@ -241,6 +249,6 @@
       String(a.geraet.ordner).localeCompare(String(b.geraet.ordner), 'de', { numeric: true }));
   }
 
-  return { FORMAT, DATEI, STUFEN, STUFE_TEXT, KATEGORIEN, ordnerEinteilen, ordnerName, infoLesen, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
+  return { FORMAT, DATEI, STUFEN, STUFE_TEXT, KATEGORIEN, ordnerEinteilen, ordnerName, infoLesen, infoText, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
            pruefen, gesamtStufe, grund, kern, finde, fuerStoff };
 });
