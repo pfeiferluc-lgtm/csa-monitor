@@ -261,10 +261,17 @@
     border-radius: .65rem; background: var(--surface2); border: 1px solid var(--line); color: var(--ink); text-decoration: none; border-left: .3rem solid var(--c, var(--rand)); }
   .ez-bild { width: 4.2rem; height: 4.2rem; border-radius: .45rem; background: var(--surface); border: 1px solid var(--line); object-fit: contain; grid-row: span 3;
     display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: .65rem; text-align: center; overflow: hidden; }
+  /* Bild links über die ersten Zeilen, alles andere immer in der rechten Spalte (sonst rutschen weitere Listenzeilen unter das Bild) */
+  .ez-geraete > li > a > :not(.ez-bild), .ez-geraete > li > div > :not(.ez-bild) { grid-column: 2; min-width: 0; }
+  .ez-geraete .ez-bild { grid-column: 1; grid-row: 1 / span 3; }
   .ez-geraete b { font-weight: 600; overflow-wrap: anywhere; }
   .ez-geraete .zeile { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; font-size: .8rem; color: var(--ink2); }
-  .ez-geraete .eintrag { font-size: .8rem; color: var(--ink2); line-height: 1.35; }
-  .ez-geraete .eintrag i { color: var(--muted); font-style: normal; }
+  .ez-geraete .eintrag { font-size: .8rem; color: var(--ink2); line-height: 1.35; display: flex; flex-direction: column; gap: .1rem; }
+  .ez-geraete .eintrag + .eintrag { border-top: 1px solid var(--line); padding-top: .35rem; margin-top: .1rem; }
+  .ez-geraete .eintrag .kopf { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .45rem; color: var(--ink); }
+  .ez-geraete .eintrag .kopf .ez-stufe { font-size: .74rem; padding: .12rem .5rem; }
+  .ez-geraete .eintrag i { color: var(--muted); font-style: normal; overflow-wrap: anywhere; }
+  .ez-geraete .eintrag i b { color: var(--ink2); }
   .ez-ungeprueft { font-size: .68rem; font-weight: 700; color: var(--ser); border: 1px solid var(--ser); border-radius: .3rem; padding: 0 .3rem; white-space: nowrap; }
   .ez-gepr { font-size: .68rem; font-weight: 700; color: var(--good); border: 1px solid var(--good); border-radius: .3rem; padding: 0 .3rem; white-space: nowrap; }
   .ez-filter { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .6rem; }
@@ -1218,6 +1225,8 @@
     };
     zeigen();
   }
+  // Stoffname aus der Liste lesbar: „Chlor , trocken“ → „Chlor, trocken“
+  const stoffText = t => String(t || '').replace(/\s+([,;.)])/g, '$1').replace(/\(\s+/g, '(').replace(/\s{2,}/g, ' ').trim();
   function geraetZeile(e) {
     const g = e.geraet;
     const titel = (g.nr ? g.nr + ' · ' : '') + g.name;
@@ -1226,8 +1235,11 @@
       const ids = L.relevant.length ? L.relevant : L.spalten.map(s => s.id);
       const werte = ids.map(id => { const w = t.eintrag.werte[id]; const sp = L.spalten.find(s => s.id === id);
         return w && w.roh ? `${esc(sp ? sp.id : id)}: <b>${esc(w.roh)}</b>` : ''; }).filter(Boolean).slice(0, 6).join(' · ');
-      return `<div class="eintrag">${e.treffer.length > 1 ? stufeBadge(t.stufe) + ' ' : 'Liste: '}„${esc(t.eintrag.stoff)}“${t.eintrag.konz ? ' ' + esc(t.eintrag.konz) : ''}${t.eintrag.temp ? ' · ' + esc(t.eintrag.temp) : ''}` +
-        `${t.art === 'aehnlich' ? ' <i>(ähnlicher Name – prüfen)</i>' : ''}${werte ? `<br><i>${werte}</i>` : ''}${t.eintrag.hinweis ? `<br><i>${esc(t.eintrag.hinweis)}</i>` : ''}</div>`;
+      // Konzentration/Temperatur nur, wenn sie nicht schon im Stoffnamen steht („Salzsäure 37 %“ + „37 %“)
+      const name = S.wertSchoen(stoffText(t.eintrag.stoff)).replace(/\s+/g, '');
+      const zusatz = [t.eintrag.konz, t.eintrag.temp].filter(Boolean).map(x => S.wertSchoen(x)).filter(x => !name.includes(x.replace(/\s+/g, ''))).join(' · ');
+      return `<div class="eintrag"><span class="kopf">${e.treffer.length > 1 ? stufeBadge(t.stufe) : '<span>Liste:</span>'}<span>„${esc(stoffText(t.eintrag.stoff))}“${zusatz ? ' ' + esc(zusatz) : ''}` +
+        `${t.art === 'aehnlich' ? ' <i>(ähnlicher Name – prüfen)</i>' : ''}</span></span>${werte ? `<i>${werte}</i>` : ''}${t.eintrag.hinweis ? `<i>${esc(t.eintrag.hinweis)}</i>` : ''}</div>`;
     }).join('');
     const rest = e.treffer.length > 6 ? `<div class="eintrag"><i>… und ${e.treffer.length - 6} weitere Zeilen</i></div>` : '';
     return `<li><a href="#geraet/${kodiere(g.ordner)}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}">
@@ -1468,7 +1480,7 @@
       const q = B.grund(feld.value);
       const treffer = d.eintraege.filter(e => !q || B.grund(e.stoff).includes(q) || (e.cas && e.cas.includes(feld.value.trim())));
       tb.innerHTML = treffer.slice(0, grenze).map(e => { const ges = B.gesamtStufe(e, L);
-        return `<tr><td>${esc(e.stoff)}${e.hinweis ? `<br><span class="ez-klein">${esc(e.hinweis)}</span>` : ''}</td><td>${esc(e.cas)}</td><td>${esc([e.konz, e.temp].filter(Boolean).join(' · '))}</td>
+        return `<tr><td>${esc(stoffText(e.stoff))}${e.hinweis ? `<br><span class="ez-klein">${esc(e.hinweis)}</span>` : ''}</td><td>${esc(e.cas)}</td><td>${esc([e.konz, e.temp].filter(Boolean).map(x => S.wertSchoen(x)).join(' · '))}</td>
         ${sp.map(s => { const w = e.werte[s.id] || { roh: '', stufe: 'unbekannt' }; return `<td class="w ${w.roh ? esc(w.stufe) : ''}${L.relevant.includes(s.id) ? ' rel' : ''}">${esc(w.roh)}</td>`; }).join('')}
         <td class="w ${esc(ges)}">${esc(ges === 'unbekannt' ? '–' : ges === 'gut' ? '✓' : ges === 'nicht' ? '✕' : ges === 'bedingt' ? '△' : '±')}</td><td>${esc(e.seite)}</td></tr>`; }).join('');
       mehr.innerHTML = treffer.length > grenze ? `${grenze} von ${treffer.length} Einträgen angezeigt · <a href="#" id="ez-alle">alle zeigen</a>` : `${treffer.length} Einträge`;

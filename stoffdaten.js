@@ -154,6 +154,7 @@
       .replace(new RegExp(`(\\d)\\s+[-–]\\s+(?=${ZAHL})`, 'g'), '$1 bis ')                                       // „100 - 102“
       .replace(/(^|[\s(\/;:])-(?=\d)/g, '$1−')                                                                 // Minuszeichen
       .replace(/<\s?=/g, '≤').replace(/>\s?=/g, '≥')                                                          // „<=“ → „≤“
+      .replace(/(\d)\s?%/g, '$1 %')                                                                          // „37%“ → „37 %“
       .replace(/([<>≤≥])(?=[−\d])/g, '$1 ')                                                                    // „<50“ → „< 50“
       .replace(/\b(c|d)?m3\b/g, (m, v) => (v || '') + 'm³').replace(/\b(c|d)?m2\b/g, (m, v) => (v || '') + 'm²')
       .replace(/(\d+,\d{4,})(?!\d)/g, z => rundenText(z))                                                     // 8,5737 → 8,57
