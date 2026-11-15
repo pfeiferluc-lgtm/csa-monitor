@@ -28,17 +28,10 @@
   .logo-hell { object-fit: contain !important; border-radius: 0 !important; }
   :root:not(.hell) .logo-hell, :root.hell .logo-dunkel:not(.allein) { display: none !important; }
 
-  /* Hauptmenü und Übungen-Menü */
-  #startseite, #uebungen { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  /* Übungen-Menü (zentriert) und Bausteine des Hauptmenüs */
+  #uebungen { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: calc(1.5rem + var(--frei-oben)) calc(1.2rem + var(--sicher-rechts)) calc(1.2rem + var(--sicher-unten)) calc(1.2rem + var(--sicher-links));
     gap: 1.8rem; }
-  .st-oben { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .35rem; }
-  .st-logo { width: 9.5rem; height: 9.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: .6rem; }
-  .st-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 1.4rem; box-shadow: var(--schatten); }
-  .st-logo img.logo-hell { box-shadow: none; }
-  #startseite h1 { margin: 0; font-size: 2.35rem; letter-spacing: .01em; line-height: 1.1; }
-  .st-te { font-size: 1.45rem; font-weight: 600; color: var(--ink2); }
-  .st-kreis { font-size: .9rem; color: var(--muted); letter-spacing: .04em; }
   .st-kacheln { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; width: min(46rem, 100%); }
   .st-kachel { display: flex; flex-direction: column; gap: .45rem; padding: 1.3rem 1.3rem 1.15rem; border-radius: var(--rund);
     background: var(--surface); box-shadow: var(--schatten); color: var(--ink); text-decoration: none; position: relative;
@@ -55,9 +48,66 @@
   .st-kachel em .warn { color: var(--ser); font-weight: 600; }
   .st-kachel em .gut { color: var(--good); font-weight: 600; }
   .st-kachel .pfeil { position: absolute; right: 1.1rem; top: 1.1rem; font-size: 1.4rem; color: var(--muted); }
-  .st-kacheln.gross .st-kachel { padding: 1.6rem 1.4rem 1.4rem; min-height: 12.5rem; }
-  .st-kacheln.gross .st-kachel svg { width: 3.4rem; height: 3.4rem; }
-  .st-kacheln.gross .st-kachel > b { font-size: 1.7rem; }
+
+  /* Hauptmenü: dunkler Kopf wie eine Fahrzeugfront (in Hell und Dunkel gleich, daher das Original-Logo), Uhrzeit, Schnellsuche,
+     rot-weiße Warnmarkierung als Abschluss; darunter Einsatz (rot) und Übungen, zuletzt geöffnete Stoffe */
+  #startseite { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
+  body[data-ansicht="start"] #statusband { background: #0f141b; }
+  .st-held { position: relative; overflow: hidden; color: #fff; isolation: isolate;
+    background: radial-gradient(110% 130% at 100% 0%, rgba(214, 41, 48, .38) 0%, rgba(214, 41, 48, 0) 58%),
+                linear-gradient(165deg, #141a23 0%, #0b0e13 75%);
+    padding: calc(1.5rem + var(--frei-oben)) calc(1.25rem + var(--sicher-rechts)) 1.45rem calc(1.25rem + var(--sicher-links)); }
+  .st-held::before { content: ""; position: absolute; z-index: -1; right: -4.5rem; top: 50%; width: 17rem; height: 17rem; border-radius: 2rem;
+    border: 2.4rem solid rgba(255, 255, 255, .04); transform: translateY(-50%) rotate(45deg); pointer-events: none; }
+  .st-held-innen { width: min(60rem, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+  .st-kopfzeile { display: flex; align-items: center; gap: 1rem; }
+  .st-marke { display: flex; align-items: center; gap: 1rem; min-width: 0; flex: 1; }
+  .st-logo { width: 4.8rem; height: 4.8rem; flex: none; border-radius: 1.05rem; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 10px 26px rgba(0, 0, 0, .5); }
+  .st-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .st-name { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+  .st-ueber { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: rgba(255, 255, 255, .6); }
+  #startseite h1 { margin: 0; font-size: 2.3rem; line-height: 1.02; font-weight: 800; letter-spacing: -.005em; color: #fff; }
+  .st-te { font-size: 1.05rem; font-weight: 600; color: rgba(255, 255, 255, .84); }
+  .st-uhr { display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; flex: none; }
+  .st-uhr b { font-size: 2rem; font-weight: 800; line-height: 1; letter-spacing: .01em; }
+  .st-uhr span { font-size: .78rem; color: rgba(255, 255, 255, .66); margin-top: .25rem; }
+  .st-suche { display: flex; align-items: center; gap: .55rem; background: #fff; border-radius: .95rem; padding: .35rem .35rem .35rem .9rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .38); }
+  .st-suche:focus-within { box-shadow: 0 0 0 3px rgba(229, 72, 77, .55), 0 12px 32px rgba(0, 0, 0, .38); }
+  .st-suche svg { width: 1.25rem; height: 1.25rem; color: #687482; flex: none; }
+  .st-suche input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 17px; color: #0e1318;
+    padding: .62rem 0; margin: 0; -webkit-appearance: none; appearance: none; }
+  .st-suche input::placeholder { color: #7b8794; }
+  .st-suche input::-webkit-search-cancel-button { display: none; }
+  .st-suche button { font: inherit; font-size: .95rem; font-weight: 700; color: #fff; background: #d42a30; border: 0; border-radius: .7rem;
+    padding: .72rem 1.05rem; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+  .st-suche button:active { background: #b31f25; }
+  .st-streifen { height: .55rem; flex: none; background: repeating-linear-gradient(-45deg, #d42a30 0 .85rem, #f2f2f2 .85rem 1.7rem); }
+  .st-inhalt { width: min(60rem, 100%); margin: 0 auto; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; gap: 1.3rem;
+    padding: 1.4rem calc(1.25rem + var(--sicher-rechts)) calc(1.1rem + var(--sicher-unten)) calc(1.25rem + var(--sicher-links)); }
+  #startseite .st-kacheln { width: 100%; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1rem; }
+  #startseite .st-kachel { padding: 1.5rem 1.35rem 1.3rem; min-height: 11.5rem; border-top: 0; border-radius: 1rem; }
+  #startseite .st-kachel svg { width: 3.1rem; height: 3.1rem; }
+  #startseite .st-kachel > b { font-size: 1.65rem; letter-spacing: -.005em; }
+  #startseite .st-kachel:not(.st-haupt) { border-left: .35rem solid var(--c); }
+  .st-kachel.st-haupt { color: #fff; background: linear-gradient(140deg, #b8161e 0%, #df3b41 62%, #ea5a3d 100%);
+    box-shadow: 0 14px 30px rgba(190, 24, 32, .32), inset 0 1px 0 rgba(255, 255, 255, .18); }
+  .st-kachel.st-haupt svg, .st-kachel.st-haupt > b { color: #fff; }
+  .st-kachel.st-haupt > span { color: rgba(255, 255, 255, .9); }
+  .st-kachel.st-haupt .pfeil { color: rgba(255, 255, 255, .85); }
+  .st-kachel.st-haupt em { background: rgba(0, 0, 0, .16); border-color: rgba(255, 255, 255, .28); color: #fff; }
+  .st-kachel.st-haupt em .warn { color: #ffe2a8; }
+  .st-kachel.st-haupt em .gut { color: #d6ffe4; }
+  #st-einsatz-info:empty { display: none; }
+  .st-zuletzt h2 { margin: 0 0 .55rem; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink2); }
+  .st-chips { display: flex; gap: .55rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: .15rem .1rem .45rem; }
+  .st-chips::-webkit-scrollbar { display: none; }
+  .st-chip { flex: none; display: inline-flex; align-items: center; gap: .6rem; padding: .45rem .8rem .45rem .45rem; border-radius: .85rem;
+    background: var(--surface); box-shadow: var(--schatten); color: var(--ink); text-decoration: none; max-width: 15rem; -webkit-tap-highlight-color: transparent; }
+  .st-chip span { font-size: .9rem; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .st-chip .ez-mini-tafel { flex: none; }
+  #startseite .st-fuss { margin-top: auto; padding-top: .6rem; border-top: 1px solid var(--line); width: 100%; max-width: none; justify-content: space-between; }
   .st-fuss select { font: inherit; font-size: 16px; padding: .25rem .4rem; border-radius: .4rem; border: 1px solid var(--rand);
     background: var(--surface2); color: var(--ink); }
   .ue-kopf { width: min(46rem, 100%); display: flex; align-items: center; gap: .8rem; }
@@ -151,14 +201,25 @@
     font-weight: 700; padding: .6rem 1.2rem !important; font-size: 1rem !important; }
   .aw-speichern:disabled { opacity: .45; cursor: default; }
   @media (max-width: 640px) {
-    .st-kacheln { grid-template-columns: 1fr; gap: .8rem; }
-    .st-kacheln.gross .st-kachel { min-height: 0; padding: 1.2rem 1.1rem 1.1rem; }
-    .st-kacheln.gross .st-kachel > b { font-size: 1.45rem; }
+    .st-kacheln, #startseite .st-kacheln { grid-template-columns: 1fr; gap: .8rem; }
+    #startseite .st-kachel { min-height: 0; padding: 1.15rem 1.1rem 1.05rem; }
+    #startseite .st-kachel svg { width: 2.6rem; height: 2.6rem; }
+    #startseite .st-kachel > b { font-size: 1.45rem; }
     .ue-kopf h1 { font-size: 1.55rem; }
-    .st-logo { width: 7.2rem; height: 7.2rem; }
-    #startseite, #uebungen { justify-content: flex-start; gap: 1.3rem; }
-    #startseite h1 { font-size: 1.95rem; }
-    .st-te { font-size: 1.2rem; }
+    #uebungen { justify-content: flex-start; gap: 1.3rem; }
+    .st-held { padding: calc(1.1rem + var(--frei-oben)) calc(1rem + var(--sicher-rechts)) 1.15rem calc(1rem + var(--sicher-links)); }
+    .st-held-innen { gap: 1rem; }
+    .st-kopfzeile { flex-direction: column-reverse; align-items: stretch; gap: .6rem; }
+    .st-uhr { flex-direction: row; align-items: baseline; justify-content: flex-end; gap: .45rem; }
+    .st-uhr b { font-size: 1.05rem; } .st-uhr span { margin-top: 0; }
+    .st-logo { width: 3.9rem; height: 3.9rem; border-radius: .9rem; }
+    .st-marke { gap: .8rem; }
+    #startseite h1 { font-size: 1.85rem; }
+    .st-te { font-size: .95rem; }
+    .st-ueber { font-size: .66rem; letter-spacing: .12em; } .st-bks { display: none; }
+    .st-inhalt { padding: 1.1rem calc(.9rem + var(--sicher-rechts)) calc(1rem + var(--sicher-unten)) calc(.9rem + var(--sicher-links)); gap: 1.1rem; }
+    .st-suche button { padding: .72rem .85rem; }
+    #startseite .st-fuss { justify-content: center; }
     .st-kachel { padding: 1rem 1rem .95rem; }
     .aw-felder { grid-template-columns: 1fr; }
     .aw-kopf { gap: .5rem; padding: .3rem .55rem .3rem .4rem; }
@@ -174,6 +235,12 @@
     .aw-filter { display: flex; width: 100%; }              /* Filter über die ganze Breite, Knöpfe teilen sich den Platz */
     .aw-filter button { flex: 1 1 auto; padding: .5rem .35rem; }
     .aw-leiste { gap: .1rem .7rem; padding-left: calc(.75rem + var(--sicher-links)); padding-right: calc(.75rem + var(--sicher-rechts)); }
+  }
+  @media (max-width: 380px) {
+    .st-logo { width: 3.3rem; height: 3.3rem; }
+    #startseite h1 { font-size: 1.6rem; }
+    .st-suche { padding-left: .7rem; } .st-suche svg { display: none; }
+    .st-suche button { padding: .7rem .75rem; font-size: .9rem; }
   }
   @media (max-width: 400px) {
     .aw-lang { display: none; }
@@ -236,6 +303,8 @@
     '<circle cx="24" cy="33" r="1.6" fill="currentColor"/></svg>';
   const ICON_UEBUNGEN = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<rect x="7" y="9" width="34" height="32" rx="4" opacity=".25"/><path d="M7 17h34M16 5v8M32 5v8"/><path d="m16 29 5 5 11-11"/></svg>';
+  const ICON_LUPE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">' +
+    '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>';
   const ICON_LISTE = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<rect x="9" y="7" width="30" height="36" rx="4" opacity=".25"/><path d="M18 7h12v6H18z"/><path d="m16 25 5 5 11-11"/></svg>';
 
@@ -243,25 +312,41 @@
   const start = document.createElement('main');
   start.id = 'startseite';
   start.className = 'gsz-ansicht';
+  const logoOriginal = logoDunkel || logoHell;           // dunkler Kopf: Original-Logo (dunkelblauer Grund)
   start.innerHTML = `
-    <div class="st-oben">
-      <div class="st-logo">${logos()}</div>
-      <h1>Gefahrstoffzug</h1>
-      <div class="st-te">Teileinheit Miehlen</div>
-      <div class="st-kreis">Rhein-Lahn-Kreis</div>
-    </div>
-    <nav class="st-kacheln gross" aria-label="Hauptmenü">
-      <a class="st-kachel" href="#einsatz" id="st-einsatz" style="--c:var(--crit)">${ICON_EINSATZ}<span class="pfeil">›</span>
-        <b>Einsatz</b><span>Stoffsuche (GESTIS), Beständigkeitslisten und Unterlagen für A-, B- und C-Lagen</span><em id="st-einsatz-info">Stoff, UN-Nr., CAS-Nr. oder Summenformel suchen</em></a>
-      <a class="st-kachel" href="#uebungen" id="st-uebungen" style="--c:var(--akzent)">${ICON_UEBUNGEN}<span class="pfeil">›</span>
-        <b>Übungen</b><span>CSA-Monitor (Belastungsübung) und Übungsanwesenheit</span><em id="st-uebungen-info">Personaltabelle wird beim Öffnen geladen</em></a>
-    </nav>
-    <div class="st-fuss">
-      <label>beim Start <select id="st-direkt"><option value="">Hauptmenü</option><option value="einsatz">Einsatz</option>
-        <option value="monitor">CSA-Monitor</option></select> zeigen</label>
-      <span><button class="knopf" id="st-modus" title="Hell / Dunkel">◐</button>
-      <button class="knopf" id="st-einst" title="Einstellungen" hidden>⚙</button></span>
-      <span id="st-version"></span>
+    <header class="st-held">
+      <div class="st-held-innen">
+        <div class="st-kopfzeile">
+          <div class="st-marke">
+            ${logoOriginal ? `<div class="st-logo"><img src="${logoOriginal}" alt="Logo Gefahrstoffzug Rhein-Lahn-Kreis"></div>` : ''}
+            <div class="st-name"><span class="st-ueber"><span class="st-bks">Brand- und Katastrophenschutz · </span>Rhein-Lahn-Kreis</span>
+              <h1>Gefahrstoffzug</h1><div class="st-te">Teileinheit Miehlen</div></div>
+          </div>
+          <div class="st-uhr" aria-label="Uhrzeit"><b id="st-zeit"></b><span id="st-datum"></span></div>
+        </div>
+        <form class="st-suche" id="st-suche" role="search" novalidate>
+          ${ICON_LUPE}<input type="search" id="st-q" placeholder="Stoff, UN-Nr. oder CAS-Nr." aria-label="Stoff, UN-Nr. oder CAS-Nr. suchen"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+          <button type="submit">Suchen</button>
+        </form>
+      </div>
+    </header>
+    <div class="st-streifen" aria-hidden="true"></div>
+    <div class="st-inhalt">
+      <nav class="st-kacheln gross" aria-label="Hauptmenü">
+        <a class="st-kachel st-haupt" href="#einsatz" id="st-einsatz" style="--c:var(--crit)">${ICON_EINSATZ}<span class="pfeil">›</span>
+          <b>Einsatz</b><span>Stoffsuche (GESTIS), Beständigkeitslisten und Unterlagen für A-, B- und C-Lagen</span><em id="st-einsatz-info"></em></a>
+        <a class="st-kachel" href="#uebungen" id="st-uebungen" style="--c:var(--akzent)">${ICON_UEBUNGEN}<span class="pfeil">›</span>
+          <b>Übungen</b><span>CSA-Monitor (Belastungsübung) und Übungsanwesenheit</span><em id="st-uebungen-info">Personaltabelle wird beim Öffnen geladen</em></a>
+      </nav>
+      <section class="st-zuletzt" id="st-zuletzt" hidden><h2>Zuletzt geöffnet</h2><div class="st-chips" id="st-chips"></div></section>
+      <div class="st-fuss">
+        <label>beim Start <select id="st-direkt"><option value="">Hauptmenü</option><option value="einsatz">Einsatz</option>
+          <option value="monitor">CSA-Monitor</option></select> zeigen</label>
+        <span><button class="knopf" id="st-modus" title="Hell / Dunkel">◐</button>
+        <button class="knopf" id="st-einst" title="Einstellungen" hidden>⚙</button></span>
+        <span id="st-version"></span>
+      </div>
     </div>`;
   const ue = document.createElement('main');
   ue.id = 'uebungen';
@@ -411,6 +496,8 @@
   // Hauptmenü
   const kachelInfos = {};
   function hauptmenueZeichnen() {
+    uhrStellen();
+    zuletztZeichnen();
     const w = SP.get('gsz-start') || '';
     $('st-direkt').value = ['einsatz', 'monitor'].includes(w) ? w : '';
     if (kachelInfos.einsatz) $('st-einsatz-info').innerHTML = kachelInfos.einsatz;
@@ -424,6 +511,35 @@
     }
   }
   function kachelInfo(name, html) { kachelInfos[name] = html; if (ansicht === 'start') hauptmenueZeichnen(); }
+  // Uhrzeit und Datum im Kopf des Hauptmenüs
+  const WOCHENTAG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+  function uhrStellen() {
+    const d = new Date();
+    $('st-zeit').textContent = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
+    $('st-datum').textContent = `${innerWidth <= 640 ? TAGE[d.getDay()] : WOCHENTAG[d.getDay()]}, ${p2(d.getDate())}.${p2(d.getMonth() + 1)}.${d.getFullYear()}`;
+  }
+  uhrStellen();
+  setInterval(() => { if (ansicht === 'start' && !document.hidden) uhrStellen(); }, 10000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && ansicht === 'start') uhrStellen(); });
+  // Schnellsuche: wie die Suche der Einsatz-Seite (eindeutige UN-/CAS-Nr. öffnet den Stoff direkt)
+  $('st-suche').addEventListener('submit', e => {
+    e.preventDefault();
+    const q = $('st-q').value.trim();
+    $('st-q').blur();
+    if (!q || !window.GSZEinsatz || !GSZEinsatz.suchen) { zeige('einsatz'); return; }
+    $('st-q').value = '';
+    GSZEinsatz.suchen(q);
+  });
+  // zuletzt geöffnete Stoffe (aus dem Gerätespeicher – auch offline)
+  async function zuletztZeichnen() {
+    const E = window.GSZEinsatz;
+    if (!E || !E.zuletzt) return;
+    let l = [];
+    try { l = await E.zuletzt(8); } catch { l = []; }
+    $('st-zuletzt').hidden = !l.length;
+    $('st-chips').innerHTML = l.map(x => `<a class="st-chip" href="#stoff/${esc(x.zvg)}" title="${esc(E.nameSchoen ? E.nameSchoen(x.name) : x.name)}">` +
+      `${E.miniTafel ? E.miniTafel(x.stoff && x.stoff.transport) : ''}<span>${esc(E.nameSchoen ? E.nameSchoen(x.name) : x.name)}</span></a>`).join('');
+  }
 
   // ---------------------------------------------------------------- Startseite
   function startZeichnen() {

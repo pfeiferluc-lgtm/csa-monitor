@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>CSA-Monitor · Belastungsübung</title>
+<title>Gefahrstoffzug TE Miehlen</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -320,6 +320,9 @@ body.handy footer { white-space: normal; text-align: left; font-size: .68rem; li
 .chip::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--c); flex: none; }
 .chip small { color: var(--ink2); font-size: .72rem; }
 @media print { .knopf { display: none; } }
+/* Bis oberflaeche.js eine Ansicht gewählt hat, nichts zeigen – sonst blitzt beim Öffnen kurz der CSA-Monitor auf */
+body:not([data-ansicht]) { background: #0b0e13; }
+body:not([data-ansicht]) > * { visibility: hidden; }
 </style>
 </head>
 <body>
@@ -378,7 +381,7 @@ body.handy footer { white-space: normal; text-align: left; font-size: .68rem; li
 
 <script>
 // let statt const: Das Programm CSA-Monitor setzt die Daten nach dem Einlesen der Excel-Datei neu (start.js)
-let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-15T20:45"};
+let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-15T21:45"};
 
 const KAT = {
   1: { label: 'überfällig', c: 'var(--crit)' },

@@ -728,6 +728,18 @@
       letzterVersuch = 0;
       await einsatzAbgleich(true);
     },
+    // ganzes Gerät (Ordner) löschen – die Dropbox hebt Gelöschtes 30 Tage auf
+    async geraetLoeschen(ordner) {
+      if (!verbundenDbx()) throw new Error('Nicht mit Dropbox verbunden.');
+      if (darfSchreiben() === false) throw new Error('Der Web-App fehlt das Schreibrecht in ihrem Dropbox-Ordner (⚙ › Mit Dropbox neu verbinden).');
+      if (navigator.onLine === false) throw new Error('Ohne Netz nicht möglich.');
+      const o = String(ordner || '').replace(/[\/\\]/g, '-').trim();
+      if (!o || o.startsWith('.')) throw new Error('Ungültiger Ordnername.');
+      await dropbox('https://api.dropboxapi.com/2/files/delete_v2', { headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: `${EINSATZ}/Beständigkeitslisten/${o}` }) });
+      letzterVersuch = 0;
+      await einsatzAbgleich(true);
+    },
     datei: einsatzDatei,
     fortschritt: () => fortschrittText,
     beiAenderung: f => beobachter.push(f),

@@ -41,7 +41,41 @@
   // Der Rest sind Angaben zum Gerät (Werkstoffe, Hinweise) für die Auswertung.
   const KAT_ZEILE = /^[ \t]*(?:kategorie|gruppe)[ \t]*:[ \t]*(.*?)[ \t]*$/im;
   const SPALTEN_ZEILE = /^[ \t]*spalten[ \t]*:[ \t]*(.*?)[ \t]*$/im;
-  const APP_ZEILE = /^[ \t]*(?:kategorie|gruppe|spalten)[ \t]*:.*$/im;
+  // „Bild: Hintergrund=weiß; Format=1:1; Größe=groß; Darstellung=füllen“: wie das Gerätefoto in der App erscheint (nur Anzeige)
+  const BILD_ZEILE = /^[ \t]*bild[ \t]*:[ \t]*(.*?)[ \t]*$/im;
+  const APP_ZEILE = /^[ \t]*(?:kategorie|gruppe|spalten|bild)[ \t]*:.*$/im;
+  const BILD_WAHL = {
+    hintergrund: { auto: 'Automatisch', weiss: 'Weiß', hell: 'Hellgrau', dunkel: 'Dunkelgrau', schwarz: 'Schwarz', rot: 'Rot' },
+    format: { '4:3': 'Quer 4:3', '1:1': 'Quadrat 1:1', '3:4': 'Hoch 3:4', '16:9': 'Breit 16:9' },
+    groesse: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß' },
+    darstellung: { ganz: 'Ganz zeigen', fuellen: 'Rahmen füllen' },
+  };
+  const BILD_STANDARD = { hintergrund: 'auto', format: '4:3', groesse: 'mittel', darstellung: 'ganz' };
+  const BILD_NAME = { hintergrund: 'Hintergrund', format: 'Format', groesse: 'Größe', darstellung: 'Darstellung' };
+  const BILD_WORT = { hintergrund: { weiss: 'weiß', hell: 'hellgrau', dunkel: 'dunkelgrau' }, groesse: { gross: 'groß' }, darstellung: { fuellen: 'füllen' } };
+  const flach = t => String(t || '').trim().toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+  const BILD_ALIAS = {
+    hintergrund: { automatisch: 'auto', auto: 'auto', weiss: 'weiss', hellgrau: 'hell', hell: 'hell', grau: 'hell', dunkelgrau: 'dunkel', dunkel: 'dunkel', schwarz: 'schwarz', rot: 'rot' },
+    format: { '4:3': '4:3', quer: '4:3', '1:1': '1:1', quadrat: '1:1', quadratisch: '1:1', '3:4': '3:4', hoch: '3:4', '16:9': '16:9', breit: '16:9' },
+    groesse: { klein: 'klein', mittel: 'mittel', gross: 'gross' },
+    darstellung: { ganz: 'ganz', 'ganz zeigen': 'ganz', fuellen: 'fuellen', ausfuellen: 'fuellen', 'rahmen fuellen': 'fuellen' },
+  };
+  function bildLesen(zeile) {
+    const b = { ...BILD_STANDARD };
+    for (const teil of String(zeile || '').split(/[;,]/)) {
+      const m = /^\s*([^=:]+?)\s*[=:]\s*(.+?)\s*$/.exec(teil);
+      if (!m) continue;
+      const k = { hintergrund: 'hintergrund', format: 'format', groesse: 'groesse', grosse: 'groesse', darstellung: 'darstellung' }[flach(m[1])];
+      const w = k && BILD_ALIAS[k][flach(m[2]).replace(/\s+/g, ' ')];
+      if (w) b[k] = w;
+    }
+    return b;
+  }
+  // nur Abweichungen vom Standard; alles Standard → '' (keine Zeile)
+  function bildText(b) {
+    return Object.keys(BILD_STANDARD).filter(k => b && b[k] && b[k] !== BILD_STANDARD[k] && BILD_WAHL[k][b[k]])
+      .map(k => `${BILD_NAME[k]}=${(BILD_WORT[k] && BILD_WORT[k][b[k]]) || b[k]}`).join('; ');
+  }
   function kategorieAus(wort) {
     const w = String(wort || '').trim().toLowerCase();
     if (!w) return '';
@@ -52,13 +86,17 @@
     const roh = String(t || '').replace(/\r/g, '');
     const m = KAT_ZEILE.exec(roh), sp = SPALTEN_ZEILE.exec(roh);
     const spalten = sp ? sp[1].split(sp[1].includes(';') ? ';' : ',').map(x => x.trim()).filter(Boolean) : [];
-    return { kategorie: m ? kategorieAus(m[1]) : '', spalten, text: roh.replace(new RegExp(APP_ZEILE.source + '\\n?', 'gim'), '').trim() };
+    const bild = BILD_ZEILE.exec(roh);
+    return { kategorie: m ? kategorieAus(m[1]) : '', spalten, bild: bildLesen(bild ? bild[1] : ''),
+             text: roh.replace(new RegExp(APP_ZEILE.source + '\\n?', 'gim'), '').trim() };
   }
   // info.txt aus den Angaben der App zusammensetzen
-  function infoText({ kategorie = '', spalten = [], text = '' } = {}) {
-    return (kategorie ? `Kategorie: ${kategorie}\n` : '') + (spalten.length ? `Spalten: ${spalten.join('; ')}\n` : '') + (String(text).trim() ? String(text).trim() + '\n' : '');
+  function infoText({ kategorie = '', spalten = [], bild = null, text = '' } = {}) {
+    const b = bildText(bild);
+    return (kategorie ? `Kategorie: ${kategorie}\n` : '') + (spalten.length ? `Spalten: ${spalten.join('; ')}\n` : '') + (b ? `Bild: ${b}\n` : '') +
+      (String(text).trim() ? String(text).trim() + '\n' : '');
   }
-  // für die Prüfsumme des Mac-Helfers: geänderte Kategorie bzw. Spaltenwahl ist kein Grund, die Liste neu auszuwerten
+  // für die Prüfsumme des Mac-Helfers: geänderte Kategorie, Spaltenwahl oder Bildanzeige ist kein Grund, die Liste neu auszuwerten
   function infoOhneKategorie(t) { return String(t || '').replace(new RegExp(APP_ZEILE.source + '\\r?\\n?', 'gim'), ''); }
   // Ordnername „27 ELRO Schlauchpumpe“ bzw. „Nr.27 ELRO …“ → { nr: '27', name: 'ELRO Schlauchpumpe' }
   function ordnerName(ordner) {
@@ -96,8 +134,10 @@
     '- kopf.art: "werkstoff" (Beständigkeit von Werkstoffen, meist Zeichen oder Klassen), "permeation" (Durchbruchzeiten in Minuten, z. B. für Schutzanzüge oder Handschuhe) oder "eignung" (geeignet/nicht geeignet für ein Produkt, z. B. Bindemittel).',
     '- kopf.kategorie: eine aus Schutzkleidung, Abdichten, Auffangen, Pumpen, Schläuche, Fahrzeuge, Sonstiges.',
     '- kopf.spalten: die Bewertungsspalten der Liste in der Reihenfolge der Tabelle, je { id: kurze Kennung wie "NBR", "PTFE", "Edelstahl 316L" oder "Durchbruchzeit", name: ausgeschriebener Name, z. B. "NBR (Nitrilkautschuk)" }.',
-    '- kopf.relevant: die ids der Spalten, die für das Gerät gelten, soweit bekannt (aus den Angaben zum Gerät, z. B. Werkstoff des Schlauchs); sonst [] (dann gelten alle).',
+    '- kopf.relevant: die ids der Spalten, die für das Gerät gelten, soweit bekannt (aus den Angaben zum Gerät, z. B. Werkstoff des Schlauchs); sonst []. Sind die Spalten keine verschiedenen Werkstoffe, sondern Prüfnormen für dasselbe Gerät (z. B. "EN ISO 374" und "ASTM F739"), gib die europäische Norm an (EN bzw. EN ISO).',
     '- kopf.legende: alle Bewertungszeichen bzw. -klassen mit Bedeutung und stufe: "gut" (beständig/sehr gut/gut/geeignet), "bedingt" (bedingt/eingeschränkt beständig), "nicht" (nicht beständig/ungeeignet) oder "unbekannt" (nicht geprüft/keine Angabe).',
+    '  Steht die Legende nicht auf diesen Seiten, gib die Zeichen trotzdem an und beginne text mit „vorläufig:“ – ein späterer Teil mit der Legende ersetzt den Text.',
+    '  Festlegung der Feuerwehr: Jede angegebene Zeit gilt als beständig, ob kurz oder lang. Bei art "permeation" bekommen Zeitklassen stufe "gut"; ebenso Klassen wie „beständig mindestens 3 Stunden“. Texte wie in der Liste; darüber keine Anmerkung.',
     '- kopf.werkstoffe: Werkstoffe des Geräts, falls aus Liste oder Geräteangaben ersichtlich; kopf.hinweise: wichtige allgemeine Hinweise der Liste (Konzentration, Temperatur, Gewährleistung) in kurzen Sätzen.',
     '- eintraege: jede Zeile der Tabelle ein Eintrag: stoff (Name wie in der Liste, mit Zusätzen wie "wässrig"), cas (nur, wenn in der Liste angegeben), konz (Konzentration, falls angegeben), temp (Temperatur, falls angegeben), werte (ein Wert je Spalte in der Reihenfolge von kopf.spalten: das Zeichen bzw. die Klasse oder die Durchbruchzeit in Minuten wie ">480"; "" für leer), seite (Seitennummer der Vorlage), hinweis (Fußnote oder Bemerkung zur Zeile). Verweiszeilen wie "Bleichlauge – siehe Natriumhypochloritlauge" als Eintrag mit leeren werten und dem Verweis in hinweis.',
     '- anmerkung: was unsicher oder unleserlich war; leer, wenn alles eindeutig war.',
@@ -252,6 +292,6 @@
       String(a.geraet.ordner).localeCompare(String(b.geraet.ordner), 'de', { numeric: true }));
   }
 
-  return { FORMAT, DATEI, STUFEN, STUFE_TEXT, KATEGORIEN, ordnerEinteilen, ordnerName, infoLesen, infoText, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
+  return { FORMAT, DATEI, STUFEN, STUFE_TEXT, KATEGORIEN, BILD_WAHL, BILD_STANDARD, bildLesen, bildText, ordnerEinteilen, ordnerName, infoLesen, infoText, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
            pruefen, gesamtStufe, grund, kern, finde, fuerStoff };
 });

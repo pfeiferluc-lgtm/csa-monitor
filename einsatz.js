@@ -114,7 +114,7 @@
   .ez-ok.breit { grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr) auto; }
   .ez-ok .fotos { grid-row: 1 / span 2; grid-column: 3; display: flex; gap: .35rem; }
   .ez-ok .fotos:empty { display: none; }
-  .ez-ok .fotos img, .ez-ok .fotos .ez-bild { width: 2.8rem; height: 2.8rem; border-radius: .55rem; object-fit: cover; background: #fff; border: 1px solid var(--line); }
+  .ez-ok .fotos img, .ez-ok .fotos .ez-bild { width: 2.8rem; height: 2.8rem; border-radius: .55rem; object-fit: cover; background: var(--bild-bg, #fff); border: 1px solid var(--line); }
   /* Stand der Unterlagen */
   .ez-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .45rem .8rem; padding: .7rem .85rem; border-radius: .95rem;
     background: var(--surface); box-shadow: var(--schatten); font-size: .78rem; color: var(--ink2); line-height: 1.35; }
@@ -263,7 +263,7 @@
     display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: .65rem; text-align: center; overflow: hidden; }
   /* Bild links über die ersten Zeilen, alles andere immer in der rechten Spalte (sonst rutschen weitere Listenzeilen unter das Bild) */
   .ez-geraete > li > a > :not(.ez-bild), .ez-geraete > li > div > :not(.ez-bild) { grid-column: 2; min-width: 0; }
-  .ez-geraete .ez-bild { grid-column: 1; grid-row: 1 / span 3; }
+  .ez-geraete .ez-bild { grid-column: 1; grid-row: 1 / span 3; background: var(--bild-bg, var(--surface)); }
   .ez-geraete b { font-weight: 600; overflow-wrap: anywhere; }
   .ez-geraete .zeile { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; font-size: .8rem; color: var(--ink2); }
   .ez-geraete .eintrag { font-size: .8rem; color: var(--ink2); line-height: 1.35; display: flex; flex-direction: column; gap: .1rem; }
@@ -281,7 +281,8 @@
   .ez-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: .7rem; }
   .ez-raster a { display: flex; flex-direction: column; border-radius: .7rem; background: var(--surface); box-shadow: var(--schatten); overflow: hidden;
     color: var(--ink); text-decoration: none; }
-  .ez-raster .foto { aspect-ratio: 4 / 3; background: #fff; display: flex; align-items: center; justify-content: center; color: #6b7480; font-size: .75rem; }
+  .ez-raster .foto { aspect-ratio: 4 / 3; background: var(--bild-bg, #fff); display: flex; align-items: center; justify-content: center; color: #6b7480; font-size: .75rem; overflow: hidden; }
+  .ez-raster a.bild-gross { grid-column: span 2; }
   .ez-raster .foto img { width: 100%; height: 100%; object-fit: contain; }
   .ez-raster .unter { padding: .5rem .6rem .6rem; display: flex; flex-direction: column; gap: .25rem; }
   .ez-raster b { font-size: .9rem; line-height: 1.2; overflow-wrap: anywhere; }
@@ -342,6 +343,51 @@
   .ez-pdf-rahmen { overflow: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
   .ez-bildansicht { max-width: 100%; height: auto; display: block; margin: 0 auto; background: #fff; border-radius: .4rem; }
   .ez-bildansicht.voll { max-width: none; }
+  /* Gerätefoto im Rahmen – je Gerät einstellbar (info.txt „Bild:“): Hintergrund, Format, Größe, Darstellung */
+  .ez-bildspalte { width: min(14rem, 100%); display: flex; flex-direction: column; gap: .45rem; }
+  .ez-bildspalte.bild-klein { width: min(9rem, 100%); } .ez-bildspalte.bild-gross { width: min(24rem, 100%); }
+  .ez-bildspalte > .knopf { align-self: flex-start; font-size: .8rem; padding: .3rem .6rem; display: inline-flex; align-items: center; gap: .3rem; text-decoration: none; }
+  .ez-bildspalte > .knopf svg { width: 1em; height: 1em; }
+  .ez-bildrahmen { display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: .6rem; width: 100%; box-sizing: border-box;
+    aspect-ratio: 4 / 3; background: var(--bild-bg, #fff); border: 1px solid var(--line); }
+  .ez-bildrahmen img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .ez-bildrahmen .leer { color: #6b7480; font-size: .8rem; }
+  .bild-fuellen img, img.bild-fuellen { object-fit: cover !important; }
+  /* Lange Texte eingeklappt („Mehr zur Liste …“) */
+  details.ez-mehr { border-top: 1px solid var(--line); padding-top: .45rem; margin-top: .1rem; }
+  details.ez-mehr > summary { cursor: pointer; font-size: .84rem; font-weight: 600; color: var(--akzent); list-style: none; display: flex; align-items: center; gap: .4rem;
+    -webkit-tap-highlight-color: transparent; }
+  details.ez-mehr > summary::-webkit-details-marker { display: none; }
+  details.ez-mehr > summary::before { content: "▸"; display: inline-block; transition: transform .15s ease; }
+  details.ez-mehr[open] > summary::before { transform: rotate(90deg); }
+  details.ez-mehr .inhalt { display: flex; flex-direction: column; gap: .55rem; margin-top: .5rem; font-size: .84rem; color: var(--ink2); line-height: 1.45; overflow-wrap: anywhere; }
+  details.ez-mehr .inhalt b { display: block; color: var(--ink); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .1rem; }
+  /* Bearbeiten: Bildanzeige, Dateien, Gerät löschen */
+  .ez-bildwahl { display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); gap: .9rem; align-items: start; }
+  .ez-optionen { display: flex; flex-direction: column; gap: .65rem; min-width: 0; }
+  .ez-optionen .gruppe { display: flex; flex-direction: column; gap: .3rem; }
+  .ez-optionen .gruppe > span { font-size: .75rem; font-weight: 600; color: var(--ink2); }
+  .ez-segment { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .ez-segment button { font: inherit; font-size: .8rem; padding: .4rem .65rem; border-radius: .5rem; border: 1px solid var(--rand); background: var(--surface2);
+    color: var(--ink2); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .ez-segment button.an { border-color: var(--akzent); background: color-mix(in srgb, var(--akzent) 18%, var(--surface2)); color: var(--ink); font-weight: 700; }
+  .ez-farben button { width: 2.2rem; height: 2.2rem; padding: 0; border-radius: 50%; border: 2px solid var(--rand); background: var(--f); }
+  .ez-farben button.auto { background: linear-gradient(135deg, #fff 0 50%, #2b3038 50% 100%); }
+  .ez-farben button.an { outline: 3px solid var(--akzent); outline-offset: 2px; background: var(--f); }
+  .ez-farben button.auto.an { background: linear-gradient(135deg, #fff 0 50%, #2b3038 50% 100%); }
+  .ez-dateiliste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .45rem; }
+  .ez-dateiliste li { display: grid; grid-template-columns: 2.7rem minmax(0, 1fr) auto; gap: .65rem; align-items: center; padding: .45rem .5rem;
+    border-radius: .6rem; background: var(--surface2); border: 1px solid var(--line); }
+  .ez-dateiliste .sym { width: 2.7rem; height: 2.7rem; border-radius: .45rem; display: flex; align-items: center; justify-content: center; font-size: .66rem;
+    font-weight: 800; color: #fff; background: var(--c, #6b7480); overflow: hidden; }
+  .ez-dateiliste .sym img { width: 100%; height: 100%; object-fit: cover; background: #fff; }
+  .ez-dateiliste b { display: block; font-size: .88rem; font-weight: 600; overflow-wrap: anywhere; line-height: 1.25; }
+  .ez-dateiliste small { display: block; font-size: .72rem; color: var(--muted); line-height: 1.3; }
+  .knopf.weg { color: var(--crit) !important; border-color: color-mix(in srgb, var(--crit) 45%, var(--rand)) !important; display: inline-flex; align-items: center; gap: .3rem; }
+  .knopf.weg svg { width: 1.05em; height: 1.05em; }
+  .ez-gefahr { border: 1px solid color-mix(in srgb, var(--crit) 40%, var(--rand)); border-radius: .7rem; padding: .75rem .85rem; display: flex; flex-direction: column;
+    gap: .5rem; align-items: flex-start; }
+  @media (max-width: 640px) { .ez-bildwahl { grid-template-columns: 1fr; } .ez-bildwahl .ez-bildrahmen { max-width: 15rem; } }
   .ez-text { white-space: pre-wrap; font-size: .85rem; line-height: 1.45; overflow-wrap: anywhere; }
   @media (max-width: 900px) { .ez-ordner { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ez-kw { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 640px) {
@@ -426,6 +472,7 @@
     hoch: SVG('<path d="M12 20V5M5 12l7-7 7 7"/>', '0 0 24 24').replace('stroke-width="2"', 'stroke-width="2.6"'),
     quer: SVG('<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>', '0 0 24 24').replace('stroke-width="2"', 'stroke-width="2.4"'),
     frage: SVG('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><circle cx="12" cy="17.2" r=".7" fill="currentColor"/>'),
+    muell: SVG('<path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>'),
     plus: SVG('<path d="M12 5v14M5 12h14"/>'),
     bild: SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/>'),
     kreuz: SVG('<path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/>'),
@@ -538,7 +585,7 @@
       }
       if (g.daten && g.daten.geraet && g.daten.geraet.name && !g.name) g.name = g.daten.geraet.name;
       if (g.info) {
-        try { const inf = B.infoLesen(await (await ad().datei(g.info)).text()); g.kategorieInfo = inf.kategorie; g.infoText = inf.text; g.spaltenWahl = inf.spalten; }
+        try { const inf = B.infoLesen(await (await ad().datei(g.info)).text()); g.kategorieInfo = inf.kategorie; g.infoText = inf.text; g.spaltenWahl = inf.spalten; g.bild = inf.bild; }
         catch { /* ohne Angaben */ }
       }
       spaltenAnwenden(g);
@@ -557,6 +604,12 @@
     g.relevantVon = wahl.length ? 'wahl' : L.relevant.length ? 'auswertung' : '';
   }
   const kategorie = g => g.kategorieInfo || (g.daten && g.daten.geraet && g.daten.geraet.kategorie) || 'Sonstiges';
+  // Bildanzeige je Gerät (info.txt „Bild:“): Hintergrund, Format (Seitenverhältnis), Größe, Darstellung (ganz zeigen / Rahmen füllen)
+  const BILD_FARBE = { weiss: '#ffffff', hell: '#e3e7ec', dunkel: '#2b3038', schwarz: '#000000', rot: '#b3121b' };
+  const bildVon = g => ({ ...B.BILD_STANDARD, ...((g && g.bild) || {}) });
+  const bildStil = (b, mitFormat = true) => { const [w, h] = String(b.format || '').split(':').map(Number);
+    return (mitFormat && w && h ? `aspect-ratio:${w} / ${h};` : '') + (BILD_FARBE[b.hintergrund] ? `--bild-bg:${BILD_FARBE[b.hintergrund]};` : ''); };
+  const bildFuellen = b => b.darstellung === 'fuellen' ? ' bild-fuellen' : '';
   const stufeBadge = (stufe, text) => `<span class="ez-stufe ${esc(stufe)}">${esc(text || B.STUFE_TEXT[stufe] || stufe)}</span>`;
   const STUFE_FARBE = { gut: 'var(--good)', bedingt: '#c48a00', nicht: 'var(--crit)', gemischt: 'var(--ser)' };
   const pruefBadge = g => !g.daten ? '' : g.daten.auswertung && g.daten.auswertung.geprueft
@@ -800,7 +853,7 @@
     let g = [];
     try { g = (await geraete()).filter(x => x.foto).slice(0, innerWidth <= 360 ? 3 : 4); } catch { return; }
     if (!box.isConnected) return;
-    box.innerHTML = g.map(x => `<img data-foto="${esc(x.foto)}" alt="">`).join('');
+    box.innerHTML = g.map(x => `<img data-foto="${esc(x.foto)}" style="${bildStil(bildVon(x), false)}" alt="">`).join('');
     fotoEinsetzen(box);
   }
   function statusZeigen() {
@@ -1245,7 +1298,7 @@
     }).join('');
     const rest = e.treffer.length > 6 ? `<div class="eintrag"><i>… und ${e.treffer.length - 6} weitere Zeilen</i></div>` : '';
     return `<li><a href="#geraet/${kodiere(g.ordner)}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}">
-      ${g.foto ? `<img class="ez-bild" data-foto="${esc(g.foto)}" alt="">` : '<span class="ez-bild">kein Bild</span>'}
+      ${g.foto ? `<img class="ez-bild${bildFuellen(bildVon(g))}" style="${bildStil(bildVon(g), false)}" data-foto="${esc(g.foto)}" alt="">` : '<span class="ez-bild">kein Bild</span>'}
       <b>${esc(titel)}</b>
       <div class="zeile">${stufeBadge(e.stufe)}${e.nurAehnlich ? '<span class="ez-ungeprueft">nur ähnlicher Name</span>' : ''}${pruefBadge(g)}</div>
       ${eintraege}${rest}</a></li>`;
@@ -1395,9 +1448,9 @@
     const zeigen = () => {
       const sicht = G_.filter(g => f === 'Alle' || kategorie(g) === f).sort((a, b) => (Number(a.nr) || 999) - (Number(b.nr) || 999) || a.name.localeCompare(b.name, 'de'));
       k.innerHTML = neuKnopf + `<div class="ez-filter">${kats.map(c => `<button class="${c === f ? 'an' : ''}" data-k="${esc(c)}">${esc(c)}</button>`).join('')}</div>
-        <div class="ez-raster">${sicht.map(g => `<a href="#geraet/${kodiere(g.ordner)}"><div class="foto">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="">` : 'kein Bild'}</div>
+        <div class="ez-raster">${sicht.map(g => { const b = bildVon(g); return `<a href="#geraet/${kodiere(g.ordner)}" class="bild-${esc(b.groesse)}${bildFuellen(b)}"><div class="foto" style="${bildStil(b)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="">` : 'kein Bild'}</div>
           <div class="unter"><b>${esc((g.nr ? g.nr + ' · ' : '') + g.name)}</b><small>${esc(kategorie(g))} · ${g.daten ? `${g.daten.eintraege.length} Einträge` : g.quellen.length ? `<span data-auswertung="${esc(nfc(g.ordner))}">noch nicht ausgewertet</span>` : 'keine Liste'}</small>
-          <span>${pruefBadge(g)}</span></div></a>`).join('')}</div>`;
+          <span>${pruefBadge(g)}</span></div></a>`; }).join('')}</div>`;
       for (const b of k.querySelectorAll('.ez-filter button')) b.addEventListener('click', () => { f = b.dataset.k; zeigen(); });
       fotoEinsetzen(k);
     };
@@ -1441,19 +1494,31 @@
     const d = g.daten, L = d && d.liste;
     const kopfK = document.createElement('section');
     kopfK.className = 'kachel ez-karte';
-    kopfK.innerHTML = `<div class="ez-oben"><div style="width:min(14rem,100%)">${g.foto ? `<img class="ez-bildansicht" data-foto="${esc(g.foto)}" alt="Foto ${esc(g.name)}">` : '<div class="ez-leer">kein Foto</div>'}</div>
+    const bild = bildVon(g), bearbeitbar = !!(ad() && ad().geraetDateien);
+    // lange Texte (Angaben zum Gerät, Liste, Hinweise der Auswertung) eingeklappt – aufklappen bei Bedarf
+    const infoTxt = (d && d.geraet.info) || (!d && g.infoText) || '';
+    const infoLang = infoTxt.length > 180;
+    const listeTxt = L ? [L.titel, L.stand && 'Stand ' + L.stand, L.bedingungen].filter(Boolean).join(' · ') : '';
+    const anmerkung = d && d.auswertung && d.auswertung.anmerkung ? d.auswertung.anmerkung : '';
+    const status = d && d.auswertung ? (d.auswertung.geprueft ? 'Geprüft' + (d.auswertung.pruefung && d.auswertung.pruefung.am ? ' am ' + datumZeit(d.auswertung.pruefung.am) : '') + ' – mit dem Original abgeglichen.'
+      : 'Automatisch ausgelesen am ' + datumZeit(d.auswertung.am) + ' – noch nicht mit dem Original abgeglichen.') : '';
+    const mehrTitel = [infoLang && 'Angaben zum Gerät', listeTxt && 'Liste', anmerkung && 'Hinweise der Auswertung'].filter(Boolean);
+    kopfK.innerHTML = `<div class="ez-oben"><div class="ez-bildspalte bild-${esc(bild.groesse)}">
+        <div class="ez-bildrahmen${bildFuellen(bild)}" style="${bildStil(bild)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="Foto ${esc(g.name)}">` : '<span class="leer">kein Foto</span>'}</div>
+        ${bearbeitbar ? `<a class="knopf" href="#geraet-neu/${kodiere(g.ordner)}" data-sprung="gn-bild">${I.bild}Bild anpassen</a>` : ''}</div>
       <div style="flex:1;min-width:13rem;display:flex;flex-direction:column;gap:.35rem">
         <div class="zeile" style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">${d || g.kategorieInfo ? `<span class="ez-chip">${esc(kategorie(g))}</span>` : ''}${pruefBadge(g)}</div>
         ${d && d.geraet.hersteller ? `<div class="ez-hinweis">Hersteller: ${esc(d.geraet.hersteller)}</div>` : ''}
         ${d && d.geraet.werkstoffe.length ? `<div class="ez-hinweis">Werkstoffe: ${esc(d.geraet.werkstoffe.join(', '))}</div>` : ''}
-        ${d && d.geraet.info ? `<div class="ez-hinweis">${esc(d.geraet.info)}</div>` : !d && g.infoText ? `<div class="ez-hinweis">${esc(g.infoText)}</div>` : ''}
-        ${L ? `<div class="ez-klein">${esc([L.titel, L.stand && 'Stand ' + L.stand, L.bedingungen].filter(Boolean).join(' · '))}</div>` : ''}
-        ${d && d.auswertung ? `<div class="ez-klein">${d.auswertung.geprueft ? 'Geprüft' + (d.auswertung.pruefung && d.auswertung.pruefung.am ? ' am ' + esc(datumZeit(d.auswertung.pruefung.am)) : '') :
-          'Automatisch ausgelesen am ' + esc(datumZeit(d.auswertung.am)) + ' – noch nicht mit dem Original abgeglichen.'}${d.auswertung.anmerkung ? ' ' + esc(d.auswertung.anmerkung) : ''}</div>` : ''}
+        ${infoTxt && !infoLang ? `<div class="ez-hinweis">${esc(infoTxt)}</div>` : ''}
+        ${status ? `<div class="ez-klein">${esc(status)}</div>` : ''}
+        ${mehrTitel.length ? `<details class="ez-mehr" id="ez-mehr-liste"><summary>Mehr: ${esc(mehrTitel.join(', '))}</summary><div class="inhalt">
+          ${infoLang ? `<div><b>Angaben zum Gerät</b>${esc(infoTxt)}</div>` : ''}${listeTxt ? `<div><b>Liste</b>${esc(listeTxt)}</div>` : ''}
+          ${anmerkung ? `<div><b>Hinweise der Auswertung</b>${esc(anmerkung)}</div>` : ''}</div></details>` : ''}
         ${g.fehler ? `<div class="ez-warn rot">${esc(g.fehler)}</div>` : ''}
         ${!d && g.quellen.length ? '<div class="ez-warn" id="ez-auswertung"><div class="ez-fortschritt"><div class="titel">Auswertung durch den Mac-Helfer</div><div class="ez-klein">wird abgefragt …</div></div></div>' : ''}
         ${!g.quellen.length ? '<div class="ez-warn">Noch keine Beständigkeitsliste hinterlegt.</div>' : ''}
-        ${ad() && ad().geraetDateien ? `<div><a class="knopf" href="#geraet-neu/${kodiere(g.ordner)}">${I.bild}Bearbeiten: Foto, Liste, Gruppe</a></div>` : ''}
+        ${bearbeitbar ? `<div><a class="knopf" href="#geraet-neu/${kodiere(g.ordner)}">${I.bild}Bearbeiten: Foto, Bild, Listen, Gruppe · Löschen</a></div>` : ''}
       </div></div>
       ${g.quellen.length ? `<h2 style="margin-top:.8rem">Original</h2><ul class="ez-dateien">${g.quellen.map(q => { const [t, c] = TYP[endung(q)] || ['DATEI', '#6b7480'];
         const info = dateiInfo(q); return `<li><a href="#datei/${kodiere(q)}"><span class="typ" style="--c:${c}">${esc(t)}</span><span><b>${esc(q.split('/').pop().replace(/\.[^.]+$/, ''))}</b>
@@ -1522,7 +1587,7 @@
     };
     async function speichern(wahl) {
       const infoName = g.info ? g.info.split('/').pop() : 'info.txt';
-      const inhalt = B.infoText({ kategorie: g.kategorieInfo || '', spalten: L.spalten.filter(s => wahl.includes(s.id)).map(s => s.id), text: g.infoText || '' });
+      const inhalt = B.infoText({ kategorie: g.kategorieInfo || '', spalten: L.spalten.filter(s => wahl.includes(s.id)).map(s => s.id), bild: g.bild, text: g.infoText || '' });
       try { await ad().geraetDateien(g.ordner, [{ name: infoName, blob: new Blob([inhalt], { type: 'text/plain' }) }]); }
       catch (e) { meldung('Speichern nicht möglich: ' + e.message, 7000); return; }
       g.spaltenWahl = wahl; spaltenAnwenden(g);
@@ -1608,13 +1673,17 @@
       return await new Promise((ok, nein) => c.toBlob(b => b ? ok(b) : nein(new Error('Bild nicht lesbar')), 'image/jpeg', 0.85));
     } catch { return datei; }          // z. B. HEIC am Rechner: unverändert hochladen
   }
+  // „Bild anpassen“ auf der Geräteseite springt im Formular direkt zur Bildanzeige
+  let sprungZiel = '';
+  document.addEventListener('click', e => { const z = e.target.closest && e.target.closest('a[data-sprung]'); if (z) sprungZiel = z.dataset.sprung; }, true);
   async function geraetNeuSeite(ordner) {
     neuEl.innerHTML = '';
     const a = ad();
     if (a && a.verbunden() && !dateien.length) await listeHolen(false);
     const alle = a && a.verbunden() ? await geraete() : [];
     const g = ordner ? alle.find(x => x.ordner === ordner) : null;
-    neuEl.appendChild(kopf({ titel: g ? 'Gerät bearbeiten' : 'Gerät oder PSA anlegen', unter: g ? esc((g.nr ? g.nr + ' · ' : '') + g.name) : BL,
+    const titel = g ? (g.nr ? g.nr + ' · ' : '') + g.name : '';
+    neuEl.appendChild(kopf({ titel: g ? 'Gerät bearbeiten' : 'Gerät oder PSA anlegen', unter: g ? esc(titel) : BL,
                              eltern: g ? 'geraet/' + kodiere(ordner) : 'ordner/' + kodiere(BL) }));
     const k = document.createElement('section');
     k.className = 'kachel ez-karte';
@@ -1629,34 +1698,135 @@
     const nummern = alle.map(x => Number(x.nr)).filter(Boolean);
     const vorschlag = String(nummern.length ? Math.max(...nummern) + 1 : 1);
     const katJetzt = g ? kategorie(g) : '';
+    const bild = bildVon(g), bildVorher = JSON.stringify(bild);
+    const knoepfe = (schl, farben = false) => Object.entries(B.BILD_WAHL[schl]).map(([w, t]) => farben
+      ? `<button type="button" data-w="${esc(w)}" class="${w === 'auto' ? 'auto' : ''}${bild[schl] === w ? ' an' : ''}" style="--f:${BILD_FARBE[w] || '#ffffff'}" title="${esc(t)}" aria-label="Hintergrund ${esc(t)}" aria-pressed="${bild[schl] === w}"></button>`
+      : `<button type="button" data-w="${esc(w)}"${bild[schl] === w ? ' class="an"' : ''} aria-pressed="${bild[schl] === w}">${esc(t)}</button>`).join('');
     k.innerHTML = `<form class="ez-formular" id="gn-form" novalidate>
       ${g ? '' : `<div class="reihe"><label class="feld">Nr.<input type="text" id="gn-nr" inputmode="numeric" maxlength="3" placeholder="${vorschlag}"></label>
         <label class="feld">Bezeichnung<input type="text" id="gn-name" maxlength="80" placeholder="z. B. Tychem TK Gasschutzanzug" autocomplete="off"></label></div>`}
       <label class="feld">Gruppe<select id="gn-kat">${B.KATEGORIEN.map(c => `<option${c === (katJetzt || 'Schutzkleidung') ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>
         <span class="ez-klein" style="font-weight:400">„Schutzkleidung“ erscheint im Einsatzbildschirm auch unter PSA.</span></label>
       <div class="feld" style="display:flex;flex-direction:column;gap:.35rem"><span class="ez-klein" style="font-weight:600;color:var(--ink2)">Foto</span>
-        <div class="ez-wahl"><img class="vorschau" id="gn-foto-bild" alt=""${g && g.foto ? ` data-foto="${esc(g.foto)}"` : ' hidden'}>
-          <label class="knopf ez-import">${I.kamera}<span>${g && g.foto ? 'Foto ersetzen' : 'Foto aufnehmen oder wählen'}</span><input type="file" id="gn-foto" accept="image/*"></label></div></div>
+        <div class="ez-wahl"><label class="knopf ez-import">${I.kamera}<span>${g && g.foto ? 'Foto ersetzen' : 'Foto aufnehmen oder wählen'}</span><input type="file" id="gn-foto" accept="image/*"></label>
+          <div class="namen" id="gn-foto-name"></div></div></div>
+      <div class="feld" id="gn-bild" style="display:flex;flex-direction:column;gap:.45rem"><span class="ez-klein" style="font-weight:600;color:var(--ink2)">Bildanzeige</span>
+        <div class="ez-bildwahl">
+          <div class="ez-bildrahmen${bildFuellen(bild)}" id="gn-rahmen" style="${bildStil(bild)}"><img id="gn-rahmen-bild" alt="Vorschau"${g && g.foto ? ` data-foto="${esc(g.foto)}"` : ' hidden'}>${g && g.foto ? '' : '<span class="leer" id="gn-rahmen-leer">noch kein Foto</span>'}</div>
+          <div class="ez-optionen">
+            <div class="gruppe"><span>Hintergrund</span><div class="ez-segment ez-farben" data-k="hintergrund">${knoepfe('hintergrund', true)}</div></div>
+            <div class="gruppe"><span>Format</span><div class="ez-segment" data-k="format">${knoepfe('format')}</div></div>
+            <div class="gruppe"><span>Größe</span><div class="ez-segment" data-k="groesse">${knoepfe('groesse')}</div></div>
+            <div class="gruppe"><span>Darstellung</span><div class="ez-segment" data-k="darstellung">${knoepfe('darstellung')}</div></div>
+          </div></div>
+        <span class="ez-klein" style="font-weight:400">Gilt in der Übersicht, auf der Geräteseite und bei den Beständigkeiten. „Groß“ zeigt das Bild in der Übersicht doppelt breit; „Automatisch“ ist der weiße Rahmen wie bisher.</span></div>
       <div class="feld" style="display:flex;flex-direction:column;gap:.35rem"><span class="ez-klein" style="font-weight:600;color:var(--ink2)">Beständigkeitsliste des Herstellers</span>
         <div class="ez-wahl"><label class="knopf ez-import">${I.blatt}<span>${g && g.quellen.length ? 'Weitere Liste hinzufügen' : 'Liste wählen (PDF oder Fotos)'}</span>
           <input type="file" id="gn-liste" accept="application/pdf,.pdf,image/*" multiple></label>
-          <div class="namen" id="gn-liste-namen">${g && g.quellen.length ? 'vorhanden: ' + esc(g.quellen.map(q => q.split('/').pop()).join(', ')) : ''}</div></div></div>
+          <div class="namen" id="gn-liste-namen"></div></div></div>
       <label class="feld">Werkstoff bzw. Ausführung unseres Geräts, Hinweise (freiwillig)<textarea id="gn-info" placeholder="z. B. „Anzug: SYKAN 2“ oder „Dichtung FKM, Gehäuse Edelstahl 1.4571“">${esc(g ? g.infoText || '' : '')}</textarea>
         <span class="ez-klein" style="font-weight:400">Enthält die Liste mehrere Werkstoffe oder Ausführungen, wählt die Auswertung damit die passende Spalte. Nach der Auswertung lässt sich die Spalte auf der Geräteseite auch direkt antippen („Für unser Gerät gilt“).</span></label>
       <button class="knopf los" type="submit" id="gn-los">${g ? 'Speichern' : 'Gerät anlegen'}</button>
       <div class="ez-klein" id="gn-status"></div></form>`;
+    // Dateien des Geräts (nur beim Bearbeiten): einzeln löschen; dazu das ganze Gerät löschen
+    const imOrdner = g ? dateien.filter(d => !d.ordner && ordnerVon(d.pfad) === BL + '/' + g.ordner) : [];
+    const artVon = n => {
+      const l = n.toLowerCase();
+      if (g.foto && g.foto.split('/').pop().toLowerCase() === l) return ['foto', 'Foto des Geräts', '#2f8f5b'];
+      if (l === B.DATEI) return ['auswertung', g.daten && g.daten.auswertung && g.daten.auswertung.geprueft ? 'Geordnete Fassung (geprüft)' : 'Geordnete Fassung (Auswertung)', 'var(--akzent)'];
+      if (l === 'bestaendigkeit.fehler.json') return ['fehler', 'Fehlervermerk des Mac-Helfers', '#6b7480'];
+      if (l === 'bestaendigkeit.alt.json') return ['alt', 'Sicherung einer früheren geprüften Fassung', '#6b7480'];
+      if (g.info && g.info.split('/').pop().toLowerCase() === l) return null;                 // Angaben: oben im Formular
+      if (g.quellen.some(q => q.split('/').pop().toLowerCase() === l)) return ['liste', 'Beständigkeitsliste', (TYP[endung(n)] || [, '#d64045'])[1]];
+      return ['sonst', 'Datei', '#6b7480'];
+    };
+    const zeilen = imOrdner.map(d => ({ d, art: artVon(d.name) })).filter(x => x.art)
+      .sort((x, y) => ['foto', 'liste', 'auswertung', 'alt', 'fehler', 'sonst'].indexOf(x.art[0]) - ['foto', 'liste', 'auswertung', 'alt', 'fehler', 'sonst'].indexOf(y.art[0]));
+    if (g) {
+      const k2 = document.createElement('section');
+      k2.className = 'kachel ez-karte';
+      k2.innerHTML = `<h2>Dateien des Geräts</h2>
+        ${zeilen.length ? `<ul class="ez-dateiliste">${zeilen.map(({ d, art }) => `<li><span class="sym" style="--c:${art[2]}">${art[0] === 'foto' ? `<img data-foto="${esc(d.pfad)}" alt="">` : esc((TYP[endung(d.name)] || [endung(d.name).toUpperCase().slice(0, 4) || 'DATEI'])[0])}</span>
+          <span><b>${esc(d.name)}</b><small>${esc(art[1])}${d.groesse ? ' · ' + esc(groesse(d.groesse)) : ''}</small></span>
+          <button type="button" class="knopf weg" data-weg="${esc(d.name)}" data-art="${art[0]}" aria-label="${esc(d.name)} löschen">${I.muell}<span>Löschen</span></button></li>`).join('')}</ul>`
+          : '<div class="ez-leer">Keine Dateien.</div>'}
+        <div class="ez-klein" style="margin-top:.5rem">Gelöschtes liegt noch 30 Tage im Papierkorb der Dropbox und lässt sich dort wiederherstellen.</div>
+        ${a.geraetLoeschen ? `<div class="ez-gefahr" style="margin-top:.9rem"><b>Gerät löschen</b>
+          <span class="ez-klein">Entfernt „${esc(titel)}“ mit Foto, Listen und Auswertung aus dem Dropbox-App-Ordner.</span>
+          <button type="button" class="knopf weg" id="gn-geraet-weg">${I.muell}<span>Gerät löschen</span></button></div>` : ''}`;
+      neuEl.appendChild(k2);
+      fotoEinsetzen(k2);
+      k2.addEventListener('click', async e => {
+        const b = e.target.closest('[data-weg]');
+        if (b) {
+          const name = b.dataset.weg, art = b.dataset.art;
+          const listen = zeilen.filter(x => x.art[0] === 'liste');
+          const abgeleitet = imOrdner.filter(d => /^bestaendigkeit\.(json|fehler\.json)$/i.test(d.name)).map(d => d.name);
+          const weg = [name];
+          let frage = `„${name}“ löschen?`;
+          if (art === 'liste' && listen.length === 1) { frage = `Liste „${name}“ löschen? Es ist die einzige Liste – die geordnete Fassung wird mit gelöscht.`; weg.push(...abgeleitet); }
+          else if (art === 'liste') frage = `Liste „${name}“ löschen? Der Mac-Helfer wertet die übrigen Listen danach neu aus.`;
+          else if (art === 'foto') frage = 'Foto des Geräts löschen?';
+          else if (art === 'auswertung') {
+            frage = `${g.daten && g.daten.auswertung && g.daten.auswertung.geprueft ? 'Die GEPRÜFTE geordnete Fassung' : 'Die geordnete Fassung'} löschen? Der Mac-Helfer erstellt sie aus den Listen neu (dann ungeprüft).`;
+            weg.push(...abgeleitet.filter(n => n.toLowerCase() !== name.toLowerCase()));
+          }
+          if (!confirm(frage)) return;
+          b.disabled = true;
+          try { await a.geraetDateien(g.ordner, [], { loeschen: [...new Set(weg)] }); }
+          catch (f) { b.disabled = false; meldung('Löschen nicht möglich: ' + f.message, 7000); return; }
+          geraeteCache = null; urlCache.clear();
+          await listeHolen(true);
+          meldung(weg.length === 1 ? `„${name}“ gelöscht.` : `„${name}“ und die geordnete Fassung gelöscht.`, 4500);
+          geraetNeuSeite(g.ordner);
+          return;
+        }
+        if (e.target.closest('#gn-geraet-weg')) {
+          const n = zeilen.filter(x => x.art[0] === 'liste').length;
+          if (!confirm(`Gerät „${titel}“ wirklich löschen – mit Foto, ${n === 1 ? 'Liste' : n + ' Listen'} und Auswertung?`)) return;
+          try { await a.geraetLoeschen(g.ordner); }
+          catch (f) { meldung('Löschen nicht möglich: ' + f.message, 7000); return; }
+          geraeteCache = null; urlCache.clear();
+          await listeHolen(true);
+          GSZ.zeige('ordner/' + kodiere(BL), true);
+          meldung(`„${titel}“ gelöscht.`, 5000);
+        }
+      });
+    }
     fotoEinsetzen(k);
     const form = k.querySelector('#gn-form'), fotoFeld = k.querySelector('#gn-foto'), listeFeld = k.querySelector('#gn-liste');
+    const rahmen = k.querySelector('#gn-rahmen');
+    const bildAnwenden = () => {
+      rahmen.setAttribute('style', bildStil(bild));
+      rahmen.className = 'ez-bildrahmen' + bildFuellen(bild);
+      for (const seg of k.querySelectorAll('.ez-segment[data-k]')) for (const b of seg.querySelectorAll('button')) {
+        const an = bild[seg.dataset.k] === b.dataset.w; b.classList.toggle('an', an); b.setAttribute('aria-pressed', String(an));
+      }
+    };
+    k.addEventListener('click', e => {
+      const b = e.target.closest('.ez-segment[data-k] button');
+      if (!b) return;
+      bild[b.closest('.ez-segment').dataset.k] = b.dataset.w;
+      bildAnwenden();
+    });
     let foto = null, listen = [];
     fotoFeld.addEventListener('change', () => {
       foto = fotoFeld.files[0] || null;
-      const img = k.querySelector('#gn-foto-bild');
-      if (foto) { img.src = URL.createObjectURL(foto); img.hidden = false; }
+      if (!foto) return;
+      const img = k.querySelector('#gn-rahmen-bild'), leer = k.querySelector('#gn-rahmen-leer');
+      img.src = URL.createObjectURL(foto); img.hidden = false;
+      if (leer) leer.remove();
+      k.querySelector('#gn-foto-name').textContent = 'neu: ' + (foto.name || 'Foto');
     });
     listeFeld.addEventListener('change', () => {
       listen = [...listeFeld.files];
       k.querySelector('#gn-liste-namen').textContent = listen.length ? 'gewählt: ' + listen.map(f => f.name || 'Foto').join(', ') : '';
     });
+    if (sprungZiel) {
+      const z = k.querySelector('#' + sprungZiel);
+      sprungZiel = '';
+      if (z) requestAnimationFrame(() => requestAnimationFrame(() => z.scrollIntoView({ block: 'start', behavior: 'smooth' })));
+    }
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const los = k.querySelector('#gn-los'), status = k.querySelector('#gn-status');
@@ -1665,25 +1835,31 @@
       const nr = g ? '' : (k.querySelector('#gn-nr').value.replace(/\D/g, '') || vorschlag);
       const ziel = g ? g.ordner : dateiName(`${nr.padStart(2, '0')} ${name}`);
       if (!g && alle.some(x => x.ordner.toLowerCase() === ziel.toLowerCase())) { meldung('Ein Gerät mit diesem Namen gibt es schon.'); return; }
-      const vorhanden = new Set(dateien.filter(d => !d.ordner && ordnerVon(d.pfad) === BL + '/' + ziel).map(d => d.name.toLowerCase()));
+      const imZiel = dateien.filter(d => !d.ordner && ordnerVon(d.pfad) === BL + '/' + ziel);
+      const vorhanden = new Set(imZiel.map(d => d.name.toLowerCase()));
+      const groesseVon = new Map(imZiel.map(d => [d.name.toLowerCase(), d.groesse]));
       const frei = n => { let x = n, i = 2; const p = n.lastIndexOf('.'); while (vorhanden.has(x.toLowerCase())) x = p > 0 ? `${n.slice(0, p)} (${i++})${n.slice(p)}` : `${n} (${i++})`; vorhanden.add(x.toLowerCase()); return x; };
-      const hoch = [], weg = [];
+      const hoch = [], weg = [], schonDa = [];
       if (foto) {
         const b = await fotoVerkleinern(foto);
         const fn = 'Foto.' + (b.type === 'image/jpeg' ? 'jpg' : (endung(foto.name) || 'jpg'));
         if (g && g.foto && g.foto.split('/').pop() !== fn) weg.push(g.foto.split('/').pop());
         hoch.push({ name: fn, blob: b });
       }
-      let seite = dateien.filter(d => ordnerVon(d.pfad) === BL + '/' + ziel && /^Liste Seite \d+/i.test(d.name)).length;
+      let seite = imZiel.filter(d => /^Liste Seite \d+/i.test(d.name)).length;
       for (const l of listen) {
-        const bild = /^image\//.test(l.type) || istBild(l.name);
-        const n = bild ? `Liste Seite ${++seite}.${endung(l.name) || 'jpg'}` : dateiName(l.name) || 'Liste.pdf';
-        hoch.push({ name: frei(/^(foto|bild|ger(ä|ae)t|photo|image)/i.test(n) ? 'Liste ' + n : n), blob: l });
+        const bildDatei = /^image\//.test(l.type) || istBild(l.name);
+        let n = bildDatei ? `Liste Seite ${++seite}.${endung(l.name) || 'jpg'}` : dateiName(l.name) || 'Liste.pdf';
+        if (/^(foto|bild|ger(ä|ae)t|photo|image)/i.test(n)) n = 'Liste ' + n;
+        // dieselbe Liste noch einmal gewählt (gleicher Name, gleiche Größe): nicht als „… (2)“ doppelt ablegen
+        if (!bildDatei && groesseVon.get(n.toLowerCase()) === l.size) { schonDa.push(n); continue; }
+        hoch.push({ name: frei(n), blob: l });
       }
       const kat = k.querySelector('#gn-kat').value, info = k.querySelector('#gn-info').value.trim();
-      if (!g || kat !== katJetzt || info !== (g.infoText || '')) hoch.push({ name: g && g.info ? g.info.split('/').pop() : 'info.txt',
-        blob: new Blob([B.infoText({ kategorie: kat, spalten: g ? g.spaltenWahl || [] : [], text: info })], { type: 'text/plain' }) });
-      if (g && !hoch.length) { meldung('Nichts geändert.'); return; }
+      const bildNeu = JSON.stringify(bild) !== bildVorher;
+      if (!g || kat !== katJetzt || info !== (g.infoText || '') || bildNeu) hoch.push({ name: g && g.info ? g.info.split('/').pop() : 'info.txt',
+        blob: new Blob([B.infoText({ kategorie: kat, spalten: g ? g.spaltenWahl || [] : [], bild, text: info })], { type: 'text/plain' }) });
+      if (g && !hoch.length) { meldung(schonDa.length ? `„${schonDa.join('“, „')}“ ist schon vorhanden – nichts geändert.` : 'Nichts geändert.', 6000); return; }
       los.disabled = true; status.textContent = 'Wird gespeichert …';
       try {
         await a.geraetDateien(ziel, hoch, { loeschen: weg }, (n, von) => { status.textContent = `Wird hochgeladen … ${n} von ${von}`; });
@@ -1691,7 +1867,9 @@
       geraeteCache = null; urlCache.clear();
       await listeHolen(true);
       GSZ.zeige('geraet/' + kodiere(ziel), true);
-      meldung(g ? 'Gespeichert.' : listen.length ? `„${name}“ angelegt – der Mac-Helfer wertet die Liste aus, sobald er läuft.` : `„${name}“ angelegt. Die Beständigkeitsliste lässt sich über „Bearbeiten“ nachreichen.`, 7000);
+      const neuListen = listen.length - schonDa.length;
+      meldung((g ? 'Gespeichert.' : neuListen ? `„${name}“ angelegt – der Mac-Helfer wertet die Liste aus, sobald er läuft.` : `„${name}“ angelegt. Die Beständigkeitsliste lässt sich über „Bearbeiten“ nachreichen.`) +
+        (schonDa.length ? ` „${schonDa.join('“, „')}“ war schon vorhanden und wurde nicht doppelt abgelegt.` : ''), 7000);
     });
   }
   GSZ.ansicht('geraet-neu', { element: neuEl, titel: p => p ? 'Gerät bearbeiten' : 'Gerät anlegen', anzeigen(param) { geraetNeuSeite(dekodiere(param || '')); } });
@@ -1850,5 +2028,5 @@
   // für sdb-import.js und die Tests
   window.GSZEinsatz = { stoffSeite, stoffElement: sEl, dateiZeigen, kopf, ansichtElement, esc, datumZeit, groesse, meldung, I, zoomErlauben,
     ehHtml, dekonHtml,
-    listeHolen, geraete, get dateien() { return dateien; }, stoffHolen, suchen: suchenUndZeigen, symbol };
+    listeHolen, geraete, get dateien() { return dateien; }, stoffHolen, suchen: suchenUndZeigen, symbol, zuletzt, miniTafel, nameSchoen };
 })();
