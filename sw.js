@@ -1,10 +1,10 @@
-// Service Worker der Web-App (CSA-Monitor und Übungsanwesenheit): hält die App-Dateien für den Start ohne Netz bereit und holt bei
+// Service Worker der Web-App „Gefahrstoffzug TE Miehlen“: hält die App-Dateien für den Start ohne Netz bereit und holt bei
 // Verbindung immer zuerst die neueste Fassung (so kommen Verbesserungen beim nächsten Öffnen von selbst an).
 // Immer beim Server nachfragen (no-cache), sonst liefert der Browser bis zu 10 Minuten lang die alte Fassung aus seinem Zwischenspeicher.
-// Anfragen an Dropbox laufen unverändert durch und werden nie zwischengespeichert.
-const CACHE = 'csa-monitor-202611140125';
-const DATEIEN = ['./', 'index.html', 'xlsx.core.min.js', 'sha512.min.js', 'aes.js', 'excel-kern.js', 'konfig.js',
-  'oberflaeche.js', 'web-start.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+// Anfragen an Dropbox und GESTIS laufen unverändert durch und werden hier nie zwischengespeichert (Stoffe und Einsatz-Dateien
+// speichert die App selbst im Gerätespeicher). Die Liste der Dateien setzt web-bauen.js ein.
+const CACHE = 'gsz-app-202611151636';
+const DATEIEN = ["./","index.html","xlsx.core.min.js","sha512.min.js","aes.js","excel-kern.js","konfig.js","stoffdaten.js","gestis.js","bestaendigkeit.js","speicher.js","symbole.js","sdb-parser.js","ocr.js","oberflaeche.js","einsatz.js","sdb-import.js","web-start.js","pdf.min.js","pdf.worker.min.js","ocr/tesseract.min.js","ocr/worker.min.js","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png"];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(DATEIEN.map(d => new Request(d, { cache: 'no-cache' })))).then(() => self.skipWaiting()));
@@ -12,13 +12,13 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(namen => Promise.all(namen.filter(n => n.startsWith('csa-monitor-') && n !== CACHE).map(n => caches.delete(n))))
+    .then(namen => Promise.all(namen.filter(n => (n.startsWith('gsz-app-') || n.startsWith('csa-monitor-')) && n !== CACHE).map(n => caches.delete(n))))
     .then(() => self.clients.claim()));
 });
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;   // Dropbox usw.: nicht anfassen
+  if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;   // Dropbox, GESTIS usw.: nicht anfassen
   e.respondWith(
     fetch(e.request, { cache: 'no-cache' }).then(antwort => {
       if (antwort.ok) { const kopie = antwort.clone(); caches.open(CACHE).then(c => c.put(e.request, kopie)); }

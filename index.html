@@ -9,11 +9,11 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="CSA-Monitor">
+<meta name="apple-mobile-web-app-title" content="GSZ Miehlen">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#0a0c0f">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.dropboxapi.com https://content.dropboxapi.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob: data: https://api.dropboxapi.com https://content.dropboxapi.com https://gestis-api.dguv.de; worker-src 'self' blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root {
   --crit: #e5484d; --ser: #f0794a; --warn: #f2b01e; --good: #26a95b; --akzent: #4c8df0;
@@ -378,7 +378,7 @@ body.handy footer { white-space: normal; text-align: left; font-size: .68rem; li
 
 <script>
 // let statt const: Das Programm CSA-Monitor setzt die Daten nach dem Einlesen der Excel-Datei neu (start.js)
-let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-14T00:25"};
+let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-15T15:36"};
 
 const KAT = {
   1: { label: 'überfällig', c: 'var(--crit)' },
@@ -782,7 +782,16 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) zeic
 <script src="aes.js"></script>
 <script src="excel-kern.js"></script>
 <script src="konfig.js"></script>
+<script src="stoffdaten.js"></script>
+<script src="gestis.js"></script>
+<script src="bestaendigkeit.js"></script>
+<script src="speicher.js"></script>
+<script src="symbole.js"></script>
+<script src="sdb-parser.js"></script>
+<script src="ocr.js"></script>
 <script src="oberflaeche.js"></script>
+<script src="einsatz.js"></script>
+<script src="sdb-import.js"></script>
 <script src="web-start.js"></script>
 </body>
 </html>

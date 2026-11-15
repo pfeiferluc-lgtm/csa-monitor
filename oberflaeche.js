@@ -1,5 +1,7 @@
-// Startseite und Übungsanwesenheit – gemeinsam für das Programm CSA-Monitor (Mac/Windows) und die Web-App (Handy).
-// Wird hinter monitor.html geladen. Die Plattform (start.js bzw. web-start.js) ruft auf:
+// Hauptmenü („Einsatz“ und „Übungen“), Übungen-Menü und Übungsanwesenheit – gemeinsam für das Programm
+// „Gefahrstoffzug TE Miehlen“ (Mac/Windows, früher CSA-Monitor) und die Web-App (Handy). Die Einsatz-Ansichten kommen aus
+// einsatz.js und melden sich mit GSZ.ansicht(…) an. Wird hinter monitor.html geladen. Die Plattform (start.js bzw.
+// web-start.js) ruft auf:
 //   GSZ.einrichten(adapter)  adapter = {
 //       geraet: 'Mac · CSA-Monitor 1.2.0',                  steht in jeder Meldung
 //       speichern(meldung) -> Promise<{ ok, text?, aktion?, daten? }>   Meldung verschlüsselt ablegen
@@ -7,24 +9,27 @@
 //       verbinden?()                                         neu mit Dropbox verbinden (Web-App, Schreibrecht)
 //   }
 //   GSZ.daten(daten)         neue Daten: { leute, anwesenheit: { eingerichtet, personen, uebungen }, ausstehend, quelle }
-//   GSZ.zeige('start' | 'monitor' | 'anwesenheit')
-// Ansichten über die Adresse (#start, #monitor, #anwesenheit), damit „Zurück“ (auch Wischen am iPhone) funktioniert.
+//   GSZ.zeige('start' | 'uebungen' | 'monitor' | 'anwesenheit' | 'einsatz' | …)
+//   adapter.personalAnfordern?()  wird aufgerufen, sobald eine Übungen-Ansicht die Personaltabelle braucht (Kennwort erst dann)
+// Ansichten über die Adresse (#start, #uebungen, #monitor, #anwesenheit, #einsatz, #stoff/…), damit „Zurück“ (auch Wischen
+// am iPhone) funktioniert.
 // Erfasste Anwesenheiten gehen in einen Postausgang (im Gerätespeicher) und werden von dort übertragen – ohne Netz
 // bleiben sie erhalten und werden später gesendet. Excel übernimmt die Meldungen beim Öffnen der Personaltabelle.
 'use strict';
 (() => {
   const css = `
-  body[data-ansicht="start"] > :not(#startseite):not(#anmeldung):not(#update):not(#web-meldung):not(#einst):not(#statusband):not(script):not(style),
-  body[data-ansicht="anwesenheit"] > :not(#anwesenheit):not(#anmeldung):not(#update):not(#web-meldung):not(#einst):not(#statusband):not(script):not(style),
-  body[data-ansicht="monitor"] > #startseite, body[data-ansicht="monitor"] > #anwesenheit,
-  body:not([data-ansicht]) > #startseite, body:not([data-ansicht]) > #anwesenheit { display: none !important; }
-  body[data-ansicht="start"], body[data-ansicht="anwesenheit"] { padding: 0; gap: 0; display: block; min-height: 100vh; min-height: 100svh; }
+  /* Alle Ansichten außer dem Monitor sind <main class="gsz-ansicht">; sichtbar ist nur die aktive. Fest stehende Ebenen
+     (Anmeldung, Hinweise, Menüs) tragen die Klasse gsz-ebene bzw. ihre ids. */
+  body[data-ansicht]:not([data-ansicht="monitor"]) > :not(main.gsz-ansicht.aktiv):not(.gsz-ebene):not(#anmeldung):not(#update):not(#web-meldung):not(#einst):not(#statusband):not(script):not(style),
+  body[data-ansicht="monitor"] > main.gsz-ansicht, body:not([data-ansicht]) > main.gsz-ansicht,
+  body > main.gsz-ansicht:not(.aktiv) { display: none !important; }
+  body[data-ansicht]:not([data-ansicht="monitor"]) { padding: 0; gap: 0; display: block; min-height: 100vh; min-height: 100svh; }
   .gsz-ansicht { --rund: .8rem; font-size: 16px; color: var(--ink); }
   .logo-hell { object-fit: contain !important; border-radius: 0 !important; }
   :root:not(.hell) .logo-hell, :root.hell .logo-dunkel:not(.allein) { display: none !important; }
 
-  /* Startseite */
-  #startseite { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  /* Hauptmenü und Übungen-Menü */
+  #startseite, #uebungen { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: calc(1.5rem + var(--frei-oben)) calc(1.2rem + var(--sicher-rechts)) calc(1.2rem + var(--sicher-unten)) calc(1.2rem + var(--sicher-links));
     gap: 1.8rem; }
   .st-oben { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .35rem; }
@@ -50,6 +55,14 @@
   .st-kachel em .warn { color: var(--ser); font-weight: 600; }
   .st-kachel em .gut { color: var(--good); font-weight: 600; }
   .st-kachel .pfeil { position: absolute; right: 1.1rem; top: 1.1rem; font-size: 1.4rem; color: var(--muted); }
+  .st-kacheln.gross .st-kachel { padding: 1.6rem 1.4rem 1.4rem; min-height: 12.5rem; }
+  .st-kacheln.gross .st-kachel svg { width: 3.4rem; height: 3.4rem; }
+  .st-kacheln.gross .st-kachel > b { font-size: 1.7rem; }
+  .st-fuss select { font: inherit; font-size: 16px; padding: .25rem .4rem; border-radius: .4rem; border: 1px solid var(--rand);
+    background: var(--surface2); color: var(--ink); }
+  .ue-kopf { width: min(46rem, 100%); display: flex; align-items: center; gap: .8rem; }
+  .ue-kopf h1 { margin: 0; font-size: 1.9rem; flex: 1; }
+  .ue-kopf .knopf { text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; }
   .st-fuss { display: flex; gap: .8rem 1.2rem; align-items: center; justify-content: center; flex-wrap: wrap; color: var(--muted);
     font-size: .8rem; text-align: center; max-width: 46rem; }
   .st-fuss label { display: inline-flex; gap: .4rem; align-items: center; cursor: pointer; }
@@ -139,8 +152,11 @@
   .aw-speichern:disabled { opacity: .45; cursor: default; }
   @media (max-width: 640px) {
     .st-kacheln { grid-template-columns: 1fr; gap: .8rem; }
+    .st-kacheln.gross .st-kachel { min-height: 0; padding: 1.2rem 1.1rem 1.1rem; }
+    .st-kacheln.gross .st-kachel > b { font-size: 1.45rem; }
+    .ue-kopf h1 { font-size: 1.55rem; }
     .st-logo { width: 7.2rem; height: 7.2rem; }
-    #startseite { justify-content: flex-start; gap: 1.3rem; }
+    #startseite, #uebungen { justify-content: flex-start; gap: 1.3rem; }
     #startseite h1 { font-size: 1.95rem; }
     .st-te { font-size: 1.2rem; }
     .st-kachel { padding: 1rem 1rem .95rem; }
@@ -215,6 +231,11 @@
     '<circle cx="24" cy="24" r="18" opacity=".25"/><path d="M24 6a18 18 0 0 1 17.1 23.6"/><path d="M24 15v10l6 4"/></svg>';
   const ICON_HAUS = '<svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="none" stroke="currentColor" stroke-width="2.2" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>';
+  const ICON_EINSATZ = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M24 4 44 24 24 44 4 24Z" opacity=".25"/><path d="M24 4 44 24 24 44 4 24Z"/><path d="M24 15v12" stroke-linecap="round"/>' +
+    '<circle cx="24" cy="33" r="1.6" fill="currentColor"/></svg>';
+  const ICON_UEBUNGEN = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="7" y="9" width="34" height="32" rx="4" opacity=".25"/><path d="M7 17h34M16 5v8M32 5v8"/><path d="m16 29 5 5 11-11"/></svg>';
   const ICON_LISTE = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<rect x="9" y="7" width="30" height="36" rx="4" opacity=".25"/><path d="M18 7h12v6H18z"/><path d="m16 25 5 5 11-11"/></svg>';
 
@@ -229,18 +250,34 @@
       <div class="st-te">Teileinheit Miehlen</div>
       <div class="st-kreis">Rhein-Lahn-Kreis</div>
     </div>
-    <nav class="st-kacheln" aria-label="Menü">
+    <nav class="st-kacheln gross" aria-label="Hauptmenü">
+      <a class="st-kachel" href="#einsatz" id="st-einsatz" style="--c:var(--crit)">${ICON_EINSATZ}<span class="pfeil">›</span>
+        <b>Einsatz</b><span>Stoffsuche (GESTIS), Beständigkeitslisten und Unterlagen für A-, B- und C-Lagen</span><em id="st-einsatz-info">Stoff, UN-Nr., CAS-Nr. oder Summenformel suchen</em></a>
+      <a class="st-kachel" href="#uebungen" id="st-uebungen" style="--c:var(--akzent)">${ICON_UEBUNGEN}<span class="pfeil">›</span>
+        <b>Übungen</b><span>CSA-Monitor (Belastungsübung) und Übungsanwesenheit</span><em id="st-uebungen-info">Personaltabelle wird beim Öffnen geladen</em></a>
+    </nav>
+    <div class="st-fuss">
+      <label>beim Start <select id="st-direkt"><option value="">Hauptmenü</option><option value="einsatz">Einsatz</option>
+        <option value="monitor">CSA-Monitor</option></select> zeigen</label>
+      <span><button class="knopf" id="st-modus" title="Hell / Dunkel">◐</button>
+      <button class="knopf" id="st-einst" title="Einstellungen" hidden>⚙</button></span>
+      <span id="st-version"></span>
+    </div>`;
+  const ue = document.createElement('main');
+  ue.id = 'uebungen';
+  ue.className = 'gsz-ansicht';
+  ue.innerHTML = `
+    <div class="ue-kopf"><h1>Übungen</h1>
+      <a class="knopf" href="#start" title="Hauptmenü" aria-label="Hauptmenü">${ICON_HAUS}<span class="aw-zt">Menü</span></a>
+      <button class="knopf" id="ue-modus" title="Hell / Dunkel">◐</button>
+      <button class="knopf" id="ue-einst" title="Einstellungen" hidden>⚙</button></div>
+    <nav class="st-kacheln" aria-label="Übungen">
       <a class="st-kachel" href="#monitor" id="st-monitor" style="--c:var(--good)">${ICON_MONITOR}<span class="pfeil">›</span>
         <b>CSA-Monitor</b><span>Belastungsübung der CSA-Träger: Ampel, Planung, Zeitstrahl</span><em id="st-monitor-info">wird geladen …</em></a>
       <a class="st-kachel" href="#anwesenheit" id="st-anw" style="--c:var(--akzent)">${ICON_LISTE}<span class="pfeil">›</span>
         <b>Übungsanwesenheit</b><span>Anwesenheit erfassen und Belastungsübungen eintragen</span><em id="st-anw-info">wird geladen …</em></a>
     </nav>
-    <div class="st-fuss">
-      <span id="st-quelle"></span>
-      <label><input type="checkbox" id="st-direkt"> beim Start direkt den CSA-Monitor zeigen</label>
-      <span><button class="knopf" id="st-modus" title="Hell / Dunkel">◐</button>
-      <button class="knopf" id="st-einst" title="Einstellungen" hidden>⚙</button></span>
-    </div>`;
+    <div class="st-fuss"><span id="st-quelle"></span></div>`;
   const anw = document.createElement('main');
   anw.id = 'anwesenheit';
   anw.className = 'gsz-ansicht';
@@ -248,7 +285,7 @@
     <header class="kachel aw-kopf">
       ${logos()}
       <div class="aw-titel"><h1>Übungs&shy;anwesenheit</h1><div>Gefahrstoffzug<span class="aw-trenn"> · </span><span class="aw-te">Teileinheit Miehlen</span></div></div>
-      <a class="knopf" href="#start" id="aw-zurueck" title="Startseite" aria-label="Startseite">${ICON_HAUS}<span class="aw-zt">Start</span></a>
+      <a class="knopf" href="#uebungen" id="aw-zurueck" title="Übungen" aria-label="Übungen">${ICON_HAUS}<span class="aw-zt">Übungen</span></a>
       <button class="knopf" id="aw-modus" title="Hell / Dunkel">◐</button>
       <button class="knopf" id="aw-einst" title="Einstellungen" hidden>⚙</button>
     </header>
@@ -279,20 +316,21 @@
       <button class="knopf aw-speichern" id="aw-speichern">Speichern</button>
     </div>`;
   document.body.appendChild(start);
+  document.body.appendChild(ue);
   document.body.appendChild(anw);
 
   // Startseite im Kopf des Monitors: schmales Haus-Symbol (der Monitor wählt die Schrift nach der Breite des Kopfes)
   const rechts = document.querySelector('.kopfleiste .rechts');
   if (rechts) {
     const k = document.createElement('a');
-    k.className = 'knopf'; k.href = '#start'; k.id = 'mon-start'; k.title = 'Startseite'; k.setAttribute('aria-label', 'Startseite');
+    k.className = 'knopf'; k.href = '#uebungen'; k.id = 'mon-start'; k.title = 'Übungen'; k.setAttribute('aria-label', 'Übungen');
     k.style.cssText = 'text-decoration:none;display:inline-flex;align-items:center;';
     k.innerHTML = ICON_HAUS;
     rechts.insertBefore(k, rechts.firstChild);
   }
 
   // ---------------------------------------------------------------- Zustand
-  let D = null, adapter = {}, ansicht = null;
+  let D = null, adapter = {}, ansicht = null, ansichtParam = '';
   let filter = 'alle', suche = '';
   // laufende Erfassung (eine je Übung): Kennung = Datei im App-Ordner; spätere Fassungen ersetzen frühere
   let sitzung = null;
@@ -304,33 +342,91 @@
   const sichern = () => { SP.set('gsz-anw-sitzung', sitzung ? JSON.stringify(sitzung) : null); SP.set('gsz-anw-ausgang', JSON.stringify(ausgang)); };
 
   // ---------------------------------------------------------------- Ansichten
-  const TITEL = { start: 'Gefahrstoffzug · Teileinheit Miehlen', monitor: 'CSA-Monitor', anwesenheit: 'Übungsanwesenheit' };
-  function zeige(a, ersetzen = false) {
-    if (!['start', 'monitor', 'anwesenheit'].includes(a)) a = 'start';
-    if (location.hash !== '#' + a) {
-      if (ersetzen) history.replaceState(null, '', '#' + a); else location.hash = a;
+  // Adresse: #name oder #name/parameter (z. B. #stoff/001100/psa); andere Teile (einsatz.js) melden Ansichten mit GSZ.ansicht an
+  const TITEL = { start: 'Gefahrstoffzug TE Miehlen', uebungen: 'Übungen', monitor: 'CSA-Monitor', anwesenheit: 'Übungsanwesenheit' };
+  const ELEMENT = { start, uebungen: ue, anwesenheit: anw };
+  const PERSONAL = new Set(['uebungen', 'monitor', 'anwesenheit']);   // brauchen die Personaltabelle
+  const fremde = {};          // name -> { element, titel(param), anzeigen(param, info), verlassen(), einrichten(adapter) }
+  const scrollStand = new Map();
+  const teile = h => { const t = String(h || '').replace(/^#/, ''); const i = t.indexOf('/'); return i < 0 ? [t, ''] : [t.slice(0, i), t.slice(i + 1)]; };
+  const bekannt = a => a in ELEMENT || a === 'monitor' || a in fremde;
+  function zeige(ziel, ersetzen = false) {
+    let [a, param] = teile(ziel);
+    if (!bekannt(a)) { a = 'start'; param = ''; }
+    const h = '#' + a + (param ? '/' + param : '');
+    if (location.hash !== h) {
+      // eigener Verlauf mit Tiefe: „Zurück“ in der App geht nur dann im Browserverlauf zurück, wenn es dort einen Schritt gibt
+      const tiefe = (history.state && history.state.tiefe) || 0;
+      if (ersetzen) history.replaceState({ tiefe }, '', h); else history.pushState({ tiefe: tiefe + 1 }, '', h);
     }
-    anwenden(a);
+    anwenden(a, param);
   }
-  function anwenden(a) {
-    const vorher = ansicht;
-    ansicht = a;
+  // „Zurück“-Knopf der Ansichten: im Verlauf zurück, sonst zur übergeordneten Ansicht (ersetzt den Eintrag)
+  function zurueck(eltern = 'start') {
+    if (history.state && history.state.tiefe > 0) history.back(); else zeige(eltern, true);
+  }
+  // interne Links (#…) über zeige(), damit jeder Schritt im eigenen Verlauf steht
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a || a.target || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    const ziel = a.getAttribute('href');
+    if (!ziel || ziel === '#') return;
+    e.preventDefault();
+    zeige(ziel, !!a.dataset.ersetzen);       // Reiter derselben Seite (z. B. PSA ↔ Datenblatt) ersetzen den Verlaufseintrag
+  });
+  function anwenden(a, param = '', { zurueck = false } = {}) {
+    const vorher = ansicht, vorherParam = ansichtParam;
+    if (vorher !== null) scrollStand.set(vorher + '/' + vorherParam, window.scrollY);
+    ansicht = a; ansichtParam = param;
     document.body.dataset.ansicht = a;
-    document.title = TITEL[a];
-    // Startseite und Anwesenheit mit fester Grundschrift (der Monitor passt seine Schrift selbst an den Bildschirm an)
+    const el = ELEMENT[a] || (fremde[a] && fremde[a].element);
+    for (const m of document.querySelectorAll('body > main.gsz-ansicht')) m.classList.toggle('aktiv', m === el);
+    document.title = (fremde[a] && fremde[a].titel ? fremde[a].titel(param) : TITEL[a]) || TITEL.start;
+    // feste Grundschrift außer im Monitor (der passt seine Schrift selbst an den Bildschirm an)
     if (a !== 'monitor') document.documentElement.style.fontSize = (innerWidth <= 640 ? 15 : 16) + 'px';
     if (vorher === 'anwesenheit' && a !== 'anwesenheit') sofortUebertragen();
+    if (vorher && vorher !== a && fremde[vorher] && fremde[vorher].verlassen) { try { fremde[vorher].verlassen(); } catch (e) { console.error(e); } }
+    if (adapter.ansichtGewechselt) { try { adapter.ansichtGewechselt(a); } catch (e) { console.error(e); } }
+    if (PERSONAL.has(a) && adapter.personalAnfordern) adapter.personalAnfordern(a);
     if (a === 'monitor') { try { zeichnen(); } catch { /* noch keine Daten */ } }   // eslint-disable-line no-undef
-    if (a === 'start') startZeichnen();
+    if (a === 'start') hauptmenueZeichnen();
+    if (a === 'uebungen') startZeichnen();
     if (a === 'anwesenheit') { if (!sitzung) uebungWaehlen(heuteIso(), null); anwZeichnen(); }
-    if (vorher !== a) window.scrollTo(0, 0);
+    if (fremde[a]) { try { fremde[a].anzeigen(param, { vorher, vorherParam, zurueck }); } catch (e) { console.error(e); } }
+    if (vorher !== a || vorherParam !== param) {
+      const y = zurueck ? scrollStand.get(a + '/' + param) : 0;
+      window.scrollTo(0, y || 0);
+      if (zurueck && y) requestAnimationFrame(() => window.scrollTo(0, y));        // nach dem Aufbau noch einmal
+    }
   }
-  addEventListener('hashchange', () => anwenden((location.hash || '#start').slice(1)));
+  const verlaufGeaendert = () => {
+    const [a, p] = teile(location.hash || '#start');
+    if (a === ansicht && p === ansichtParam) return;
+    anwenden(bekannt(a) ? a : 'start', bekannt(a) ? p : '', { zurueck: true });
+  };
+  addEventListener('popstate', verlaufGeaendert);
+  addEventListener('hashchange', verlaufGeaendert);
   addEventListener('resize', () => { if (ansicht && ansicht !== 'monitor') document.documentElement.style.fontSize = (innerWidth <= 640 ? 15 : 16) + 'px'; });
+
+  // Hauptmenü
+  const kachelInfos = {};
+  function hauptmenueZeichnen() {
+    const w = SP.get('gsz-start') || '';
+    $('st-direkt').value = ['einsatz', 'monitor'].includes(w) ? w : '';
+    if (kachelInfos.einsatz) $('st-einsatz-info').innerHTML = kachelInfos.einsatz;
+    const L = (D && D.leute) || [];
+    if (L.length) {
+      const h = heuteIso(), bereit = L.filter(p => p.faellig && p.faellig >= h).length, ueber = L.length - bereit;
+      const offen = (D.ausstehend || 0) + ausgang.length;
+      $('st-uebungen-info').innerHTML = `<b>${bereit} / ${L.length}</b> CSA-Träger einsatzbereit` +
+        (ueber ? ` · <span class="warn">${ueber}&nbsp;überfällig</span>` : '') +
+        (offen ? `<br><span class="warn">${offen} Erfassung${offen > 1 ? 'en' : ''} noch nicht in Excel übernommen</span>` : '');
+    }
+  }
+  function kachelInfo(name, html) { kachelInfos[name] = html; if (ansicht === 'start') hauptmenueZeichnen(); }
 
   // ---------------------------------------------------------------- Startseite
   function startZeichnen() {
-    $('st-direkt').checked = SP.get('gsz-start') === 'monitor';
     if (!D) return;
     const h = heuteIso(), L = D.leute || [];
     const bereit = L.filter(p => p.faellig && p.faellig >= h).length;
@@ -353,7 +449,7 @@
     $('st-anw-info').innerHTML = teile.length ? teile.join('<br>') : 'noch keine Übung erfasst';
     $('st-quelle').textContent = D.quelle ? `Daten: ${D.quelle}` : '';
   }
-  $('st-direkt').addEventListener('change', e => SP.set('gsz-start', e.target.checked ? 'monitor' : null));
+  $('st-direkt').addEventListener('change', e => SP.set('gsz-start', e.target.value || null));
 
   // ---------------------------------------------------------------- Übungsanwesenheit: Daten
   const uebungen = () => (D && D.anwesenheit && D.anwesenheit.uebungen) || [];
@@ -453,7 +549,8 @@
     } finally {
       sendet = false;
       statusZeigen();
-      if (ansicht === 'start') startZeichnen();
+      if (ansicht === 'uebungen') startZeichnen();
+      if (ansicht === 'start') hauptmenueZeichnen();
     }
   }
   addEventListener('online', () => senden());
@@ -617,31 +714,44 @@
     anwZeichnen();
   });
   $('aw-speichern').addEventListener('click', () => { zumAusgang(false); senden(); });
-  for (const id of ['st-modus', 'aw-modus']) $(id).addEventListener('click', () => {
+  function modusWechseln() {
     const hell = document.documentElement.classList.toggle('hell');
     try { localStorage.setItem('csa-modus', hell ? 'hell' : 'dunkel'); } catch { /* privat */ }
-  });
+  }
+  function modusKnopf(knopf) { knopf.addEventListener('click', modusWechseln); }
+  for (const id of ['st-modus', 'ue-modus', 'aw-modus']) modusKnopf($(id));
+  const einstKnoepfe = [];
+  function einstellungenKnopf(knopf) {
+    einstKnoepfe.push(knopf);
+    if (adapter.einstellungen) { knopf.hidden = false; knopf.addEventListener('click', e => { e.stopPropagation(); adapter.einstellungen(e.currentTarget); }); }
+  }
 
   // ---------------------------------------------------------------- Schnittstelle zur Plattform
   function daten(neu, ohneSenden = false) {
     D = neu;
-    if (ansicht === 'start') startZeichnen();
+    if (ansicht === 'start') hauptmenueZeichnen();
+    if (ansicht === 'uebungen') startZeichnen();
     if (ansicht === 'anwesenheit') anwZeichnen();
     if (!ohneSenden && ausgang.length) senden();
   }
   function einrichten(a) {
     adapter = a || {};
-    if (adapter.einstellungen) {
-      for (const id of ['st-einst', 'aw-einst']) {
-        $(id).hidden = false;
-        $(id).addEventListener('click', e => { e.stopPropagation(); adapter.einstellungen(e.currentTarget); });
-      }
-    }
-    // Startansicht: Adresse (#…), sonst gemerkte Wahl „direkt zum Monitor“, sonst Startseite
-    const h = (location.hash || '').slice(1);
-    if (['start', 'monitor', 'anwesenheit'].includes(h)) anwenden(h);
-    else zeige(SP.get('gsz-start') === 'monitor' ? 'monitor' : 'start', true);
+    for (const id of ['st-einst', 'ue-einst', 'aw-einst']) einstellungenKnopf($(id));
+    for (const k of einstKnoepfe.splice(0)) if (!['st-einst', 'ue-einst', 'aw-einst'].includes(k.id)) einstellungenKnopf(k);
+    if (adapter.version) $('st-version').textContent = adapter.version;
+    for (const f of Object.values(fremde)) if (f.einrichten) { try { f.einrichten(adapter); } catch (e) { console.error(e); } }
+    // Startansicht: Adresse (#…), sonst gemerkte Wahl (Einsatz bzw. CSA-Monitor), sonst Hauptmenü
+    const [h, p] = teile(location.hash || '');
+    if (bekannt(h)) anwenden(h, p);
+    else { const w = SP.get('gsz-start'); zeige(w === 'monitor' || w === 'einsatz' ? w : 'start', true); }
     if (ausgang.length) setTimeout(senden, 1500);
   }
-  window.GSZ = { einrichten, daten, zeige, get ausgang() { return ausgang.slice(); } };
+  // Ansicht anmelden (einsatz.js): element = <main class="gsz-ansicht">, wird an den body gehängt
+  function ansichtAnmelden(name, def) {
+    fremde[name] = def;
+    if (def.element && !def.element.parentNode) { def.element.classList.add('gsz-ansicht'); document.body.appendChild(def.element); }
+  }
+  window.GSZ = { einrichten, daten, zeige, zurueck, ansicht: ansichtAnmelden, kachelInfo, modusKnopf, einstellungenKnopf, logos,
+                 get aktuell() { return { ansicht, param: ansichtParam }; }, get adapter() { return adapter; },
+                 get ausgang() { return ausgang.slice(); } };
 })();

@@ -1,4 +1,7 @@
-// CSA-Monitor als Web-App (iPhone, iPad, jeder Browser): Startseite, CSA-Monitor und Übungsanwesenheit.
+// Web-App „Gefahrstoffzug TE Miehlen“ (iPhone, iPad, jeder Browser; früher CSA-Monitor): Hauptmenü mit Einsatz (einsatz.js)
+// und Übungen (CSA-Monitor, Übungsanwesenheit). Einsatz-Ordner und Aufträge (Datenblatt auswerten) kommen aus dem Ordner
+// „Einsatz“ bzw. „Auswertung“ des Dropbox-App-Ordners; die Dateien hält die App für den Betrieb ohne Netz auf dem Gerät.
+// Die Personaltabelle wird erst geladen bzw. ihr Kennwort erst erfragt, wenn eine Übungen-Ansicht sie braucht.
 // Holt die Personaltabelle über die Dropbox-Schnittstelle, entschlüsselt sie nur auf diesem Gerät (excel-kern.js) und
 // setzt die Daten in die Seite (monitor.html + oberflaeche.js).
 // Anmeldung bei Dropbox mit PKCE und Code zum Einfügen (kein Server, keine Weiterleitung nötig).
@@ -110,6 +113,7 @@
       if (nochmal) { zugang = null; return dropbox(url, optionen, false); }
     }
     if (!r.ok) {
+      if (optionen.roh409 && r.status === 409) return r;
       const text = await r.text().catch(() => '');
       if (optionen.fehltOk && r.status === 409 && /not_found/.test(text)) return null;
       if (r.status === 409 && /not_found/.test(text)) {
@@ -247,7 +251,7 @@
   box.innerHTML = `
     <form class="box" autocomplete="off">
       <div class="kopf">${logos}
-        <div><h2>Gefahrstoffzug</h2><div class="unter">Teileinheit Miehlen · CSA-Monitor und Übungsanwesenheit</div></div></div>
+        <div><h2>Gefahrstoffzug</h2><div class="unter">Teileinheit Miehlen</div></div></div>
       <p id="a-text">Wird geladen …</p>
       <div id="a-appkey" hidden><input type="text" id="a-appkey-feld" placeholder="App-Schlüssel der Dropbox-App" autocapitalize="off" spellcheck="false"></div>
       <div id="a-dropbox" hidden>
@@ -263,6 +267,7 @@
       </div>
       <div class="fehler" id="a-fehler"></div>
       <button type="submit" class="knopf los" id="a-los" hidden>Weiter</button>
+      <button type="button" class="klein-link" id="a-menue">Zurück zum Hauptmenü</button>
       <div class="hinweis" id="a-hinweis">Gelesen werden nur Namen, die Belastungsübungen („CSA-Träger aktiv“) und die
         Übungsanwesenheit – keine Kontaktdaten. Die Datei wird nur auf diesem Gerät entschlüsselt; Anwesenheitsmeldungen
         werden verschlüsselt in den eigenen App-Ordner der Dropbox geschrieben.</div>
@@ -283,6 +288,8 @@
   menue.innerHTML = `<button data-a="neu">Neu einlesen</button><button data-a="kennwort">Gespeichertes Kennwort löschen</button>
     <button data-a="pfad">Dateipfad in der Dropbox ändern</button><button data-a="verbinden">Mit Dropbox neu verbinden</button>
     <button data-a="abmelden">Von Dropbox abmelden</button>
+    <button data-a="abgleich">Einsatz-Ordner abgleichen</button><button data-a="offline-weg">Offline-Dateien vom Gerät löschen</button>
+    <button data-a="kurzbefehl">Kurzbefehl „GSZ Claude“ laden (iPhone)</button>
     <div class="klein">Web-App ${K.stand || ''}</div>`;
   document.body.appendChild(menue);
   // Menü unter dem jeweiligen Zahnrad öffnen (Monitor, Startseite, Übungsanwesenheit)
@@ -320,12 +327,17 @@
     ? 'Die App auf dem Home-Bildschirm einmal mit Dropbox verbinden – sie hat einen eigenen Speicher und kennt die Anmeldung aus Safari nicht. Danach bleibt sie verbunden und fragt beim Start nur noch nach dem Kennwort der Personaltabelle.'
     : 'Einmal mit Dropbox verbinden. Die Web-App liest dann nur ihren eigenen App-Ordner in der Dropbox – nichts sonst.';
 
+  // Das Anmeldefenster erscheint nur, wenn eine Übungen-Ansicht die Personaltabelle braucht (interaktiv) oder jemand für den
+  // Einsatz-Teil „Mit Dropbox verbinden“ tippt; sonst wird die Abfrage zurückgehalten (wartet) und der Einsatz bleibt nutzbar.
+  let interaktiv = false, wartet = null, zweck = 'uebungen';
   function ansicht(was, text, fehler = '') {
-    schritt = was;
-    if (was === 'laden') {                          // Startseite bleibt sichtbar, nur ein kurzer Hinweis unten
-      if (!angezeigt && !meldung.dataset.bleibt) hinweis(text, 0);
+    if (was === 'laden') {                          // Ansicht bleibt sichtbar, nur ein kurzer Hinweis unten
+      if (interaktiv && !angezeigt && !meldung.dataset.bleibt) hinweis(text, 0);
       return;
     }
+    if (!interaktiv) { wartet = { was, text, fehler }; schritt = ''; return; }
+    wartet = null;
+    schritt = was;
     box.hidden = false;
     $a('a-abbrechen').hidden = !(was === 'dropbox' && angezeigt && SP.get('csa-dbx-refresh'));
     $a('a-text').textContent = text;
@@ -345,6 +357,19 @@
 
   // Personaltabelle (ohne Meldungen) und Übertragungsschlüssel; DATEN = Personaltabelle + noch nicht übernommene Meldungen
   let basis = null, uebertragung = '';
+  function personalAnfordern() {
+    interaktiv = true; zweck = 'uebungen';
+    if (angezeigt) return;
+    if (wartet && wartet.was !== 'fehler') { const w = wartet; ansicht(w.was, w.text, w.fehler); return; }
+    wartet = null;
+    if (!beschaeftigt) laden(true);
+  }
+  // Ansicht gewechselt (oberflaeche.js): Anmeldefenster der Übungen schließen, wenn man den Übungen-Teil verlässt
+  const UEBUNGEN = ['uebungen', 'monitor', 'anwesenheit'];
+  function ansichtGewechselt(a) {
+    if (UEBUNGEN.includes(a)) return;
+    if (zweck === 'uebungen') { interaktiv = false; if (!box.hidden && schritt) { wartet = { was: schritt, text: $a('a-text').textContent, fehler: '' }; box.hidden = true; schritt = ''; } }
+  }
   function auswerten(bytes, stand) {
     const r = window.ExcelKern.lesen(window.XLSX, krypto, bytes, kennwort);
     if (!r.leute.length) throw new Error('In „CSA-Träger aktiv“ steht niemand.');
@@ -352,7 +377,7 @@
     uebertragung = r.schluessel || '';
     basis = { daten: { leute: r.leute, anwesenheit: r.anwesenheit },
               quelle: `Kopie der Personaltabelle im App-Ordner der Dropbox, gespeichert am ${zeit(stand)}` };
-    box.hidden = true; angezeigt = true;
+    box.hidden = true; angezeigt = true; wartet = null;
     if (!meldung.dataset.bleibt) meldung.hidden = true;
     neuZusammensetzen();
   }
@@ -457,6 +482,7 @@
         // Speicher dauerhaft halten (iOS räumt sonst bei Platzmangel womöglich auf); Verbindung bleibt gespeichert
         if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
         hinweis('Mit Dropbox verbunden – die Verbindung bleibt auf diesem Gerät gespeichert. Künftig fragt die App höchstens nach dem Kennwort.', 9000, true);
+        if (zweck === 'einsatz') { interaktiv = false; box.hidden = true; schritt = ''; einsatzMelden(); einsatzAbgleich(true); }
         laden(true);
       }
       catch (err) {
@@ -499,6 +525,12 @@
       if (neu && neu.trim()) { SP.set('csa-pfad', neu.trim()); letzterStand = ''; angezeigt = false; laden(true); }
     }
     if (a === 'verbinden') verbindenNeu();
+    if (a === 'abgleich') { einsatzAbgleich(true); hinweis('Einsatz-Ordner werden abgeglichen …', 2500); }
+    if (a === 'offline-weg') {
+      if (!confirm('Alle offline gespeicherten Einsatz-Dateien von diesem Gerät löschen? Sie werden beim nächsten Abgleich neu geladen.')) return;
+      window.GSZSpeicher.leeren('dateien').then(() => window.GSZSpeicher.setze('meta', 'einsatz-offline', {})).then(() => { offlineRevs = {}; einsatzMelden(); hinweis('Gelöscht.'); });
+    }
+    if (a === 'kurzbefehl') location.href = 'GSZ-Claude.shortcut';
     if (a === 'abmelden') {
       if (!confirm('Von Dropbox abmelden? Danach muss die Web-App neu verbunden werden.')) return;
       SP.set('csa-dbx-refresh', null); SP.set('csa-dbx-verifier', null); SP.set('csa-dbx-verifier-key', null);
@@ -509,14 +541,174 @@
 
   // neu mit Dropbox verbinden (z. B. für das Schreibrecht); die bisherige Verbindung bleibt, bis die neue steht
   function verbindenNeu() {
+    interaktiv = true;
     ansicht('dropbox', 'Neu mit Dropbox verbinden – z. B. damit die Web-App Anwesenheiten speichern darf (Schreibrecht im eigenen ' +
       'App-Ordner; vorher in der Dropbox-App unter „Permissions“ „files.content.write“ anhaken).');
   }
   $a('a-abbrechen').addEventListener('click', () => { box.hidden = true; schritt = ''; });
+  $a('a-menue').addEventListener('click', () => {
+    box.hidden = true; schritt = ''; interaktiv = false;
+    if (window.GSZ && UEBUNGEN.includes(GSZ.aktuell.ansicht)) GSZ.zeige('start'); else if (window.GSZ) GSZ.zeige(GSZ.aktuell.ansicht + (GSZ.aktuell.param ? '/' + GSZ.aktuell.param : ''), true);
+  });
+
+  // ---------------------------------------------------------------- Einsatz-Ordner (Dropbox-App-Ordner /Einsatz), offline auf dem Gerät
+  // Liste über list_folder (rekursiv, danach nur Änderungen über den gespeicherten cursor); Dateien landen im Gerätespeicher
+  // (IndexedDB, GSZSpeicher 'dateien', Schlüssel = path_lower) und sind dann ohne Netz da.
+  const EINSATZ = '/Einsatz', AUSWERTUNG = '/Auswertung';
+  const SPx = window.GSZSpeicher;
+  let eintraege = null, einsatzStand = null, einsatzFehler = '', offlineRevs = null, abgleichLaeuft = null, fortschrittText = '';
+  const beobachter = [];
+  function einsatzMelden() { for (const f of beobachter) { try { f(); } catch { /* weiter */ } } }
+  const verbundenDbx = () => !!(appKey() && SP.get('csa-dbx-refresh'));
+  const MIME = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', txt: 'text/plain',
+                 json: 'application/json', heic: 'image/heic' };
+  const mimeVon = n => MIME[(/\.([a-z0-9]+)$/i.exec(n) || [, ''])[1].toLowerCase()] || 'application/octet-stream';
+  async function gespeichertLaden() {
+    if (eintraege) return;
+    const m = await SPx.hole('meta', 'einsatz').catch(() => null);
+    eintraege = new Map(((m && m.eintraege) || []).map(e => [e.lower, e]));
+    einsatzStand = (m && m.stand) || null;
+    offlineRevs = (await SPx.hole('meta', 'einsatz-offline').catch(() => null)) || {};
+  }
+  const relativ = e => { const d = e.path_display || e.path_lower; return d.toLowerCase().startsWith(EINSATZ.toLowerCase() + '/') ? d.slice(EINSATZ.length + 1) : null; };
+  async function listeAktualisieren() {
+    await gespeichertLaden();
+    if (!verbundenDbx() || navigator.onLine === false) return false;
+    const m = await SPx.hole('meta', 'einsatz').catch(() => null);
+    let cursor = m && m.cursor, neu = cursor ? new Map(eintraege) : new Map(), j;
+    const anwenden = liste => {
+      for (const e of liste) {
+        const pfad = relativ(e);
+        if (!pfad) continue;
+        if (e['.tag'] === 'deleted') { for (const k of [...neu.keys()]) if (k === e.path_lower || k.startsWith(e.path_lower + '/')) neu.delete(k); continue; }
+        neu.set(e.path_lower, { lower: e.path_lower, pfad, name: pfad.split('/').pop(), ordner: e['.tag'] === 'folder', rev: e.rev || '',
+                                groesse: e.size || 0, geaendert: e.server_modified || '' });
+      }
+    };
+    const json = { 'Content-Type': 'application/json' };
+    if (cursor) {
+      const r = await dropbox('https://api.dropboxapi.com/2/files/list_folder/continue', { headers: json, body: JSON.stringify({ cursor }), roh409: true });
+      if (r.status === 409) { cursor = null; neu = new Map(); }          // cursor ungültig (reset) → alles neu
+      else { j = await r.json(); anwenden(j.entries); }
+    }
+    if (!cursor) {
+      const r = await dropbox('https://api.dropboxapi.com/2/files/list_folder', { headers: json, roh409: true,
+        body: JSON.stringify({ path: EINSATZ, recursive: true, include_deleted: false, limit: 2000 }) });
+      if (r.status === 409) { eintraege = new Map(); einsatzStand = new Date().toISOString(); await SPx.setze('meta', 'einsatz', { eintraege: [], stand: einsatzStand }); return true; }
+      j = await r.json(); anwenden(j.entries);
+    }
+    while (j && j.has_more) {
+      j = await (await dropbox('https://api.dropboxapi.com/2/files/list_folder/continue', { headers: json, body: JSON.stringify({ cursor: j.cursor }) })).json();
+      anwenden(j.entries);
+    }
+    eintraege = neu; einsatzStand = new Date().toISOString(); einsatzFehler = '';
+    await SPx.setze('meta', 'einsatz', { eintraege: [...neu.values()], stand: einsatzStand, cursor: j ? j.cursor : cursor }).catch(() => {});
+    // Dateien, die es nicht mehr gibt, aus dem Gerätespeicher entfernen
+    for (const k of Object.keys(offlineRevs)) if (!neu.has(k)) { delete offlineRevs[k]; SPx.loesche('dateien', k).catch(() => {}); }
+    await SPx.setze('meta', 'einsatz-offline', offlineRevs).catch(() => {});
+    return true;
+  }
+  async function herunterladenEinsatz(e) {
+    const r = await dropbox('https://content.dropboxapi.com/2/files/download', { headers: { 'Dropbox-API-Arg': kopfJson({ path: e.lower }) } });
+    const blob = new Blob([await r.arrayBuffer()], { type: mimeVon(e.name) });
+    try {
+      await SPx.setze('dateien', e.lower, { rev: e.rev, blob });
+      offlineRevs[e.lower] = e.rev;
+      await SPx.setze('meta', 'einsatz-offline', offlineRevs);
+    } catch (f) { const x = new Error('Gerätespeicher voll – Datei nur online verfügbar.'); x.voll = true; x.blob = blob; throw x; }
+    return blob;
+  }
+  // Liste holen und alle Dateien offline speichern (nacheinander, im Hintergrund)
+  let letzterVersuch = 0;
+  function einsatzAbgleich(frisch = false) {
+    if (abgleichLaeuft) return abgleichLaeuft;
+    if (!verbundenDbx()) return Promise.resolve();
+    letzterVersuch = Date.now();
+    abgleichLaeuft = (async () => {
+      try {
+        await listeAktualisieren();
+        einsatzMelden();
+        const fehlen = [...eintraege.values()].filter(e => !e.ordner && offlineRevs[e.lower] !== e.rev);
+        let n = 0;
+        for (const e of fehlen) {
+          if (navigator.onLine === false) break;
+          fortschrittText = `lädt ${++n} von ${fehlen.length} …`;
+          if (n === 1 || n % 3 === 0) einsatzMelden();
+          try { await herunterladenEinsatz(e); } catch (f) { if (f.voll) { einsatzFehler = f.message; break; } if (f.anmelden) throw f; }
+        }
+      } catch (e) {
+        einsatzFehler = e.anmelden ? 'Dropbox-Anmeldung abgelaufen – neu verbinden' : navigator.onLine === false ? '' : e.message;
+      } finally {
+        fortschrittText = ''; abgleichLaeuft = null; einsatzMelden();
+      }
+    })();
+    return abgleichLaeuft;
+  }
+  async function einsatzDatei(pfad) {
+    await gespeichertLaden();
+    const e = [...eintraege.values()].find(x => x.pfad === pfad) || [...eintraege.values()].find(x => x.pfad.toLowerCase() === String(pfad).toLowerCase());
+    if (!e) throw new Error('Datei nicht gefunden.');
+    const gespeichert = await SPx.hole('dateien', e.lower).catch(() => null);
+    if (gespeichert && (gespeichert.rev === e.rev || navigator.onLine === false || !verbundenDbx())) return gespeichert.blob;
+    try { return await herunterladenEinsatz(e); }
+    catch (f) { if (f.blob) return f.blob; if (gespeichert) return gespeichert.blob; throw f; }
+  }
+  async function hochladen(pfadM, inhalt) {
+    const r = await dropbox('https://content.dropboxapi.com/2/files/upload', { headers: { 'Content-Type': 'application/octet-stream',
+      'Dropbox-API-Arg': kopfJson({ path: pfadM, mode: 'overwrite', autorename: false, mute: true }) }, body: inhalt });
+    return r.json().catch(() => ({}));
+  }
+  async function textHolen(pfadM) {
+    const r = await dropbox('https://content.dropboxapi.com/2/files/download', { headers: { 'Dropbox-API-Arg': kopfJson({ path: pfadM }) }, fehltOk: true });
+    return r ? r.text() : null;
+  }
+  const einsatzAdapter = {
+    art: 'web',
+    verbunden: verbundenDbx,
+    verbinden() { interaktiv = true; zweck = 'einsatz'; ansicht('dropbox', 'Mit Dropbox verbinden, damit die Einsatz-Ordner und Beständigkeitslisten aus dem App-Ordner ' +
+      'auf dieses Gerät kommen (danach auch offline). Die Personaltabelle wird dabei nicht geöffnet.'); },
+    async liste({ frisch = false } = {}) {
+      await gespeichertLaden();
+      // selbsttätig höchstens einmal je Minute (auch nach Fehlern), sonst würden sich Abgleich und Neuzeichnen gegenseitig anstoßen
+      if (verbundenDbx() && navigator.onLine !== false && (frisch || Date.now() - letzterVersuch > 60 * 1000)) einsatzAbgleich(frisch);
+      return { dateien: [...eintraege.values()].map(e => ({ ...e, offline: !e.ordner && offlineRevs[e.lower] === e.rev })),
+               stand: einsatzStand, quelle: 'dropbox', fehler: einsatzFehler };
+    },
+    datei: einsatzDatei,
+    fortschritt: () => fortschrittText,
+    beiAenderung: f => beobachter.push(f),
+    // Datenblatt-Aufträge für den Mac-Helfer bzw. den Kurzbefehl (Ordner /Auswertung/<id>)
+    async auftragAblegen(id, dateienListe, auftrag) {
+      if (!verbundenDbx()) throw new Error('Nicht mit Dropbox verbunden.');
+      if (darfSchreiben() === false) throw new Error('Der Web-App fehlt das Schreibrecht in ihrem Dropbox-Ordner.');
+      for (const d of dateienListe) await hochladen(`${AUSWERTUNG}/${id}/${d.name}`, new Uint8Array(await d.blob.arrayBuffer()));
+      await hochladen(`${AUSWERTUNG}/${id}/auftrag.json`, new TextEncoder().encode(JSON.stringify(auftrag, null, 1)));
+    },
+    async auftragErgebnis(id) {
+      if (!verbundenDbx() || navigator.onLine === false) return null;
+      const e = await textHolen(`${AUSWERTUNG}/${id}/ergebnis.json`);
+      const i = await textHolen(`${AUSWERTUNG}/${id}/antwort-iphone.txt`);
+      return { ergebnis: e ? JSON.parse(e) : null, antwortIphone: i || null };
+    },
+    async helfer() {
+      if (!verbundenDbx() || navigator.onLine === false) return null;
+      const t = await textHolen(`${AUSWERTUNG}/mac-helfer.json`).catch(() => null);
+      try { return t ? JSON.parse(t) : null; } catch { return null; }
+    },
+    // Für den Kurzbefehl „GSZ Claude“: Claudes Antwort direkt in den Auftragsordner hochladen (Zugang gilt rund 4 Stunden)
+    async iphoneZugang(id) {
+      if (!verbundenDbx() || darfSchreiben() === false) return null;
+      const t = await zugriff();
+      return { url: 'https://content.dropboxapi.com/2/files/upload', auth: 'Bearer ' + t,
+               arg: kopfJson({ path: `${AUSWERTUNG}/${id}/antwort-iphone.txt`, mode: 'overwrite', autorename: false, mute: true }) };
+    },
+  };
+  addEventListener('online', () => { if (verbundenDbx()) einsatzAbgleich(false); });
 
   // Startseite und Übungsanwesenheit (oberflaeche.js)
   if (window.GSZ) {
-    GSZ.einrichten({ speichern: meldungHochladen, einstellungen: menueOeffnen, verbinden: verbindenNeu });   // eslint-disable-line no-undef
+    GSZ.einrichten({ speichern: meldungHochladen, einstellungen: menueOeffnen, verbinden: verbindenNeu, personalAnfordern,   // eslint-disable-line no-undef
+                     ansichtGewechselt, einsatz: einsatzAdapter, version: `Web-App ${K.stand || ''}` });
   }
 
   // regelmäßig und beim Zurückkehren in die App auf eine neu gespeicherte Datei prüfen

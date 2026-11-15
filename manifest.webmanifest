@@ -1,7 +1,7 @@
 {
- "name": "CSA-Monitor",
- "short_name": "CSA-Monitor",
- "description": "Gefahrstoffzug · Teileinheit Miehlen: Belastungsübung der CSA-Träger und Übungsanwesenheit",
+ "name": "Gefahrstoffzug TE Miehlen",
+ "short_name": "GSZ Miehlen",
+ "description": "Gefahrstoffzug · Teileinheit Miehlen: Einsatz (Stoffsuche, Beständigkeitslisten, Unterlagen) und Übungen (CSA-Monitor, Übungsanwesenheit)",
  "lang": "de",
  "start_url": "./",
  "scope": "./",
