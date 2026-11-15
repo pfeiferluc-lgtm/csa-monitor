@@ -143,6 +143,28 @@
     '- anmerkung: was unsicher oder unleserlich war; leer, wenn alles eindeutig war.',
   ].join('\n');
 
+  // ------------------------------------------------------------------ Prüfung auf Wunsch (App: „Liste prüfen lassen“)
+  // Die App legt pruefen.json in den Geräteordner; der Mac-Helfer lässt Claude die Liste ein zweites Mal unabhängig lesen und jede
+  // übertragene Zeile mit dem Original vergleichen. Keine Abweichung → „geprüft“; sonst stehen die Abweichungen in auswertung.pruefung.
+  const PRUEF_DATEI = 'pruefen.json';
+  const PRUEF_SCHEMA = O({
+    abweichungen: L(O({ seite: T, stoff: T, feld: T, liste: T, original: T })),
+    fehlende_zeilen: L(O({ seite: T, stoff: T })),
+    anmerkung: T,
+  });
+  const PRUEF_ANWEISUNG = [
+    'Du prüfst für die Feuerwehr (Gefahrstoffzug), ob eine Chemikalien-Beständigkeitsliste fehlerfrei aus dem Original übertragen wurde.',
+    'Du bekommst einen Teil des Originals (PDF-Seiten oder Bilder) und die daraus übertragenen Zeilen als Tabelle.',
+    '',
+    'Es ist sicherheitskritisch. Vergleiche jede übertragene Zeile, die auf diesen Seiten bzw. Bildern steht, Zeichen für Zeichen mit dem Original:',
+    '- Stoffname, CAS-Nr., Konzentration, Temperatur und jeden Wert in jeder Spalte (Zeichen, Klasse oder Zeit genau wie gedruckt, z. B. ">480", "<=120", "●", "○", "A").',
+    '- Steht jeder Wert in der richtigen Spalte und in der richtigen Zeile?',
+    '- Fehlen Zeilen dieser Seiten in der Übertragung? Dann in fehlende_zeilen.',
+    'Melde nur echte Abweichungen: feld ist "stoff", "cas", "konz", "temp" oder die Kennung der Spalte; liste = was übertragen wurde, original = was im Original steht.',
+    'Keine Abweichung sind: Leerzeichen, Schreibweise von Einheiten (20°C / 20 °C), Zeilenumbrüche, getrennt übertragene Angaben (z. B. „flüssig / 20 °C“ als konz „flüssig“ und temp „20 °C“).',
+    'Ist ein Zeichen im Original nicht sicher lesbar, nenne es in anmerkung statt als Abweichung. Stimmt alles: abweichungen und fehlende_zeilen leer.',
+  ].join('\n');
+
   // ------------------------------------------------------------------ Kompakte Antwort (eine oder mehrere Teile) → bestaendigkeit.json
   const text = v => (v === null || v === undefined) ? '' : String(v).replace(/\s+/g, ' ').trim();
   function minutenAus(roh) {
@@ -292,6 +314,6 @@
       String(a.geraet.ordner).localeCompare(String(b.geraet.ordner), 'de', { numeric: true }));
   }
 
-  return { FORMAT, DATEI, STUFEN, STUFE_TEXT, KATEGORIEN, BILD_WAHL, BILD_STANDARD, bildLesen, bildText, ordnerEinteilen, ordnerName, infoLesen, infoText, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
+  return { FORMAT, DATEI, PRUEF_DATEI, PRUEF_SCHEMA, PRUEF_ANWEISUNG, STUFEN, STUFE_TEXT, KATEGORIEN, BILD_WAHL, BILD_STANDARD, bildLesen, bildText, ordnerEinteilen, ordnerName, infoLesen, infoText, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
            pruefen, gesamtStufe, grund, kern, finde, fuerStoff };
 });

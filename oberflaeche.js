@@ -88,7 +88,7 @@
     padding: 1.4rem calc(1.25rem + var(--sicher-rechts)) calc(1.1rem + var(--sicher-unten)) calc(1.25rem + var(--sicher-links)); }
   #startseite .st-kacheln { width: 100%; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1rem; }
   #startseite .st-kachel { padding: 1.5rem 1.35rem 1.3rem; min-height: 11.5rem; border-top: 0; border-radius: 1rem; }
-  #startseite .st-kachel svg { width: 3.1rem; height: 3.1rem; }
+  #startseite .st-kachel svg { width: 3.6rem; height: 3.6rem; }
   #startseite .st-kachel > b { font-size: 1.65rem; letter-spacing: -.005em; }
   #startseite .st-kachel:not(.st-haupt) { border-left: .35rem solid var(--c); }
   .st-kachel.st-haupt { color: #fff; background: linear-gradient(140deg, #b8161e 0%, #df3b41 62%, #ea5a3d 100%);
@@ -203,7 +203,7 @@
   @media (max-width: 640px) {
     .st-kacheln, #startseite .st-kacheln { grid-template-columns: 1fr; gap: .8rem; }
     #startseite .st-kachel { min-height: 0; padding: 1.15rem 1.1rem 1.05rem; }
-    #startseite .st-kachel svg { width: 2.6rem; height: 2.6rem; }
+    #startseite .st-kachel svg { width: 3rem; height: 3rem; }
     #startseite .st-kachel > b { font-size: 1.45rem; }
     .ue-kopf h1 { font-size: 1.55rem; }
     #uebungen { justify-content: flex-start; gap: 1.3rem; }
@@ -298,11 +298,17 @@
     '<circle cx="24" cy="24" r="18" opacity=".25"/><path d="M24 6a18 18 0 0 1 17.1 23.6"/><path d="M24 15v10l6 4"/></svg>';
   const ICON_HAUS = '<svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="none" stroke="currentColor" stroke-width="2.2" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>';
-  const ICON_EINSATZ = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M24 4 44 24 24 44 4 24Z" opacity=".25"/><path d="M24 4 44 24 24 44 4 24Z"/><path d="M24 15v12" stroke-linecap="round"/>' +
-    '<circle cx="24" cy="33" r="1.6" fill="currentColor"/></svg>';
-  const ICON_UEBUNGEN = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<rect x="7" y="9" width="34" height="32" rx="4" opacity=".25"/><path d="M7 17h34M16 5v8M32 5v8"/><path d="m16 29 5 5 11-11"/></svg>';
+  // Einsatz: Einsatzkraft im Chemikalienschutzanzug (Haube mit Sichtscheibe); Übungen: Atemschutz-Vollmaske (CSA-Belastungsübung)
+  const ICON_EINSATZ = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M24 3c-6.9 0-11.5 5.4-11.5 12.3V19h23v-3.7C35.5 8.4 30.9 3 24 3Z" fill="currentColor" fill-opacity=".18"/>' +
+    '<rect x="16.4" y="8.8" width="15.2" height="8.4" rx="4.2" fill="currentColor" fill-opacity=".6"/>' +
+    '<path d="M12.5 19h23l2 15h-27Z" fill="currentColor" fill-opacity=".18"/><path d="M12.8 20.6 6.5 30l3.3 4.2M35.2 20.6l6.3 9.4-3.3 4.2"/>' +
+    '<path d="M12 34 11 45h8l5-9 5 9h8l-1-11"/><path d="M24 21v9"/></svg>';
+  const ICON_UEBUNGEN = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M24 5.5c-8.6 0-14.5 6.4-14.5 14.8C9.5 31.2 16.6 43.5 24 43.5S38.5 31.2 38.5 20.3C38.5 11.9 32.6 5.5 24 5.5Z" fill="currentColor" fill-opacity=".14"/>' +
+    '<path d="M13.8 19.2c1.4-6.8 19-6.8 20.4 0 .5 2.6-.8 5-3.2 5.8-4.4 1.6-9.6 1.6-14 0-2.4-.8-3.7-3.2-3.2-5.8Z" fill="currentColor" fill-opacity=".55"/>' +
+    '<circle cx="24" cy="33.4" r="5.2" fill="currentColor" fill-opacity=".3"/><path d="M21.6 32.1h4.8M21.6 34.7h4.8"/>' +
+    '<path d="M17 7.2 14.5 3.5M31 7.2l2.5-3.7M24 5.5V2.5"/></svg>';
   const ICON_LUPE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">' +
     '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>';
   const ICON_LISTE = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +

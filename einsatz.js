@@ -27,7 +27,7 @@
   .ez-kopf { display: flex; align-items: center; gap: .7rem; padding: .3rem .7rem .3rem .45rem; }
   /* Kopf aller Einsatz-Seiten wie das Hauptmenü: dunkel (in Hell und Dunkel gleich, daher das Original-Logo), über die volle Breite,
      unten die rot-weiße Warnmarkierung */
-  .ez > .ez-kopf { position: relative; isolation: isolate; overflow: hidden; color: #fff; border-radius: 0; box-shadow: none; gap: .75rem;
+  .ez > .ez-kopf { position: relative; isolation: isolate; overflow: hidden; color: #fff; border-radius: 0 !important; box-shadow: none; gap: .75rem;
     margin: calc(-.7rem - var(--frei-oben)) calc(-1 * var(--rand-r)) .15rem calc(-1 * var(--rand-l));
     padding: calc(.85rem + var(--frei-oben)) max(var(--rand-r), calc((100% - 62rem) / 2 + var(--rand-r))) 1.3rem max(var(--rand-l), calc((100% - 62rem) / 2 + var(--rand-l)));
     background: radial-gradient(90% 190% at 100% 0%, rgba(214, 41, 48, .34) 0%, rgba(214, 41, 48, 0) 60%), linear-gradient(165deg, #141a23 0%, #0b0e13 82%); }
@@ -300,14 +300,15 @@
   .ez-geraete { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
   .ez-geraete > li > a, .ez-geraete > li > div { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: .3rem .75rem; padding: .6rem;
     border-radius: .65rem; background: var(--surface2); border: 1px solid var(--line); color: var(--ink); text-decoration: none;
-    position: relative; overflow: hidden; padding-right: 5rem; }
+    position: relative; overflow: hidden; padding-right: 5.7rem; }
   /* Band rechts über die volle Höhe: grün beständig (mit Zeit bzw. Klasse), rot nicht beständig, gelb bedingt, grau ohne Angabe */
-  .ez-band { position: absolute; top: 0; right: 0; bottom: 0; width: 4.3rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  .ez-band { position: absolute; top: 0; right: 0; bottom: 0; width: 5rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: .2rem; padding: .35rem .3rem; box-sizing: border-box; text-align: center; color: #fff; background: #6b7480; }
   .ez-band.gut { background: var(--good); } .ez-band.nicht { background: var(--crit); } .ez-band.bedingt { background: #c48a00; } .ez-band.gemischt { background: var(--ser); }
   .ez-band b { font-size: 1.25rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   .ez-band.lang b { font-size: .95rem; }
   .ez-band small { font-size: .62rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; line-height: 1.15; opacity: .92; overflow-wrap: anywhere; }
+  .ez-band em { font-style: normal; font-size: .68rem; font-weight: 700; line-height: 1.15; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: anywhere; max-width: 100%; }
   .ez-bild { width: 4.2rem; height: 4.2rem; border-radius: .45rem; background: var(--surface); border: 1px solid var(--line); object-fit: contain; grid-row: span 3;
     display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: .65rem; text-align: center; overflow: hidden; }
   /* Bild links über die ersten Zeilen, alles andere immer in der rechten Spalte (sonst rutschen weitere Listenzeilen unter das Bild) */
@@ -402,6 +403,10 @@
   .ez-bildrahmen img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .ez-bildrahmen .leer { color: #6b7480; font-size: .8rem; }
   .bild-fuellen img, img.bild-fuellen { object-fit: cover !important; }
+  /* Prüfung auf Wunsch */
+  .ez-pruefen-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .7rem; margin-top: .15rem; }
+  .ez-pruefen-zeile .knopf.los { background: var(--akzent) !important; border-color: var(--akzent) !important; color: #fff !important; font-weight: 700; }
+  .ez-pruefen-zeile .ez-klein { flex: 1; min-width: 12rem; }
   /* Gerät aus der Stoffsuche geöffnet: Hinweis oben, Liste auf den Stoff gefiltert */
   .ez-stoffbezug { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .8rem; margin-bottom: .8rem; }
   .ez-stoffbezug .knopf { margin: 0 !important; white-space: nowrap; }
@@ -469,9 +474,9 @@
   }
   @media (max-width: 360px) { .ez-suchfeld input { font-size: 17px; } .ez-suchfeld { padding-left: .6rem; } .ez-zuletzt { width: 8.6rem; } }
   @media (max-width: 380px) {
-    .ez-geraete > li > a, .ez-geraete > li > div { padding-right: 4.4rem; grid-template-columns: 3.6rem minmax(0, 1fr); }
+    .ez-geraete > li > a, .ez-geraete > li > div { padding-right: 5rem; grid-template-columns: 3.6rem minmax(0, 1fr); }
     .ez-geraete .ez-bild { width: 3.6rem; height: 3.6rem; }
-    .ez-band { width: 3.8rem; } .ez-band b { font-size: 1.05rem; } .ez-band.lang b { font-size: .82rem; }
+    .ez-band { width: 4.4rem; } .ez-band b { font-size: 1.05rem; } .ez-band.lang b { font-size: .82rem; } .ez-band em { font-size: .62rem; }
     .ez > .ez-kopf .ez-titel h1 { font-size: 1.25rem; }
   }
   @media (max-width: 380px) { .ez-ordner { gap: .5rem; } .ez-ok { padding: .75rem .65rem .7rem; } .ez-kw { gap: .4rem; } .ez-kw > div:not(.ez-ausbr) { padding: .45rem .5rem; } .ez-aegl th, .ez-aegl td { font-size: .76rem; padding: .28rem .1rem; } .ez-aegl th:first-child, .ez-aegl td:first-child { width: 3.3rem; }
@@ -642,6 +647,9 @@
         catch (f) { g.fehler = 'Geordnete Fassung nicht lesbar: ' + f.message; }
       }
       if (g.daten && g.daten.geraet && g.daten.geraet.name && !g.name) g.name = g.daten.geraet.name;
+      // Prüfauftrag aus der App (pruefen.json): wartet auf den Mac-Helfer, ggf. mit Fehlversuchen
+      const pruef = namen.find(n => n.toLowerCase() === B.PRUEF_DATEI);
+      if (pruef) { try { g.pruefAuftrag = JSON.parse(await (await ad().datei(`${BL}/${u.name}/${pruef}`)).text()) || {}; } catch { g.pruefAuftrag = {}; } }
       if (g.info) {
         try { const inf = B.infoLesen(await (await ad().datei(g.info)).text()); g.kategorieInfo = inf.kategorie; g.infoText = inf.text; g.spaltenWahl = inf.spalten; g.bild = inf.bild; }
         catch { /* ohne Angaben */ }
@@ -1347,11 +1355,20 @@
   }
   // Stoffname aus der Liste lesbar: „Chlor , trocken“ → „Chlor, trocken“
   const stoffText = t => String(t || '').replace(/\s+([,;.)])/g, '$1').replace(/\(\s+/g, '(').replace(/\s{2,}/g, ' ').trim();
+  // Bedeutung eines Zeichens laut Legende der Liste („○“ → „Gut beständig“), dazu eine Kurzform fürs Band
+  // („geeignet für Voll- und Leerschlauchsystem, Dauerbetrieb“ → „geeignet“)
+  const legendeText = (L, roh) => { const l = (L.legende || []).find(x => x.zeichen === roh); return l ? l.text : ''; };
+  function kurzDefinition(t) {
+    let k = String(t || '').split(/[,;.(]| – | - /)[0].trim();
+    if (k.length > 24) k = k.split(/\s+(?:für|bei|nur|wenn)\s+/)[0].trim();
+    if (k.length > 32) k = k.slice(0, 30).replace(/\s+\S*$/, '') + ' …';
+    return k;
+  }
   // Band rechts an der Gerätezeile: Farbe der Gesamtbewertung, dazu die Angabe, die sie bestimmt (Zeit bzw. Klasse; bei mehreren
   // Zeilen die ungünstigste – bei Durchbruchzeiten die kürzeste)
   function bandHtml(e) {
     const g = e.geraet, L = g.daten && g.daten.liste;
-    const band = (zeichen, text, extra = '') => `<span class="ez-band ${esc(e.stufe)}${extra}" title="${esc(B.STUFE_TEXT[e.stufe] || '')}"><b>${esc(zeichen)}</b><small>${esc(text)}</small></span>`;
+    const band = (zeichen, text, extra = '', def = '') => `<span class="ez-band ${esc(e.stufe)}${extra}" title="${esc(B.STUFE_TEXT[e.stufe] || '')}"><b>${esc(zeichen)}</b>${def ? `<em>${esc(def)}</em>` : ''}<small>${esc(text)}</small></span>`;
     if (e.stufe === 'offen') return band('…', 'noch offen');
     if (e.stufe === 'keine' || !L) return band('–', 'nicht in der Liste');
     if (e.stufe === 'gemischt') return band('±', 'gemischt');
@@ -1363,8 +1380,10 @@
     const passend = werte.filter(w => w.stufe === e.stufe), kand = passend.length ? passend : werte;
     const zahl = w => { const m = /(\d+(?:[.,]\d+)?)/.exec(w.roh); return m ? Number(m[1].replace(',', '.')) : Infinity; };
     const w = L.art === 'permeation' ? kand.reduce((a, b) => (zahl(b) < zahl(a) ? b : a)) : kand[0];
-    const unter = L.art === 'permeation' && /\d/.test(w.roh) ? 'min' : ids.length > 1 || L.spalten.length > 1 ? w.id : (B.STUFE_TEXT[e.stufe] || '');
-    return band(w.roh, unter, w.roh.length > 5 ? ' lang' : '');
+    const zeit = L.art === 'permeation' && /\d/.test(w.roh);
+    const def = zeit ? '' : kurzDefinition(legendeText(L, w.roh));          // Bedeutung des Zeichens laut Legende
+    const unter = zeit ? 'min' : ids.length > 1 || L.spalten.length > 1 ? w.id : (def ? '' : B.STUFE_TEXT[e.stufe] || '');
+    return band(w.roh, unter, w.roh.length > 5 ? ' lang' : '', def);
   }
   function geraetZeile(e, kontext = '') {
     const g = e.geraet;
@@ -1375,7 +1394,8 @@
       const werte = ids.map(id => { const w = t.eintrag.werte[id]; const sp = L.spalten.find(s => s.id === id);
         // Durchbruchzeiten mit Einheit („Sykan 2: >480 min“) – bei Permeationslisten zählt die Zeit, nicht die Farbe
         const min = L.art === 'permeation' && w && /\d/.test(w.roh) && !/min/i.test(w.roh) ? ' min' : '';
-        return w && w.roh ? `${esc(sp ? sp.id : id)}: <b>${esc(w.roh)}${min}</b>` : ''; }).filter(Boolean).slice(0, 6).join(' · ');
+        const bedeutung = !min && w && w.roh ? legendeText(L, w.roh) : '';
+        return w && w.roh ? `${esc(sp ? sp.id : id)}: <b>${esc(w.roh)}${min}</b>${bedeutung ? ' ' + esc(bedeutung) : ''}` : ''; }).filter(Boolean).slice(0, 6).join(' · ');
       // Konzentration/Temperatur nur, wenn sie nicht schon im Stoffnamen steht („Salzsäure 37 %“ + „37 %“)
       const name = S.wertSchoen(stoffText(t.eintrag.stoff)).replace(/\s+/g, '');
       const zusatz = [t.eintrag.konz, t.eintrag.temp].filter(Boolean).map(x => S.wertSchoen(x)).filter(x => !name.includes(x.replace(/\s+/g, ''))).join(' · ');
@@ -1578,7 +1598,7 @@
     geraetKontext = { ordner, kontext };
     gEl.innerHTML = '';
     if (!dateien.length && ad() && ad().verbunden()) await listeHolen(false);
-    const g = (await geraete()).find(x => x.ordner === ordner);
+    const g = (await geraete()).find(x => x.ordner === ordner) || (await geraete()).find(x => x.ordner.normalize('NFC') === String(ordner).normalize('NFC'));
     // Stoff aus der Stoffsuche (Gerät über „Beständigkeiten“ bzw. „PSA“ geöffnet); nach Neuladen aus dem Stoffspeicher
     let sf = kontext ? stoffKontexte.get(kontext) || null : null;
     if (!sf && /^\d{6}$/.test(kontext)) { try { sf = stoffInfoVon(await stoffHolen(kontext)); stoffKontexte.set(kontext, sf); } catch { sf = null; } }
@@ -1596,6 +1616,20 @@
     const status = d && d.auswertung ? (d.auswertung.geprueft ? 'Geprüft' + (d.auswertung.pruefung && d.auswertung.pruefung.am ? ' am ' + datumZeit(d.auswertung.pruefung.am) : '') + ' – mit dem Original abgeglichen.'
       : 'Automatisch ausgelesen am ' + datumZeit(d.auswertung.am) + ' – noch nicht mit dem Original abgeglichen.') : '';
     const mehrTitel = [infoLang && 'Angaben zum Gerät', listeTxt && 'Liste', anmerkung && 'Hinweise der Auswertung'].filter(Boolean);
+    // Prüfung auf Wunsch: Claude liest die Liste über den Mac ein zweites Mal und vergleicht jede Zeile mit dem Original
+    const aw = d && d.auswertung, pr = aw && aw.pruefung, auto = aw && aw.pruefung_auto;
+    const abwListe = p => [...(p.abweichungen || []).map(a => `<li data-z="•">${a.seite ? 'S. ' + esc(a.seite) + ' · ' : ''}<b>${esc(stoffText(a.stoff))}</b>` +
+        `${a.feld ? ' · ' + esc(a.feld) : ''}: Liste „${esc(a.liste)}“ – Original „${esc(a.original)}“</li>`),
+      ...(p.fehlende_zeilen || []).map(f => `<li data-z="•">${f.seite ? 'S. ' + esc(f.seite) + ' · ' : ''}<b>${esc(stoffText(f.stoff))}</b> fehlt in der Übertragung</li>`)].join('');
+    const abwAnzahl = p => (p && ((p.abweichungen || []).length + (p.fehlende_zeilen || []).length)) || 0;
+    const pruefHtml = !d ? '' : g.pruefAuftrag ? '<div class="ez-warn blau" id="ez-pruefung"><div class="ez-fortschritt"><div class="titel">Prüfung angefordert</div><div class="ez-klein">wird abgefragt …</div></div></div>'
+      : (!aw.geprueft && abwAnzahl(pr) ? `<div class="ez-warn rot" id="ez-pruef-abw"><b>Zweiter Lesedurchgang: ${abwAnzahl(pr) === 1 ? '1 mögliche Abweichung' : abwAnzahl(pr) + ' mögliche Abweichungen'}</b> – bitte im Original nachsehen.
+          <ul class="ez-zeilen">${abwListe(pr)}</ul></div>` : '') +
+        (aw.geprueft && abwAnzahl(auto) ? `<div class="ez-warn" id="ez-pruef-abw"><b>Zweiter Lesedurchgang (Mac-Helfer): ${abwAnzahl(auto) === 1 ? '1 mögliche Abweichung' : abwAnzahl(auto) + ' mögliche Abweichungen'}</b> – die Fassung bleibt geprüft.
+          <details class="ez-mehr"><summary>Anzeigen</summary><div class="inhalt"><ul class="ez-zeilen">${abwListe(auto)}</ul></div></details></div>` : '') +
+        (bearbeitbar ? `<div class="ez-pruefen-zeile"><button type="button" class="knopf${aw.geprueft ? '' : ' los'}" id="ez-pruefen">${I.schild}${aw.geprueft || pr ? 'Erneut prüfen lassen' : 'Liste prüfen lassen'}</button>
+          <span class="ez-klein">${aw.geprueft ? 'Claude liest die Liste über den Mac noch einmal und vergleicht jede Zeile mit dem Original.'
+            : 'Claude liest die Liste über den Mac ein zweites Mal und vergleicht jede Zeile mit dem Original. Ohne Abweichung gilt sie danach als geprüft.'}</span></div>` : '');
     kopfK.innerHTML = `${sf && L ? `<div class="ez-warn blau ez-stoffbezug"><span>Aus der Stoffsuche: <b>${esc(sf.anzeige)}</b> – die Liste unten zeigt nur die passenden Zeilen.</span>
         <button class="knopf" type="button" id="ez-zur-liste">Zur Liste ↓</button></div>` : ''}<div class="ez-oben"><div class="ez-bildspalte bild-${esc(bild.groesse)}">
         <div class="ez-bildrahmen${bildFuellen(bild)}" style="${bildStil(bild)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="Foto ${esc(g.name)}">` : '<span class="leer">kein Foto</span>'}</div>
@@ -1606,6 +1640,7 @@
         ${d && d.geraet.werkstoffe.length ? `<div class="ez-hinweis">Werkstoffe: ${esc(d.geraet.werkstoffe.join(', '))}</div>` : ''}
         ${infoTxt && !infoLang ? `<div class="ez-hinweis">${esc(infoTxt)}</div>` : ''}
         ${status ? `<div class="ez-klein">${esc(status)}</div>` : ''}
+        ${pruefHtml}
         ${mehrTitel.length ? `<details class="ez-mehr" id="ez-mehr-liste"><summary>Mehr: ${esc(mehrTitel.join(', '))}</summary><div class="inhalt">
           ${infoLang ? `<div><b>Angaben zum Gerät</b>${esc(infoTxt)}</div>` : ''}${listeTxt ? `<div><b>Liste</b>${esc(listeTxt)}</div>` : ''}
           ${anmerkung ? `<div><b>Hinweise der Auswertung</b>${esc(anmerkung)}</div>` : ''}</div></details>` : ''}
@@ -1619,6 +1654,18 @@
         <small>${esc(groesse(info && info.groesse))}</small></span></a>${info && ad().art === 'web' && ad().verfuegbarkeitSetzen ? verfWahl(info) : ''}</li>`; }).join('')}</ul>` : ''}`;
     gEl.appendChild(kopfK);
     verfBedienung(kopfK);
+    const pk = kopfK.querySelector('#ez-pruefen');
+    if (pk) pk.addEventListener('click', async () => {
+      pk.disabled = true;
+      const auftrag = JSON.stringify({ angefordert: new Date().toISOString(), von: ad().art === 'web' ? 'Web-App' : 'Programm' }, null, 1);
+      try { await ad().geraetDateien(g.ordner, [{ name: B.PRUEF_DATEI, blob: new Blob([auftrag], { type: 'application/json' }) }]); }
+      catch (e) { pk.disabled = false; meldung('Nicht möglich: ' + e.message, 7000); return; }
+      geraeteCache = null;
+      await listeHolen(true);
+      meldung('Prüfung angefordert – der Mac-Helfer lässt Claude die Liste ein zweites Mal lesen und mit dem Original vergleichen.', 6500);
+      geraetSeite(g.ordner);
+    });
+    if (g.pruefAuftrag && d) pruefungBeobachten(g);
     const zurListe = kopfK.querySelector('#ez-zur-liste');
     if (zurListe) zurListe.addEventListener('click', () => { const z = document.getElementById('ez-liste-karte'); if (z) z.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     if (!d && g.quellen.length) auswertungBeobachten(g);
@@ -1709,7 +1756,7 @@
   function auswertungStoppen() { clearInterval(auswertungTimer); auswertungTimer = null; }
   const nfc = t => String(t || '').normalize('NFC');
   const uhr = d => { d = new Date(d); return isNaN(d) ? '' : `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
-  function fortschrittHtml(w) {
+  function fortschrittHtml(w, titel = 'Wird ausgewertet') {
     const dreht = I.neu.replace('<svg ', '<svg class="dreht" ');
     if (!w || w.phase === 'vorbereiten' || !w.teile) return `<div class="ez-fortschritt"><div class="titel">${dreht}Liste wird vorbereitet …</div>
       <div class="balken unbestimmt"><i></i></div><div class="zeile"><span>Herunterladen und in Teile aufteilen</span><span>seit ${esc(uhr(w && w.seit))}</span></div></div>`;
@@ -1718,7 +1765,7 @@
     const imTeil = schnitt ? Math.min(.9, lauf / schnitt) : Math.min(.5, lauf / 240000);
     const anteil = Math.max(0, Math.min(.99, ((Number(w.fertig) || 0) + (w.fertig >= w.teil ? 0 : imTeil)) / w.teile));
     const rest = schnitt ? Math.max(1, Math.round(((w.teile - (Number(w.fertig) || 0)) * schnitt - (w.fertig >= w.teil ? 0 : lauf)) / 60000)) : 0;
-    return `<div class="ez-fortschritt"><div class="titel">${dreht}Wird ausgewertet <span class="gross">${Math.round(anteil * 100)} %</span></div>
+    return `<div class="ez-fortschritt"><div class="titel">${dreht}${titel} <span class="gross">${Math.round(anteil * 100)} %</span></div>
       <div class="balken" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(anteil * 100)}"><i style="width:${(anteil * 100).toFixed(1)}%"></i></div>
       <div class="zeile"><span>Teil ${esc(w.teil || 1)} von ${esc(w.teile)}${w.fertig ? ` · ${esc(w.fertig)} fertig` : ''}</span><span>${rest ? `noch etwa ${rest} min · ` : ''}seit ${esc(uhr(w.seit))}</span></div></div>`;
   }
@@ -1759,8 +1806,45 @@
     auswertungTimer = setInterval(runde, 4000);
     auswertungZeigen(g);
   }
+  // Fortschritt einer angeforderten Prüfung (Lebenszeichen des Mac-Helfers: arbeit.art = 'pruefung')
+  let pruefTimer = null;
+  function pruefungStoppen() { clearInterval(pruefTimer); pruefTimer = null; }
+  async function pruefungZeigen(g, runde) {
+    const box = gEl.querySelector('#ez-pruefung');
+    if (!box || GSZ.aktuell.ansicht !== 'geraet') { pruefungStoppen(); return; }
+    // fertig, sobald pruefen.json weg ist
+    if (runde % 4 === 0) {
+      await listeHolen(true);
+      if (!dateiInfo(`${BL}/${g.ordner}/${B.PRUEF_DATEI}`)) { pruefungStoppen(); geraeteCache = null; if (GSZ.aktuell.ansicht === 'geraet') geraetSeite(g.ordner); return; }
+    }
+    let h = null;
+    try { h = ad() && ad().helfer ? await ad().helfer() : null; } catch { h = null; }
+    if (!box.isConnected) return;
+    const lebt = !!(h && h.zeit && Date.now() - Date.parse(h.zeit) < 3 * 60 * 1000);
+    const w = h && h.arbeit && h.arbeit.art === 'pruefung' && nfc(h.arbeit.ordner) === nfc(g.ordner) ? h.arbeit : null;
+    const f = g.pruefAuftrag || {};
+    let html;
+    if (w) html = fortschrittHtml(w, 'Wird geprüft');
+    else if (!lebt) html = `<b>Prüfung angefordert</b> – der Mac-Helfer meldet sich nicht (Mac aus, im Ruhezustand oder ohne Netz${h && h.zeit ? `, zuletzt ${esc(datumZeit(h.zeit))}` : ''}). Die Prüfung startet, sobald er läuft.`;
+    else if (h.pause_bis && Date.parse(h.pause_bis) > Date.now()) html = `<b>Prüfung angefordert</b> – Pause bis ${esc(uhr(h.pause_bis))}, das Kontingent des Claude-Abos ist gerade erschöpft.`;
+    else if (f.fehler) html = `<b>${(Number(f.versuche) || 0) >= 3 ? 'Prüfung aufgegeben' : 'Letzter Prüfversuch fehlgeschlagen'}</b> (${esc(f.versuche || 1)}. Versuch): ${esc(f.fehler)}` +
+      ((Number(f.versuche) || 0) >= 3 ? ' – „Erneut prüfen lassen“ fordert sie neu an.' : ' – nächster Versuch in etwa 10 Minuten.');
+    else if (h.arbeit) html = `<div class="ez-fortschritt"><div class="titel">Prüfung in der Warteschlange</div><div class="balken"><i style="width:0"></i></div>
+      <div class="zeile"><span>Der Mac-Helfer arbeitet gerade an ${h.arbeit.art === 'sdb' ? 'einem Sicherheitsdatenblatt' : `„${esc(h.arbeit.ordner || '')}“`} – danach ist diese Prüfung dran.</span></div></div>`;
+    else html = `<div class="ez-fortschritt"><div class="titel">Prüfung in der Warteschlange</div><div class="balken unbestimmt"><i></i></div>
+      <div class="zeile"><span>Der Mac-Helfer beginnt in Kürze.</span></div></div>`;
+    box.innerHTML = html;
+    box.className = 'ez-warn ' + (f.fehler && !w ? 'rot' : 'blau');
+  }
+  function pruefungBeobachten(g) {
+    pruefungStoppen();
+    let n = 0;
+    const runde = () => { if (document.hidden) return; pruefungZeigen(g, ++n); };
+    pruefTimer = setInterval(runde, 4000);
+    pruefungZeigen(g, 1);
+  }
   GSZ.ansicht('geraet', { element: gEl, titel: p => dekodiere(String(p).split('/')[0]),
-    anzeigen(param) { const [o, k] = String(param).split('/'); geraetSeite(dekodiere(o), k ? dekodiere(k) : ''); }, verlassen() { auswertungStoppen(); } });
+    anzeigen(param) { const [o, k] = String(param).split('/'); geraetSeite(dekodiere(o), k ? dekodiere(k) : ''); }, verlassen() { auswertungStoppen(); pruefungStoppen(); } });
 
   // ---------------------------------------------------------------- Gerät oder PSA anlegen bzw. bearbeiten (#geraet-neu[/<ordner>])
   // Legt Einsatz/Beständigkeitslisten/<Nr> <Bezeichnung>/ an: Foto.jpg, Original-Liste(n), info.txt („Kategorie: …“ + Angaben).
@@ -1786,7 +1870,7 @@
     const a = ad();
     if (a && a.verbunden() && !dateien.length) await listeHolen(false);
     const alle = a && a.verbunden() ? await geraete() : [];
-    const g = ordner ? alle.find(x => x.ordner === ordner) : null;
+    const g = ordner ? alle.find(x => x.ordner === ordner) || alle.find(x => x.ordner.normalize('NFC') === String(ordner).normalize('NFC')) : null;
     const titel = g ? (g.nr ? g.nr + ' · ' : '') + g.name : '';
     neuEl.appendChild(kopf({ titel: g ? 'Gerät bearbeiten' : 'Gerät oder PSA anlegen', unter: g ? esc(titel) : BL,
                              eltern: g ? 'geraet/' + kodiere(ordner) : 'ordner/' + kodiere(BL) }));
@@ -1841,6 +1925,7 @@
       if (l === B.DATEI) return ['auswertung', g.daten && g.daten.auswertung && g.daten.auswertung.geprueft ? 'Geordnete Fassung (geprüft)' : 'Geordnete Fassung (Auswertung)', 'var(--akzent)'];
       if (l === 'bestaendigkeit.fehler.json') return ['fehler', 'Fehlervermerk des Mac-Helfers', '#6b7480'];
       if (l === 'bestaendigkeit.alt.json') return ['alt', 'Sicherung einer früheren geprüften Fassung', '#6b7480'];
+      if (l === B.PRUEF_DATEI) return ['sonst', 'Prüfauftrag für den Mac-Helfer (löschen bricht ihn ab)', '#6b7480'];
       if (g.info && g.info.split('/').pop().toLowerCase() === l) return null;                 // Angaben: oben im Formular
       if (g.quellen.some(q => q.split('/').pop().toLowerCase() === l)) return ['liste', 'Beständigkeitsliste', (TYP[endung(n)] || [, '#d64045'])[1]];
       return ['sonst', 'Datei', '#6b7480'];
