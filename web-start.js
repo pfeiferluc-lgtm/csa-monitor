@@ -530,7 +530,13 @@
       if (!confirm('Alle offline gespeicherten Einsatz-Dateien von diesem Gerät löschen? Sie werden beim nächsten Abgleich neu geladen.')) return;
       window.GSZSpeicher.leeren('dateien').then(() => window.GSZSpeicher.setze('meta', 'einsatz-offline', {})).then(() => { offlineRevs = {}; einsatzMelden(); hinweis('Gelöscht.'); });
     }
-    if (a === 'kurzbefehl') location.href = 'GSZ-Claude.shortcut';
+    // als Download (wie Content-Disposition: attachment), sonst zeigt Safari die Datei als Text an; danach „Kurzbefehl hinzufügen“
+    if (a === 'kurzbefehl') {
+      const l = document.createElement('a');
+      l.href = 'GSZ-Claude.shortcut'; l.download = 'GSZ Claude.shortcut';
+      document.body.appendChild(l); l.click(); l.remove();
+      hinweis('Kurzbefehl wird geladen – danach „Kurzbefehl hinzufügen“ wählen (ggf. in der Dateien-App unter „Downloads“ antippen).', 9000);
+    }
     if (a === 'abmelden') {
       if (!confirm('Von Dropbox abmelden? Danach muss die Web-App neu verbunden werden.')) return;
       SP.set('csa-dbx-refresh', null); SP.set('csa-dbx-verifier', null); SP.set('csa-dbx-verifier-key', null);

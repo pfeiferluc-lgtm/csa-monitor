@@ -226,7 +226,7 @@
       }
       if (d.text) knoepfe.push('<button class="knopf" id="sdb-kopieren">Anfrage für Claude kopieren</button>');
       teile.push(`<div class="ez-warn">${esc(t)}${knoepfe.length ? `<div class="sdb-zeile">${knoepfe.join('')}</div>` : ''}
-        ${istIphone() ? '<div class="ez-klein" style="margin-top:.4rem">Fehlt der Kurzbefehl „GSZ Claude“? <a href="GSZ-Claude.shortcut">Hier laden</a> (einmalig, braucht die Claude-App).</div>' : ''}</div>`);
+        ${istIphone() ? '<div class="ez-klein" style="margin-top:.4rem">Fehlt der Kurzbefehl „GSZ Claude“? <a href="GSZ-Claude.shortcut" download="GSZ Claude.shortcut">Hier laden</a> (einmalig, braucht die Claude-App).</div>' : ''}</div>`);
     }
     const s = stoffVon(d);
     const cas = s.cas[0] || (s.bestandteile.find(b => b.cas) || {}).cas;
