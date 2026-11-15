@@ -36,8 +36,10 @@
       loeschmittel: { geeignet: [], ungeeignet: [], brandklasse: '', hinweise: [], psaBrand: [], gefahrenBrand: [] },
       freisetzung: [],
       psa: { atem: [], koerper: [], augen: [], hand: [], handMaterialien: [], hygiene: [] },   // handMaterialien: [{ material, dicke, zeit, stufe }]
-      ersteHilfe: { allgemein: [], einatmen: [], haut: [], augen: [], verschlucken: [] },
+      ersteHilfe: { allgemein: [], einatmen: [], haut: [], augen: [], verschlucken: [], arzt: [] },   // arzt: Hinweise für den Arzt
       reaktionen: [],
+      dekon: [],              // ausdrückliche Angaben zur Reinigung/Dekontamination (nur Claude; sonst leitet die Oberfläche sie ab)
+      entsorgung: [],         // Entsorgung (GESTIS bzw. Abschnitt 13)
       gasflasche: '',
       kapitel: [],            // [{ titel, text }] vollständiges Datenblatt (GESTIS-Kapitel bzw. Abschnitte des Sicherheitsdatenblatts)
       anmerkung: '',          // Hinweis der Auswertung (z. B. „Abschnitt 9 auf dem Foto unleserlich“)
@@ -93,6 +95,8 @@
     const e = o.ersteHilfe || {};
     for (const k of Object.keys(s.ersteHilfe)) s.ersteHilfe[k] = satzListe(e[k]);
     s.reaktionen = satzListe(o.reaktionen);
+    s.dekon = satzListe(o.dekon);
+    s.entsorgung = satzListe(o.entsorgung);
     s.kapitel = (Array.isArray(o.kapitel) ? o.kapitel : []).map(k => ({ titel: text(k && k.titel), text: String((k && k.text) || '').trim(),
       gruppe: text(k && k.gruppe) }))      // gruppe: Hauptkapitel (GESTIS), sonst leer
       .filter(k => k.titel || k.text);
@@ -149,6 +153,7 @@
       .replace(/\s(?:\.\.\.|…)\s?(?=[<>≤≥]?\s?[-−]?\d)/g, ' bis ')
       .replace(new RegExp(`(\\d)\\s+[-–]\\s+(?=${ZAHL})`, 'g'), '$1 bis ')                                       // „100 - 102“
       .replace(/(^|[\s(\/;:])-(?=\d)/g, '$1−')                                                                 // Minuszeichen
+      .replace(/<\s?=/g, '≤').replace(/>\s?=/g, '≥')                                                          // „<=“ → „≤“
       .replace(/([<>≤≥])(?=[−\d])/g, '$1 ')                                                                    // „<50“ → „< 50“
       .replace(/\b(c|d)?m3\b/g, (m, v) => (v || '') + 'm³').replace(/\b(c|d)?m2\b/g, (m, v) => (v || '') + 'm²')
       .replace(/(\d+,\d{4,})(?!\d)/g, z => rundenText(z))                                                     // 8,5737 → 8,57
@@ -192,8 +197,10 @@
     loeschmittel: O({ geeignet: L(T), ungeeignet: L(T), brandklasse: T, hinweise: L(T), psaBrand: L(T), gefahrenBrand: L(T) }),
     freisetzung: L(T),
     psa: O({ atem: L(T), koerper: L(T), augen: L(T), hand: L(T), handMaterialien: L(O({ material: T, dicke: T, zeit: T, stufe: T })), hygiene: L(T) }),
-    ersteHilfe: O({ allgemein: L(T), einatmen: L(T), haut: L(T), augen: L(T), verschlucken: L(T) }),
+    ersteHilfe: O({ allgemein: L(T), einatmen: L(T), haut: L(T), augen: L(T), verschlucken: L(T), arzt: L(T) }),
     reaktionen: L(T),
+    dekon: L(T),
+    entsorgung: L(T),
     gasflasche: T,
     anmerkung: T,
   });
@@ -219,7 +226,9 @@
     '- loeschmittel (Abschnitt 5): geeignet, ungeeignet, brandklasse (falls genannt), hinweise (besondere Hinweise für die Brandbekämpfung, 5.3), psaBrand (Schutzausrüstung bei der Brandbekämpfung), gefahrenBrand (besondere Gefahren, gefährliche Verbrennungsprodukte, 5.2).',
     '- freisetzung (Abschnitt 6): personenbezogene Vorsichtsmaßnahmen, Umweltschutz und Verfahren zum Aufnehmen/Eindämmen.',
     '- psa (Abschnitt 8.2): atem (Atemschutz, mit Filtertyp und Kennfarbe, falls genannt), koerper, augen, hand (Text zum Handschutz), handMaterialien (je Handschuhmaterial: material, dicke, zeit = Durchbruchzeit, stufe = "gut" bei Durchbruchzeit ≥ 480 min bzw. als geeignet empfohlen, "bedingt" bei kürzerer Zeit oder Einschränkung, "nicht" bei ungeeignet, sonst "unbekannt"), hygiene.',
-    '- ersteHilfe (Abschnitt 4): allgemein, einatmen, haut, augen, verschlucken.',
+    '- ersteHilfe (Abschnitt 4): allgemein (auch Selbstschutz des Ersthelfers), einatmen, haut, augen, verschlucken, arzt (4.2 Symptome und 4.3 Hinweise für den Arzt, kurz).',
+    '- dekon: alles, was das Datenblatt zur Reinigung bzw. Dekontamination von Personen, Kleidung, Ausrüstung, Geräten und Flächen sagt (z. B. aus 4, 6.3, 7.1, 8.2: „Kontaminierte Kleidung vor erneutem Tragen waschen“, „mit viel Wasser und Seife reinigen“, „Mit Neutralisationsmittel aufnehmen“, „Nicht mit Wasser in Berührung bringen“) – nur aus dem Datenblatt.',
+    '- entsorgung (Abschnitt 13): kurze Punkte zur Entsorgung des Produkts, verunreinigter Bindemittel und Verpackungen.',
     '- reaktionen (Abschnitt 10): gefährliche Reaktionen, zu vermeidende Bedingungen und unverträgliche Stoffe, gefährliche Zersetzungsprodukte.',
     '- gasflasche: Farbkennzeichnung der Gasflasche, falls genannt.',
     '- anmerkung: ein bis zwei kurze Sätze, was fehlte, unleserlich war oder bei einem Gemisch zu beachten ist; leer, wenn alles eindeutig war.',

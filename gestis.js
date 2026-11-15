@@ -220,6 +220,7 @@
     psaAuswerten(zeilen('0806'), s.psa);
     ersteHilfeAuswerten(zeilen('0703'), s.ersteHilfe);
     s.reaktionen = saetze(zeilen('0619').filter(z => !/^GEFÄHRLICHES REAKTIONSVERHALTEN/.test(z)));
+    s.entsorgung = saetze(zeilen('0807').filter(z => !/^ENTSORGUNG$/.test(z)));
 
     // vollständiges Datenblatt (ohne Literatur und Links), Unterkapitel mit Titel, gruppiert nach Hauptkapitel
     const TITEL = { '0100': 'IDENTIFIKATION', '0400': 'FORMEL' };
@@ -385,17 +386,33 @@
     }
     p.hand = text;
   }
+  // Erste Hilfe (GESTIS 0703): Abschnitte stehen als eigene Zeile („Augen:“, „Haut:“, „Atmungsorgane:“, „Verschlucken:“,
+  // „Hinweise für den Arzt:“, „Empfehlungen:“, „Anmerkung:“). Zeilen wie „So schnell wie möglich:“ gehören zum Text und werden
+  // mit der folgenden Zeile verbunden. Im Arzt-Teil stehen wieder „Augen: …“ usw. (Symptome) – die bleiben beim Arzt.
   function ersteHilfeAuswerten(z, e) {
-    const ZIEL = { Augen: 'augen', Haut: 'haut', Atmungsorgane: 'einatmen', Einatmen: 'einatmen', Verschlucken: 'verschlucken',
-                   'Hinweise für den Arzt': 'allgemein', Allgemein: 'allgemein', Ersthelfer: 'allgemein' };
-    let akt = null;
-    for (const x of z) {
+    const ZIEL = { augen: 'augen', haut: 'haut', atmungsorgane: 'einatmen', einatmen: 'einatmen', inhalation: 'einatmen', verschlucken: 'verschlucken',
+                   'hinweise für den arzt': 'arzt', 'hinweise für den ersthelfer': 'allgemein', ersthelfer: 'allgemein', selbstschutz: 'allgemein',
+                   allgemein: 'allgemein', 'allgemeine hinweise': 'allgemein', empfehlungen: 'empfehlung', anmerkung: null };
+    let akt = null, imArzt = false;
+    const dazu = (k, t) => {
+      const l = e[k], letzte = l[l.length - 1];
+      if (letzte && /:$/.test(letzte) && !/^-/.test(t)) l[l.length - 1] = letzte + ' ' + t; else l.push(t);
+    };
+    for (let x of z) {
       if (/^ERSTE HILFE/.test(x)) continue;
-      const m = /^([A-ZÄÖÜ][^:]{2,40}):\s*(.*)$/.exec(x);
-      if (m && ZIEL[m[1]]) { akt = ZIEL[m[1]]; if (m[2]) e[akt].push(m[2]); continue; }
-      if (m && !ZIEL[m[1]] && istLabel(x)) { akt = 'allgemein'; e.allgemein.push(x.replace(/:\s*$/, ':')); continue; }
-      if (akt) e[akt].push(...saetze([x]));
+      x = x.replace(/\s*\[\s*\d{2,5}(?:\s*,\s*\d{2,5})*\s*\]/g, '').trim();          // Quellennummern [07979, 00330]
+      if (!x) continue;
+      const m = /^([A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß ]{1,38}):\s*(.*)$/.exec(x);
+      const name = m ? m[1].trim().toLowerCase() : '';
+      if (m && name in ZIEL && (!imArzt || ['hinweise für den arzt', 'empfehlungen', 'anmerkung'].includes(name))) {
+        akt = ZIEL[name]; imArzt = akt === 'arzt';
+        if (m[2] && akt) x = m[2]; else continue;
+      }
+      // „Empfehlungen“: „… dem Arzt angeben“ gilt für jeden Helfer, der Rest (Spüllösungen, Medikamente) ist für den Arzt
+      if (akt === 'empfehlung') dazu(/arzt angeben|giftinformation|notruf|notarzt/i.test(x) ? 'allgemein' : 'arzt', x);
+      else if (akt) dazu(akt, x);
     }
+    for (const k of Object.keys(e)) e[k] = e[k].map(t => t.replace(/:$/, '').trim()).filter(Boolean);
   }
 
   // Passt die gesuchte UN-Nummer zum Datenblatt? (Die GESTIS-Suche nach Nummern trifft auch gleichlautende ZVG-Nummern.)

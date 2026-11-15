@@ -210,6 +210,7 @@
   async function zeichnen(id, teil) {
     const d = await hole(id);
     if (!d) { rEl.innerHTML = ''; rEl.appendChild(E.kopf({ titel: 'Datenblatt nicht gefunden', eltern: 'einsatz' })); return; }
+    if (E.zoomErlauben) E.zoomErlauben(teil === 'original');          // Finger-Zoom nur im Original (Dokument)
     if (teil === 'original') {
       rEl.classList.remove('mit-leiste');
       rEl.innerHTML = '';
@@ -273,7 +274,7 @@
       await zeichnen(id, teil);
       abfrageStarten(id);
     },
-    verlassen() { aktuell = null; clearInterval(abfrage); },
+    verlassen() { aktuell = null; clearInterval(abfrage); if (E.zoomErlauben) E.zoomErlauben(false); },
   });
   beobachter.add(id => { if (aktuell && aktuell.id === id && aktuell.teil !== 'original') zeichnen(id, aktuell.teil); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && aktuell) ergebnisHolen(aktuell.id); });

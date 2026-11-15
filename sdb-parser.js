@@ -967,7 +967,7 @@
     ['verschlucken', /^(?:nach\s+|bei\s+)?(?:aufnahme durch\s+)?(?:verschlucken|ingestion|orale aufnahme)\b/i],
   ];
   function ersteHilfeLesen(z4, layout) {
-    const e = { allgemein: [], einatmen: [], haut: [], augen: [], verschlucken: [] };
+    const e = { allgemein: [], einatmen: [], haut: [], augen: [], verschlucken: [], arzt: [] };
     const ende = z4.findIndex(z => /^\s*4\s*[.,]\s*[23]\b|wichtigste akute|hinweise auf ärztliche|^\s*symptome\b/i.test(z));
     const es = eintraege(ende > 0 ? z4.slice(0, ende) : z4, EH_LABELS, layout);
     let ersterLabel = false;
@@ -979,7 +979,21 @@
       else if (x.k) e[x.k].push(...s);
       else if (!ersterLabel) e.allgemein.push(...s);
     }
+    // 4.2 Symptome und 4.3 Hinweise für den Arzt (ohne die Überschriften)
+    if (ende > 0) {
+      const rest = z4.slice(ende).map(x => ein(x).replace(/^\s*4\s*[.,]\s*[23]\.?\s*/, '')
+        .replace(/^(?:wichtigste akute und verzögert auftretende symptome und wirkungen|wichtigste symptome und wirkungen|hinweise auf ärztliche soforthilfe oder spezialbehandlung|hinweise für den arzt)\s*:?\s*/i, ''))
+        .filter(Boolean).join(' ');
+      e.arzt = uniq(saetze(rest).filter(t => !istLeer(t) && t.length > 3)).slice(0, 12);
+    }
     return e;
+  }
+  // Abschnitt 13: Entsorgung (kurz)
+  function entsorgungLesen(z13) {
+    const t = z13.map(x => ein(x).replace(/^\s*13\s*[.,]\s*\d\.?\s*/, '')
+      .replace(/^(?:abschnitt\s*13\s*:?\s*)?(?:hinweise zur entsorgung|verfahren der abfallbehandlung|verfahren zur abfallbehandlung)\s*:?\s*/i, ''))
+      .filter(Boolean).join(' ');
+    return uniq(saetze(t).filter(x => !istLeer(x) && x.length > 3 && !/^abschnitt\s*13\b/i.test(x) && !(/abfallschlüssel/i.test(x) && x.length > 160))).slice(0, 8);
   }
   const LOESCH_LABELS = [
     ['ungeeignet', /^(?:(?:aus sicherheitsgründen\s+)?ungeeignete?\s+löschmittel|löschmittel,?\s+die aus sicherheitsgründen nicht|ungeeignet\b|unsuitable)/i],
@@ -1398,7 +1412,7 @@
       ghs: { piktogramme: pikto, signalwort: signalwortFinden(z(2)), h, euh, p, einstufung },
       transport: transportLesen(z(14), layout), loeschmittel: loeschmittelLesen(z(5), layout), freisetzung: freisetzungLesen(z(6), layout),
       psa: psaLesen(z(8), layout), ersteHilfe: ersteHilfeLesen(z(4), layout), reaktionen: reaktionenLesen(z(10), layout),
-      kapitel, anmerkung: anm.join(' '),
+      entsorgung: entsorgungLesen(z(13)), kapitel, anmerkung: anm.join(' '),
     });
   }
   function sdbLesen(text, { dateiname = '' } = {}) {

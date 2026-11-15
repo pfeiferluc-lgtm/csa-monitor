@@ -2,7 +2,8 @@
 // Stoffdatenblatt, Beständigkeiten unserer Ausrüstung, PSA, Einsatz-Ordner mit Dateien (offline) und Beständigkeitslisten
 // mit Gerätebildern. Eigene Sicherheitsdatenblätter liest sdb-import.js ein (gleicher Einsatzbildschirm).
 // Daten kommen über GSZ.adapter.einsatz (web-start.js: Dropbox-App-Ordner; start.js/main.js: Dropbox-Ordner auf dem Rechner).
-// Ansichten: #einsatz · #stoff/<zvg>[/datenblatt|bestaendigkeit|psa] · #sdb/<id>[/…] · #ordner/<pfad> · #datei/<pfad> · #geraet/<ordner>
+// Ansichten: #einsatz · #stoff/<zvg>[/datenblatt|bestaendigkeit|psa|eh] · #sdb/<id>[/…] · #ordner/<pfad> · #datei/<pfad> · #geraet/<ordner>
+// Zoomen (Finger) ist in der App gesperrt und nur in Dokumenten (#datei, Original eines Datenblatts) erlaubt.
 'use strict';
 (() => {
   const S = window.GSZStoffdaten, G = window.GSZGestis, B = window.GSZBestaendigkeit, SP = window.GSZSpeicher;
@@ -10,6 +11,9 @@
   const ORDNER_REIHE = [BL, 'A-Lage', 'B-Lage', 'C-Lage', 'Führungsunterstützung', 'Messen', 'Probenahme'];
 
   const css = `
+  /* Finger-Zoom nur in Dokumenten (html.zoom-frei) */
+  html { touch-action: pan-x pan-y; }
+  html.zoom-frei { touch-action: auto; }
   .ez { --rund: .8rem; font-size: 16px; color: var(--ink); max-width: 62rem; margin: 0 auto; display: flex; flex-direction: column; gap: .8rem;
     padding: calc(.7rem + var(--frei-oben)) calc(.8rem + var(--sicher-rechts)) calc(1.4rem + var(--sicher-unten)) calc(.8rem + var(--sicher-links)); }
   .ez.mit-leiste { padding-bottom: calc(var(--leiste-h, calc(5.6rem + var(--sicher-unten))) + 1.2rem); }
@@ -136,7 +140,7 @@
     color: var(--ink2); cursor: pointer; }
   .ez-unwahl button.an { background: var(--akzent); border-color: var(--akzent); color: #fff; font-weight: 600; }
   .ez-leiste { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); box-shadow: 0 -4px 16px rgba(0,0,0,.25);
-    border-top: 1px solid var(--rand); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem;
+    border-top: 1px solid var(--rand); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .45rem;
     padding: .55rem max(calc(.7rem + var(--sicher-rechts)), calc((100vw - 62rem) / 2 + .7rem)) calc(.55rem + var(--sicher-unten))
       max(calc(.7rem + var(--sicher-links)), calc((100vw - 62rem) / 2 + .7rem)); }
   .ez-leiste a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; padding: .45rem .3rem; border-radius: .6rem; text-decoration: none;
@@ -146,6 +150,16 @@
   .ez-leiste a.an { background: var(--akzent); border-color: var(--akzent); color: #fff; }
   .ez-leiste a.an svg { color: #fff; }
   .ez-quelle { font-size: .75rem; color: var(--muted); line-height: 1.4; }
+  /* Erste Hilfe und Dekontamination */
+  .ez-eh + .ez-eh { margin-top: .85rem; padding-top: .75rem; border-top: 1px solid var(--line); }
+  .ez-eh h3 { display: flex; align-items: center; gap: .45rem; margin: 0 0 .4rem; font-size: .95rem; color: var(--ink); }
+  .ez-eh h3 svg { width: 1.35rem; height: 1.35rem; flex: none; color: var(--c, var(--akzent)); }
+  .ez-eh-mehr { margin-top: .8rem; }
+  .ez-eh-mehr summary { cursor: pointer; font-size: .85rem; color: var(--ink2); }
+  .ez-eh-mehr .ez-zeilen { margin-top: .45rem; }
+  .ez-warn .ez-zeilen { margin-top: .35rem; }
+  .ez-warn .ez-zeilen li { font-size: .88rem; }
+  .ez-p b { display: inline-block; min-width: 0; margin-right: .3rem; font-size: .78rem; color: var(--ink2); }
   .ez-quelle a { color: var(--ink2); }
   /* Datenblatt */
   .ez-db details { border-bottom: 1px solid var(--line); }
@@ -248,6 +262,20 @@
   stil.textContent = css;
   document.head.appendChild(stil);
 
+  // ---------------------------------------------------------------- Zoomen mit den Fingern: in der App gesperrt, in Dokumenten erlaubt
+  const VIEWPORT_ZU = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
+  const VIEWPORT_AUF = 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=6, user-scalable=yes, viewport-fit=cover';
+  function zoomErlauben(an) {
+    const m = document.querySelector('meta[name="viewport"]');
+    if (m && m.getAttribute('content') !== (an ? VIEWPORT_AUF : VIEWPORT_ZU)) m.setAttribute('content', an ? VIEWPORT_AUF : VIEWPORT_ZU);
+    document.documentElement.classList.toggle('zoom-frei', !!an);
+  }
+  const zoomSperren = e => { if (!document.documentElement.classList.contains('zoom-frei') && e.cancelable) e.preventDefault(); };
+  document.addEventListener('gesturestart', zoomSperren, { passive: false });          // Safari (iPhone, iPad)
+  document.addEventListener('gesturechange', zoomSperren, { passive: false });
+  document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) zoomSperren(e); }, { passive: false });
+  zoomErlauben(false);
+
   // ---------------------------------------------------------------- Hilfen
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const p2 = n => String(n).padStart(2, '0');
@@ -286,6 +314,15 @@
     frage: SVG('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><circle cx="12" cy="17.2" r=".7" fill="currentColor"/>'),
     plus: SVG('<path d="M12 5v14M5 12h14"/>'),
     bild: SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/>'),
+    kreuz: SVG('<path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/>'),
+    auge: SVG('<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+    haut: SVG('<path d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0v6M17 12V9a1.5 1.5 0 0 1 3 0v5c0 4.4-3 7.5-7 7.5-3 0-5-1.5-6.6-4L4 14a1.5 1.5 0 0 1 2.6-1.5L8 14"/>'),
+    lunge: SVG('<path d="M12 3v9M12 11c-1.2 1-2.6.4-3-1M12 11c1.2 1 2.6.4 3-1M8.5 7C5.8 7 4 12.5 4 16c0 2.4 1.2 4 3 4s3-1.3 3-3.5V9M15.5 7c2.7 0 4.5 5.5 4.5 9 0 2.4-1.2 4-3 4s-3-1.3-3-3.5V9"/>'),
+    mund: SVG('<path d="M3 12c2.5-3 5.6-4.5 9-4.5s6.5 1.5 9 4.5c-2.5 3-5.6 4.5-9 4.5S5.5 15 3 12z"/><path d="M3 12h18"/>'),
+    person: SVG('<circle cx="12" cy="7" r="3.5"/><path d="M4.5 21c0-4.4 3.4-7.5 7.5-7.5s7.5 3.1 7.5 7.5"/>'),
+    dusche: SVG('<path d="M5 21V8a4 4 0 0 1 4-4h1a4 4 0 0 1 4 4"/><path d="M10 8h8"/><path d="M11 12v1.5M14 12v2.5M17 12v1.5M12.5 16v1.5M15.5 16v2"/>'),
+    welle: SVG('<path d="M2 9c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 15c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/>'),
+    tonne: SVG('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>'),
   };
   // Stoffnamen lesbar: „Wasserstoffperoxid 35 ... <50 %“ → „Wasserstoffperoxid 35 bis < 50 %“
   const nameSchoen = n => String(n || '').replace(/\s?(?:\.\.\.|…)\s?/g, ' bis ').replace(/([<>≤≥])(?=\d)/g, '$1 ').replace(/\s{2,}/g, ' ').trim();
@@ -610,7 +647,7 @@
 
   // ---------------------------------------------------------------- Einsatzbildschirm (GESTIS und eigenes Datenblatt)
   const sEl = ansichtElement('stoffansicht');
-  const TEILE = { '': 'Übersicht', datenblatt: 'Stoffdatenblatt', bestaendigkeit: 'Beständigkeiten', psa: 'PSA' };
+  const TEILE = { '': 'Übersicht', datenblatt: 'Stoffdatenblatt', bestaendigkeit: 'Beständigkeiten', psa: 'PSA', eh: 'Erste Hilfe · Dekontamination' };
   function symbol(art, code, groesse) {
     const Y = window.GSZSymbole;
     if (Y && Y[art]) { try { return Y[art](code, { groesse }); } catch { /* unten */ } }
@@ -663,7 +700,7 @@
     const vergleich = { schwer: 'schwerer als Luft', leicht: 'leichter als Luft', gleich: 'etwa so schwer wie Luft', unbekannt: '' }[art];
     const was = art === 'unbekannt' ? `Keine Angabe zur Dichte ${gas ? 'des Gases' : 'der Dämpfe'} im Datenblatt.`
       : `${wer} ${gas ? 'ist' : 'sind'} <strong>${staerke}${vergleich}</strong>${herkunft === 'text' ? ' (laut Datenblatt)' : ''}`;
-    const lvzText = herkunft === 'angabe' ? `Luftvergleichszahl ${zahlText} (Luft = 1)` : herkunft === 'molmasse' ? `Luftvergleichszahl ≈ ${zahlText} (aus der Molmasse berechnet)` : '';
+    const lvzText = lvz === null ? '' : herkunft === 'angabe' ? `Luftvergleichszahl ${zahlText} (Luft = 1)` : herkunft === 'molmasse' ? `Luftvergleichszahl ≈ ${zahlText} (aus der Molmasse berechnet)` : '';
     const punkte = [];
     const v = (einzahl, mehrzahl) => gas ? einzahl : mehrzahl;          // „Gas sammelt sich“ / „Dämpfe sammeln sich“
     if (art === 'schwer') punkte.push(staerke === 'etwas ' ? `${v('Sinkt', 'Sinken')} langsam ab, ${v('wird', 'werden')} von Wind und Luftbewegung leicht verwirbelt – Senken, Kanäle und Keller trotzdem beachten.`
@@ -868,6 +905,66 @@
       '<section class="kachel ez-karte" id="ez-psa-unsere"><h2>Unsere Schutzausrüstung</h2><div class="ez-leer">wird geladen …</div></section>' +
       `<div class="ez-quelle">${quelleHtml(stoff)}</div>`;
   }
+  // ---------------------------------------------------------------- Erste Hilfe und Dekontamination (Reiter „EH/Dekon“)
+  // Nur Angaben aus GESTIS bzw. dem Datenblatt: Erste-Hilfe-Abschnitt, P-Sätze der Kennzeichnung, Freisetzung (Reinigung,
+  // Aufnehmen, Neutralisieren), Hygiene/Handschutz, Reaktionen mit Wasser, Löslichkeit, Gewässergefährdung, Entsorgung.
+  const EH_TEILE = [['allgemein', 'Allgemein · Selbstschutz', 'person', 'var(--ink2)'], ['augen', 'Augen', 'auge', 'var(--akzent)'],
+    ['haut', 'Haut', 'haut', 'var(--ser)'], ['einatmen', 'Einatmen', 'lunge', '#2bb3c0'], ['verschlucken', 'Verschlucken', 'mund', '#c25bd6']];
+  const WASSER_GEFAHR = /reagiert[^.;]{0,40}mit wasser|mit wasser[^.;]{0,50}(?:reagiert|heftig|gefährlich|entsteh|entwickel|bildet|zersetz)|nicht mit wasser|kein(?:en)? (?:kontakt mit )?wasser|wasser(?:zutritt)? (?:vermeiden|fernhalten)|vor (?:wasser|feuchtigkeit) schützen|starke[rn]? wärmeentwicklung/i;
+  const DEKON_PERSON = /spül|abwasch|waschen|dusche|kleidung|ausziehen|entfernen|aufnehmen|abtupf|abreib|seife|polyethylenglykol|\bpeg\b|festgefroren/i;
+  const DEKON_TUN = /reinig|dekontamin|abspül|abwasch|waschen|spülen|neutralis|aufnehm|aufsaug|bindemittel|universalbinder|vorreinig|abwisch|kleidung[^.]{0,40}(?:wechseln|ausziehen|lüften|entfernen)|(?:wechseln|ausziehen|lüften|entfernen)[^.]{0,40}kleidung/i;
+  const ARBEITSPLATZ = /pausen|arbeitsende|nahrungs|genussmittel|straßen- und arbeitskleidung|aufbewahrungsmöglichkeit|hautpflege|hautschutzplan|arbeitsplatz/i;
+  const betrifftPerson = /\bhaut\b|hautreinigung|augen|körper|person|betroffene|verletzte/i;
+  const saetzeVon = l => l.flatMap(x => String(x).replace(/([.!?])\s+(?=[A-ZÄÖÜ])/g, '$1\u0001').split('\u0001')).map(x => x.trim()).filter(Boolean);
+  const UMWELT = /kanalisation|gewässer|abwasser|erdreich|löschwasser|grundwasser|in die umwelt/i;
+  const liste_ = (l, z = '•') => `<ul class="ez-zeilen">${l.map(x => `<li data-z="${z}">${esc(x)}</li>`).join('')}</ul>`;
+  function pSaetze(stoff, re) { return (stoff.ghs.p || []).filter(p => re.test(p.code)).map(p => ({ code: p.code, text: p.text })); }
+  function ehHtml(stoff) {
+    const e = { allgemein: [], einatmen: [], haut: [], augen: [], verschlucken: [], arzt: [], ...(stoff.ersteHilfe || {}) };
+    const bloecke = EH_TEILE.filter(([k]) => (e[k] || []).length)
+      .map(([k, titel, ic, farbe]) => `<div class="ez-eh" style="--c:${farbe}"><h3>${I[ic]}${esc(titel)}</h3>${liste_(e[k])}</div>`);
+    const p = pSaetze(stoff, /^P3[0-6]\d/);                          // Erste Hilfe laut Kennzeichnung (P301 … P364)
+    const pHtml = p.length ? `<ul class="ez-zeilen ez-p">${p.map(x => `<li data-z="•"><b>${esc(x.code)}</b>${esc(x.text)}</li>`).join('')}</ul>` : '';
+    const quelle = stoff.quelle === 'gestis' ? 'GESTIS' : 'dem Datenblatt';
+    return `<section class="kachel ez-karte" id="ez-eh"><h2>Erste Hilfe</h2>
+      ${bloecke.length ? bloecke.join('') : `<div class="ez-leer">Keine Angaben zur Ersten Hilfe in ${quelle}.${p.length ? ' Hinweise aus der Kennzeichnung:' : ''}</div>${pHtml}`}
+      ${bloecke.length && p.length ? `<details class="ez-eh-mehr"><summary>Laut Kennzeichnung (P-Sätze, ${p.length})</summary>${pHtml}</details>` : ''}
+      ${(e.arzt || []).length ? `<details class="ez-eh-mehr"><summary>Hinweise für den Arzt (${e.arzt.length})</summary>${liste_(e.arzt)}</details>` : ''}
+    </section>`;
+  }
+  function dekonHtml(stoff) {
+    const e = { haut: [], augen: [], ...(stoff.ersteHilfe || {}) };
+    const gesehen = new Set();
+    const neu = l => l.map(x => String(x).trim()).filter(x => x && !gesehen.has(x.toLowerCase()) && gesehen.add(x.toLowerCase()));
+    const alle = [...(stoff.freisetzung || []), ...(stoff.reaktionen || []), ...(e.haut || []), ...(stoff.dekon || []), ...((stoff.psa || {}).hygiene || [])];
+    // Wasser: Kennzeichnung (EUH014, EUH029, H260, H261, P223, P231+P232) und Sätze aus dem Datenblatt
+    const hWasser = [...(stoff.ghs.h || []), ...(stoff.ghs.euh || [])].filter(h => /^(EUH014|EUH029|H260|H261)$/.test(h.code)).map(h => `${h.code}: ${h.text}`);
+    const pWasser = pSaetze(stoff, /^P(223|231\+P232|232)$/).map(x => `${x.code}: ${x.text}`);
+    const wasser = neu([...hWasser, ...pWasser, ...alle.filter(x => WASSER_GEFAHR.test(x))]);
+    // Hinweise aus Freisetzung, Hygiene, Hand- und Körperschutz (und Claudes „dekon“) satzweise: Personen bzw. Sachen
+    const kandidaten = saetzeVon([...(stoff.dekon || []), ...(stoff.freisetzung || []), ...((stoff.psa || {}).hygiene || []), ...((stoff.psa || {}).hand || []),
+      ...((stoff.psa || {}).koerper || [])]).filter(x => DEKON_TUN.test(x) && !ARBEITSPLATZ.test(x) && !UMWELT.test(x) && !WASSER_GEFAHR.test(x));
+    const personen = neu([...(e.haut || []).filter(x => DEKON_PERSON.test(x)), ...kandidaten.filter(x => betrifftPerson.test(x))])
+      .concat(neu(pSaetze(stoff, /^P3(0[23]|5[23]|6[1-4])/).map(x => `${x.code}: ${x.text}`)));
+    const sachen = neu(kandidaten.filter(x => !betrifftPerson.test(x)));
+    const k = stoff.kennwerte || {};
+    const umwelt = [
+      !S.leerWert(k.loeslichkeit) ? `Wasserlöslichkeit: ${S.wertSchoen(k.loeslichkeit)}` : '',
+      !S.leerWert(k.wgk) ? `Wassergefährdung: ${S.wertSchoen(k.wgk)}` : '',
+      ...neu((stoff.freisetzung || []).filter(x => UMWELT.test(x) && !/:$/.test(x.trim()))),
+    ].filter(Boolean);
+    const entsorgung = (stoff.entsorgung || []).filter(x => !(/abfallschlüssel/i.test(x) && x.length > 160));
+    const block = (titel, ic, farbe, l) => l.length ? `<div class="ez-eh" style="--c:${farbe}"><h3>${I[ic]}${esc(titel)}</h3>${liste_(l)}</div>` : '';
+    const inhalt = [block('Personen (Haut, Kleidung)', 'person', 'var(--akzent)', personen), block('Schutzkleidung, Geräte, Flächen', 'dusche', '#2bb3c0', sachen),
+      block('Wasser und Umwelt', 'welle', 'var(--good)', umwelt)].filter(Boolean);
+    return `<section class="kachel ez-karte" id="ez-dekon"><h2>Dekontamination</h2>
+      ${wasser.length ? `<div class="ez-warn rot" style="margin-bottom:.8rem"><b>Achtung – Wasser:</b> Der Stoff reagiert mit Wasser bzw. Feuchtigkeit. Vor einer Dekon mit Wasser beachten:${liste_(wasser, '!')}</div>` : ''}
+      ${inhalt.length ? inhalt.join('') : '<div class="ez-leer">Keine Angaben zur Reinigung im Datenblatt.</div>'}
+      ${entsorgung.length ? `<details class="ez-eh-mehr"><summary>Entsorgung (${entsorgung.length})</summary>${liste_(entsorgung)}</details>` : ''}
+      <div class="ez-klein" style="margin-top:.8rem">Zusammengestellt aus ${stoff.quelle === 'gestis' ? 'GESTIS' : 'dem Sicherheitsdatenblatt'}. Ablauf der Dekontamination nach FwDV 500 und Weisung der Einsatzleitung.</div>
+    </section>`;
+  }
+
   // Beständigkeiten unserer Ausrüstung für den Stoff
   let bestFilter = 'Alle';
   async function bestaendigkeitHtml(stoff, ziel, { nurKategorie = null } = {}) {
@@ -922,13 +1019,15 @@
     if (!teil) inhaltEl.insertAdjacentHTML('beforeend', uebersichtHtml(stoff, basis));
     else if (teil === 'datenblatt') { inhaltEl.insertAdjacentHTML('beforeend', `<section class="kachel ez-karte">${datenblattHtml(stoff)}</section><div class="ez-quelle">${quelleHtml(stoff)}</div>`); }
     else if (teil === 'psa') inhaltEl.insertAdjacentHTML('beforeend', psaHtml(stoff));
+    else if (teil === 'eh') inhaltEl.insertAdjacentHTML('beforeend', ehHtml(stoff) + dekonHtml(stoff) + `<div class="ez-quelle">${quelleHtml(stoff)}</div>`);
     else if (teil === 'bestaendigkeit') inhaltEl.insertAdjacentHTML('beforeend', `<section class="kachel ez-karte"><h2>Unsere Ausrüstung · ${esc(stoff.name)}</h2><div id="ez-best">
       <div class="ez-leer">wird geladen …</div></div></section>`);
     sEl.appendChild(inhaltEl);
     const leiste = document.createElement('nav');
     leiste.className = 'ez-leiste';
     leiste.setAttribute('aria-label', 'Stoff');
-    leiste.innerHTML = [['datenblatt', 'Stoff&shy;datenblatt', I.blatt], ['bestaendigkeit', 'Beständig&shy;keiten', I.schild], ['psa', 'PSA', I.psa]]
+    leiste.innerHTML = [['datenblatt', 'Stoff&shy;daten&shy;blatt', I.blatt], ['bestaendigkeit', 'Bestän&shy;dig&shy;keiten', I.schild], ['psa', 'PSA', I.psa],
+      ['eh', 'EH/<wbr>Dekon', I.kreuz]]
       .map(([t, n, ic]) => `<a href="${teil === t ? basis : basis + '/' + t}" class="${teil === t ? 'an' : ''}"${teil ? ' data-ersetzen="1"' : ''}>${ic}<span>${n}</span></a>`).join('');
     sEl.appendChild(leiste);
     leisteBeobachten(sEl, leiste);
@@ -1230,7 +1329,7 @@
 
   // Datei anzeigen: PDF (pdf.js), Bild, Text; sonst teilen bzw. mit Standardprogramm öffnen
   const dEl = ansichtElement('dateiansicht');
-  let pdfLaden = null;
+  let pdfLaden = null, pdfAbmelden = null;
   function pdfjs() {
     if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
     if (pdfLaden) return pdfLaden;
@@ -1295,23 +1394,43 @@
     const seiten = flaeche.querySelector('.ez-seiten');
     const breite = () => Math.max(260, flaeche.clientWidth - 28);
     const gerendert = new Map();
+    let schaerfe = 1;                    // Faktor für das Zoomen mit den Fingern (visualViewport.scale)
+    const stand = () => zoom + '|' + schaerfe;
     const beob = new IntersectionObserver(ein => { for (const e of ein) if (e.isIntersecting) zeichne(Number(e.target.dataset.s)); }, { rootMargin: '600px 0px' });
+    const vv = window.visualViewport;
+    if (pdfAbmelden) pdfAbmelden();
+    if (vv) {
+      const nachSchaerfen = () => {
+        const sc = Math.min(Math.max(vv.scale || 1, 1), 3);
+        if (Math.abs(sc - schaerfe) < 0.3 || !seiten.isConnected) return;
+        schaerfe = sc;
+        for (const c of seiten.querySelectorAll('canvas')) { const r = c.getBoundingClientRect(); if (r.bottom > -800 && r.top < innerHeight + 800) zeichne(Number(c.dataset.s)); }
+      };
+      const beiGroesse = () => { clearTimeout(beiGroesse.t); beiGroesse.t = setTimeout(nachSchaerfen, 350); };
+      vv.addEventListener('resize', beiGroesse);
+      pdfAbmelden = () => { vv.removeEventListener('resize', beiGroesse); pdfAbmelden = null; };
+    }
     async function zeichne(n) {
       const platz = seiten.querySelector(`[data-s="${n}"]`);
-      if (!platz || gerendert.get(n) === zoom) return;
-      gerendert.set(n, zoom);
+      if (!platz || gerendert.get(n) === stand()) return;
+      const fuer = stand();
+      gerendert.set(n, fuer);
       const seite = await doc.getPage(n);
       const v1 = seite.getViewport({ scale: 1 });
       const massstab = breite() / v1.width * zoom;
       const v = seite.getViewport({ scale: massstab });
-      const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      // Auflösung: Bildschirm × Finger-Zoom, höchstens rund 16 Mio. Bildpunkte je Seite (Grenze von Safari)
+      const dpr = Math.min(Math.min(window.devicePixelRatio || 1, 3) * schaerfe, Math.sqrt(16e6 / (v.width * v.height)));
       const c = document.createElement('canvas');
       c.width = Math.floor(v.width * dpr); c.height = Math.floor(v.height * dpr);
       c.style.width = Math.floor(v.width) + 'px'; c.style.height = Math.floor(v.height) + 'px';
       await seite.render({ canvasContext: c.getContext('2d'), viewport: seite.getViewport({ scale: massstab * dpr }) }).promise;
-      if (gerendert.get(n) !== zoom) return;
+      if (gerendert.get(n) !== fuer) return;
       c.dataset.s = n;
-      platz.replaceWith(c);
+      const jetzt = seiten.querySelector(`[data-s="${n}"]`);
+      if (!jetzt) return;
+      if (jetzt.tagName === 'CANVAS') beob.unobserve(jetzt);
+      jetzt.replaceWith(c);
       beob.observe(c);
     }
     async function aufbauen() {
@@ -1335,8 +1454,10 @@
   }
   GSZ.ansicht('datei', {
     element: dEl, titel: p => dekodiere(p).split('/').pop(),
+    verlassen() { zoomErlauben(false); if (pdfAbmelden) pdfAbmelden(); },
     async anzeigen(param) {
       const pfad = dekodiere(param);
+      zoomErlauben(true);
       dEl.innerHTML = '';
       const name = pfad.split('/').pop();
       dEl.appendChild(kopf({ titel: name.replace(/\.[^.]+$/, ''), unter: esc(ordnerVon(pfad).split('/').join(' › ')), eltern: ordnerVon(pfad).startsWith(BL + '/') ? 'geraet/' + kodiere(ordnerVon(pfad).slice(BL.length + 1)) : 'ordner/' + kodiere(ordnerVon(pfad)) }));
@@ -1358,6 +1479,7 @@
   function suchenUndZeigen(text) { GSZ.zeige('einsatz'); suchen(text, true); }
 
   // für sdb-import.js und die Tests
-  window.GSZEinsatz = { stoffSeite, stoffElement: sEl, dateiZeigen, kopf, ansichtElement, esc, datumZeit, groesse, meldung, I,
+  window.GSZEinsatz = { stoffSeite, stoffElement: sEl, dateiZeigen, kopf, ansichtElement, esc, datumZeit, groesse, meldung, I, zoomErlauben,
+    ehHtml, dekonHtml,
     listeHolen, geraete, get dateien() { return dateien; }, stoffHolen, suchen: suchenUndZeigen, symbol };
 })();
