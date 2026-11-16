@@ -155,7 +155,8 @@
   .ez-ok.breit { grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr) auto; }
   .ez-ok .fotos { grid-row: 1 / span 2; grid-column: 3; display: flex; gap: .35rem; }
   .ez-ok .fotos:empty { display: none; }
-  .ez-ok .fotos img, .ez-ok .fotos .ez-bild { width: 2.8rem; height: 2.8rem; border-radius: .55rem; object-fit: cover; background: var(--bild-bg, #fff); border: 1px solid var(--line); }
+  .ez-ok .fotos img, .ez-ok .fotos .ez-bild, .ez-ok .fotos .ez-bildmini { width: 2.8rem; height: 2.8rem; border-radius: .55rem; object-fit: cover; background: var(--bild-bg, #fff); border: 1px solid var(--line); flex: none; box-sizing: border-box; }
+  .ez-ok .fotos .ez-bildmini img { width: 100%; height: 100%; border: 0; border-radius: 0; object-fit: cover; }
   /* Stand der Unterlagen */
   .ez-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .45rem .8rem; padding: .7rem .85rem; border-radius: .95rem;
     background: var(--surface); box-shadow: var(--schatten); font-size: .78rem; color: var(--ink2); line-height: 1.35; }
@@ -403,6 +404,23 @@
   .ez-bildrahmen img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .ez-bildrahmen .leer { color: #6b7480; font-size: .8rem; }
   .bild-fuellen img, img.bild-fuellen { object-fit: cover !important; }
+  /* Ausschnitt: Bild im Rahmen vergrößert (--bild-z) und um den Mittelpunkt (--bild-x/-y) verschoben – das Foto bleibt unverändert */
+  .ez-bildrahmen img, .ez-raster .foto img, .ez-bildmini img { object-position: var(--bild-x, 50%) var(--bild-y, 50%);
+    transform-origin: var(--bild-x, 50%) var(--bild-y, 50%); transform: scale(var(--bild-z, 1)); }
+  .ez-bildmini { display: block; overflow: hidden; background: var(--bild-bg, #fff); }
+  .ez-bildmini img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  a.ez-bildrahmen { position: relative; cursor: zoom-in; }
+  a.ez-bildrahmen .lupe { position: absolute; right: .4rem; bottom: .4rem; width: 1.9rem; height: 1.9rem; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; background: rgba(0, 0, 0, .55); color: #fff; pointer-events: none; }
+  a.ez-bildrahmen .lupe svg { width: 1rem; height: 1rem; }
+  /* Bearbeiten: Ausschnitt mit dem Finger verschieben, mit zwei Fingern, Mausrad oder Regler zoomen */
+  #gn-rahmen { touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+  #gn-rahmen.zieht { cursor: grabbing; }
+  #gn-rahmen img { pointer-events: none; -webkit-user-drag: none; }
+  .ez-zoomzeile { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+  .ez-zoomzeile input[type=range] { flex: 1 1 8rem; min-width: 6rem; font-size: 16px; accent-color: var(--akzent); margin: 0; }
+  .ez-zoomzeile .knopf { min-width: 2.3rem; padding: .3rem .55rem !important; font-weight: 800; }
+  .ez-zoomzeile b { font-size: .82rem; min-width: 3.2rem; text-align: right; font-variant-numeric: tabular-nums; }
   /* Prüfung auf Wunsch */
   .ez-pruefen-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .7rem; margin-top: .15rem; }
   .ez-pruefen-zeile .knopf.los { background: var(--akzent) !important; border-color: var(--akzent) !important; color: #fff !important; font-weight: 700; }
@@ -674,7 +692,9 @@
   const BILD_FARBE = { weiss: '#ffffff', hell: '#e3e7ec', dunkel: '#2b3038', schwarz: '#000000', rot: '#b3121b' };
   const bildVon = g => ({ ...B.BILD_STANDARD, ...((g && g.bild) || {}) });
   const bildStil = (b, mitFormat = true) => { const [w, h] = String(b.format || '').split(':').map(Number);
-    return (mitFormat && w && h ? `aspect-ratio:${w} / ${h};` : '') + (BILD_FARBE[b.hintergrund] ? `--bild-bg:${BILD_FARBE[b.hintergrund]};` : ''); };
+    const z = Number(b.zoom) || 1, x = Number(b.x ?? 50), y = Number(b.y ?? 50);
+    return (mitFormat && w && h ? `aspect-ratio:${w} / ${h};` : '') + (BILD_FARBE[b.hintergrund] ? `--bild-bg:${BILD_FARBE[b.hintergrund]};` : '') +
+      (z !== 1 || x !== 50 || y !== 50 ? `--bild-z:${Math.round(z * 1000) / 1000};--bild-x:${Math.round(x * 10) / 10}%;--bild-y:${Math.round(y * 10) / 10}%;` : ''); };
   const bildFuellen = b => b.darstellung === 'fuellen' ? ' bild-fuellen' : '';
   const stufeBadge = (stufe, text) => `<span class="ez-stufe ${esc(stufe)}">${esc(text || B.STUFE_TEXT[stufe] || stufe)}</span>`;
   const STUFE_FARBE = { gut: 'var(--good)', bedingt: '#c48a00', nicht: 'var(--crit)', gemischt: 'var(--ser)' };
@@ -920,7 +940,7 @@
     let g = [];
     try { g = (await geraete()).filter(x => x.foto).slice(0, innerWidth <= 360 ? 3 : 4); } catch { return; }
     if (!box.isConnected) return;
-    box.innerHTML = g.map(x => `<img data-foto="${esc(x.foto)}" style="${bildStil(bildVon(x), false)}" alt="">`).join('');
+    box.innerHTML = g.map(x => `<span class="ez-bildmini" style="${bildStil(bildVon(x), false)}"><img data-foto="${esc(x.foto)}" alt=""></span>`).join('');
     fotoEinsetzen(box);
   }
   function statusZeigen() {
@@ -1404,7 +1424,7 @@
     }).join('');
     const rest = e.treffer.length > 6 ? `<div class="eintrag"><i>… und ${e.treffer.length - 6} weitere Zeilen</i></div>` : '';
     return `<li><a href="#geraet/${kodiere(g.ordner)}${kontext ? '/' + kodiere(kontext) : ''}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}">
-      ${g.foto ? `<img class="ez-bild${bildFuellen(bildVon(g))}" style="${bildStil(bildVon(g), false)}" data-foto="${esc(g.foto)}" alt="">` : '<span class="ez-bild">kein Bild</span>'}
+      ${g.foto ? `<span class="ez-bild ez-bildmini${bildFuellen(bildVon(g))}" style="${bildStil(bildVon(g), false)}"><img data-foto="${esc(g.foto)}" alt=""></span>` : '<span class="ez-bild">kein Bild</span>'}
       <b>${esc(titel)}</b>
       <div class="zeile">${stufeBadge(e.stufe)}${e.nurAehnlich ? '<span class="ez-ungeprueft">nur ähnlicher Name</span>' : ''}${pruefBadge(g)}</div>
       ${eintraege}${rest}${bandHtml(e)}</a></li>`;
@@ -1632,7 +1652,9 @@
             : 'Claude liest die Liste über den Mac ein zweites Mal und vergleicht jede Zeile mit dem Original. Ohne Abweichung gilt sie danach als geprüft.'}</span></div>` : '');
     kopfK.innerHTML = `${sf && L ? `<div class="ez-warn blau ez-stoffbezug"><span>Aus der Stoffsuche: <b>${esc(sf.anzeige)}</b> – die Liste unten zeigt nur die passenden Zeilen.</span>
         <button class="knopf" type="button" id="ez-zur-liste">Zur Liste ↓</button></div>` : ''}<div class="ez-oben"><div class="ez-bildspalte bild-${esc(bild.groesse)}">
-        <div class="ez-bildrahmen${bildFuellen(bild)}" style="${bildStil(bild)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="Foto ${esc(g.name)}">` : '<span class="leer">kein Foto</span>'}</div>
+        ${g.foto ? `<a class="ez-bildrahmen${bildFuellen(bild)}" style="${bildStil(bild)}" href="#datei/${kodiere(g.foto)}" title="Antippen: Foto groß ansehen und zoomen" aria-label="Foto groß ansehen">
+          <img data-foto="${esc(g.foto)}" alt="Foto ${esc(g.name)}"><span class="lupe">${I.suche}</span></a>`
+          : `<div class="ez-bildrahmen" style="${bildStil(bild)}"><span class="leer">kein Foto</span></div>`}
         ${bearbeitbar ? `<a class="knopf" href="#geraet-neu/${kodiere(g.ordner)}" data-sprung="gn-bild">${I.bild}Bild anpassen</a>` : ''}</div>
       <div style="flex:1;min-width:13rem;display:flex;flex-direction:column;gap:.35rem">
         <div class="zeile" style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">${d || g.kategorieInfo ? `<span class="ez-chip">${esc(kategorie(g))}</span>` : ''}${pruefBadge(g)}</div>
@@ -1907,8 +1929,14 @@
             <div class="gruppe"><span>Format</span><div class="ez-segment" data-k="format">${knoepfe('format')}</div></div>
             <div class="gruppe"><span>Größe</span><div class="ez-segment" data-k="groesse">${knoepfe('groesse')}</div></div>
             <div class="gruppe"><span>Darstellung</span><div class="ez-segment" data-k="darstellung">${knoepfe('darstellung')}</div></div>
+            <div class="gruppe"><span>Ausschnitt</span><div class="ez-zoomzeile">
+              <button type="button" class="knopf" id="gn-zoom-minus" aria-label="Verkleinern">−</button>
+              <input type="range" id="gn-zoom" min="1" max="5" step="0.05" value="${esc(bild.zoom)}" aria-label="Zoom des Bildes">
+              <button type="button" class="knopf" id="gn-zoom-plus" aria-label="Vergrößern">+</button><b id="gn-zoom-wert">${Math.round(bild.zoom * 100)} %</b></div>
+              <div class="ez-zoomzeile"><button type="button" class="knopf" id="gn-ausschnitt-weg" style="min-width:0;font-weight:600">Ausschnitt zurücksetzen</button></div></div>
           </div></div>
-        <span class="ez-klein" style="font-weight:400">Gilt in der Übersicht, auf der Geräteseite und bei den Beständigkeiten. „Groß“ zeigt das Bild in der Übersicht doppelt breit; „Automatisch“ ist der weiße Rahmen wie bisher.</span></div>
+        <span class="ez-klein" style="font-weight:400">Ausschnitt wählen: das Bild in der Vorschau mit dem Finger verschieben, mit zwei Fingern, dem Regler oder dem Mausrad zoomen – das Foto selbst bleibt unverändert.
+          Gilt in der Übersicht, auf der Geräteseite und bei den Beständigkeiten. „Groß“ zeigt das Bild in der Übersicht doppelt breit; „Automatisch“ ist der weiße Rahmen wie bisher.</span></div>
       <div class="feld" style="display:flex;flex-direction:column;gap:.35rem"><span class="ez-klein" style="font-weight:600;color:var(--ink2)">Beständigkeitsliste des Herstellers</span>
         <div class="ez-wahl"><label class="knopf ez-import">${I.blatt}<span>${g && g.quellen.length ? 'Weitere Liste hinzufügen' : 'Liste wählen (PDF oder Fotos)'}</span>
           <input type="file" id="gn-liste" accept="application/pdf,.pdf,image/*" multiple></label>
@@ -1986,9 +2014,12 @@
     fotoEinsetzen(k);
     const form = k.querySelector('#gn-form'), fotoFeld = k.querySelector('#gn-foto'), listeFeld = k.querySelector('#gn-liste');
     const rahmen = k.querySelector('#gn-rahmen');
+    const zoomFeld = k.querySelector('#gn-zoom'), zoomWert = k.querySelector('#gn-zoom-wert');
     const bildAnwenden = () => {
       rahmen.setAttribute('style', bildStil(bild));
-      rahmen.className = 'ez-bildrahmen' + bildFuellen(bild);
+      rahmen.className = 'ez-bildrahmen' + bildFuellen(bild) + (rahmen.classList.contains('zieht') ? ' zieht' : '');
+      if (document.activeElement !== zoomFeld) zoomFeld.value = String(bild.zoom);
+      zoomWert.textContent = Math.round(bild.zoom * 100) + ' %';
       for (const seg of k.querySelectorAll('.ez-segment[data-k]')) for (const b of seg.querySelectorAll('button')) {
         const an = bild[seg.dataset.k] === b.dataset.w; b.classList.toggle('an', an); b.setAttribute('aria-pressed', String(an));
       }
@@ -1999,6 +2030,43 @@
       bild[b.closest('.ez-segment').dataset.k] = b.dataset.w;
       bildAnwenden();
     });
+    // Ausschnitt: ein Finger bzw. Maus verschiebt, zwei Finger bzw. Mausrad zoomen (um den gewählten Mittelpunkt)
+    const zwischen = (n, a, b) => Math.min(b, Math.max(a, n));
+    const finger = new Map();
+    let griff = null;
+    const griffMerken = () => { griff = finger.size ? { finger: new Map(finger), x: bild.x, y: bild.y, zoom: bild.zoom } : null; };
+    rahmen.addEventListener('pointerdown', e => {
+      if (!k.querySelector('#gn-rahmen-bild') || k.querySelector('#gn-rahmen-bild').hidden) return;
+      e.preventDefault();
+      try { rahmen.setPointerCapture(e.pointerId); } catch { /* egal */ }
+      finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      rahmen.classList.add('zieht');
+      griffMerken();
+    });
+    rahmen.addEventListener('pointermove', e => {
+      if (!finger.has(e.pointerId) || !griff) return;
+      finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const r = rahmen.getBoundingClientRect();
+      if (finger.size >= 2 && griff.finger.size >= 2) {
+        const [a, b] = [...finger.values()], [a0, b0] = [...griff.finger.values()];
+        bild.zoom = zwischen(griff.zoom * Math.hypot(a.x - b.x, a.y - b.y) / (Math.hypot(a0.x - b0.x, a0.y - b0.y) || 1), 1, 5);
+      } else {
+        const p0 = griff.finger.get(e.pointerId);
+        if (!p0) return;
+        const f = Math.max(bild.zoom - 1, .35);                       // je stärker vergrößert, desto feiner
+        bild.x = zwischen(griff.x - (e.clientX - p0.x) / r.width * 100 / f, 0, 100);
+        bild.y = zwischen(griff.y - (e.clientY - p0.y) / r.height * 100 / f, 0, 100);
+      }
+      bildAnwenden();
+    });
+    const loslassen = e => { finger.delete(e.pointerId); if (!finger.size) rahmen.classList.remove('zieht'); griffMerken(); };
+    rahmen.addEventListener('pointerup', loslassen);
+    rahmen.addEventListener('pointercancel', loslassen);
+    rahmen.addEventListener('wheel', e => { e.preventDefault(); bild.zoom = zwischen(bild.zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08), 1, 5); bildAnwenden(); }, { passive: false });
+    zoomFeld.addEventListener('input', () => { bild.zoom = zwischen(Number(zoomFeld.value) || 1, 1, 5); bildAnwenden(); });
+    k.querySelector('#gn-zoom-minus').addEventListener('click', () => { bild.zoom = zwischen(Math.round((bild.zoom - .25) * 4) / 4, 1, 5); bildAnwenden(); });
+    k.querySelector('#gn-zoom-plus').addEventListener('click', () => { bild.zoom = zwischen(Math.round((bild.zoom + .25) * 4) / 4, 1, 5); bildAnwenden(); });
+    k.querySelector('#gn-ausschnitt-weg').addEventListener('click', () => { bild.zoom = 1; bild.x = 50; bild.y = 50; bildAnwenden(); });
     let foto = null, listen = [];
     fotoFeld.addEventListener('change', () => {
       foto = fotoFeld.files[0] || null;

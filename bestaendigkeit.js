@@ -50,7 +50,10 @@
     groesse: { klein: 'Klein', mittel: 'Mittel', gross: 'Groß' },
     darstellung: { ganz: 'Ganz zeigen', fuellen: 'Rahmen füllen' },
   };
-  const BILD_STANDARD = { hintergrund: 'auto', format: '4:3', groesse: 'mittel', darstellung: 'ganz' };
+  // zoom (1–5) und Ausschnitt x/y (Mittelpunkt in %, 0–100): Bild im Rahmen vergrößert und verschoben – das Foto selbst bleibt unverändert
+  const BILD_STANDARD = { hintergrund: 'auto', format: '4:3', groesse: 'mittel', darstellung: 'ganz', zoom: 1, x: 50, y: 50 };
+  const BILD_KNOEPFE = ['hintergrund', 'format', 'groesse', 'darstellung'];
+  const zwischen = (n, a, b) => Math.min(b, Math.max(a, n));
   const BILD_NAME = { hintergrund: 'Hintergrund', format: 'Format', groesse: 'Größe', darstellung: 'Darstellung' };
   const BILD_WORT = { hintergrund: { weiss: 'weiß', hell: 'hellgrau', dunkel: 'dunkelgrau' }, groesse: { gross: 'groß' }, darstellung: { fuellen: 'füllen' } };
   const flach = t => String(t || '').trim().toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
@@ -62,10 +65,17 @@
   };
   function bildLesen(zeile) {
     const b = { ...BILD_STANDARD };
-    for (const teil of String(zeile || '').split(/[;,]/)) {
+    for (const teil of String(zeile || '').split(/;|,(?!\d)/)) {           // „Zoom=2,5“: Komma vor Ziffer gehört zur Zahl
       const m = /^\s*([^=:]+?)\s*[=:]\s*(.+?)\s*$/.exec(teil);
       if (!m) continue;
-      const k = { hintergrund: 'hintergrund', format: 'format', groesse: 'groesse', grosse: 'groesse', darstellung: 'darstellung' }[flach(m[1])];
+      const k = { hintergrund: 'hintergrund', format: 'format', groesse: 'groesse', grosse: 'groesse', darstellung: 'darstellung',
+                  zoom: 'zoom', ausschnitt: 'ausschnitt' }[flach(m[1])];
+      if (k === 'zoom') { const z = parseFloat(m[2].replace(',', '.')); if (z > 0) b.zoom = zwischen(z > 10 ? z / 100 : z, 1, 5); continue; }
+      if (k === 'ausschnitt') {
+        const n = (m[2].match(/\d+(?:[.,]\d+)?/g) || []).map(x => parseFloat(x.replace(',', '.')));
+        if (n.length >= 2) { b.x = zwischen(n[0], 0, 100); b.y = zwischen(n[1], 0, 100); }
+        continue;
+      }
       const w = k && BILD_ALIAS[k][flach(m[2]).replace(/\s+/g, ' ')];
       if (w) b[k] = w;
     }
@@ -73,8 +83,13 @@
   }
   // nur Abweichungen vom Standard; alles Standard → '' (keine Zeile)
   function bildText(b) {
-    return Object.keys(BILD_STANDARD).filter(k => b && b[k] && b[k] !== BILD_STANDARD[k] && BILD_WAHL[k][b[k]])
-      .map(k => `${BILD_NAME[k]}=${(BILD_WORT[k] && BILD_WORT[k][b[k]]) || b[k]}`).join('; ');
+    if (!b) return '';
+    const teile = BILD_KNOEPFE.filter(k => b[k] && b[k] !== BILD_STANDARD[k] && BILD_WAHL[k][b[k]])
+      .map(k => `${BILD_NAME[k]}=${(BILD_WORT[k] && BILD_WORT[k][b[k]]) || b[k]}`);
+    const z = Math.round(zwischen(Number(b.zoom) || 1, 1, 5) * 100), x = Math.round(zwischen(Number(b.x ?? 50), 0, 100)), y = Math.round(zwischen(Number(b.y ?? 50), 0, 100));
+    if (z !== 100) teile.push(`Zoom=${z} %`);
+    if (x !== 50 || y !== 50) teile.push(`Ausschnitt=${x}/${y}`);
+    return teile.join('; ');
   }
   function kategorieAus(wort) {
     const w = String(wort || '').trim().toLowerCase();
