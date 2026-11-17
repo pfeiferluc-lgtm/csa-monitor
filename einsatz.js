@@ -276,8 +276,10 @@
       max(calc(.7rem + var(--sicher-links)), calc((100vw - 62rem) / 2 + .7rem)); }
   .ez-leiste a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; padding: .45rem .3rem; border-radius: .6rem; text-decoration: none;
     color: var(--ink); background: var(--surface2); border: 1px solid var(--rand); font-weight: 700; font-size: .88rem; text-align: center; line-height: 1.15; min-width: 0; }
-  .ez-leiste a span { max-width: 100%; overflow-wrap: anywhere; -webkit-hyphens: manual; hyphens: manual; }
-  .ez-leiste a svg { width: 1.35rem; height: 1.35rem; color: var(--akzent); }
+  .ez-leiste a span { max-width: 100%; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+    font-size: clamp(.62rem, 2.75vw, .84rem); line-height: 1.12; overflow-wrap: normal; word-break: normal; -webkit-hyphens: manual; hyphens: manual; }
+  .ez-leiste a svg { width: 1.55rem; height: 1.55rem; color: var(--akzent); stroke-width: 1.9; flex: none; }
+  :root.gross .ez-leiste a span { font-size: clamp(.72rem, 3.2vw, .98rem); }
   .ez-leiste a.an { background: var(--akzent); border-color: var(--akzent); color: #fff; }
   .ez-leiste a.an svg { color: #fff; }
   .ez-quelle { font-size: .75rem; color: var(--muted); line-height: 1.4; }
@@ -614,6 +616,15 @@
     tonne: SVG('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>'),
     pfeil: SVG('<path d="M5 12h14M13 6l6 6-6 6"/>').replace('stroke-width="2"', 'stroke-width="2.6"'),
     ziffern: SVG('<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>').replace('stroke-width="2"', 'stroke-width="2.4"'),
+  };
+  // Piktogramme der Reiter einer Stoffseite (24 × 24, gleiche Strichstärke): Datenblatt, Beständigkeit (Schild mit Tropfen),
+  // PSA (Chemikalienschutzanzug), Erste Hilfe/Dekon (Kreuz mit Tropfen), Absperren (Ort im gestrichelten Gefahrenbereich)
+  const REITER = {
+    datenblatt: SVG('<path d="M6.5 2.8h7.6l4.4 4.4v13.9h-12z"/><path d="M14 2.8v4.5h4.5"/><path d="M9.2 11.5h6.3M9.2 14.7h6.3M9.2 17.9h4"/>'),
+    bestaendigkeit: SVG('<path d="M12 2.6 4.6 5.6v5.7c0 4.6 3.1 8.2 7.4 9.9 4.3-1.7 7.4-5.3 7.4-9.9V5.6z"/><path d="M12 8.1c-1.9 2.5-2.9 4-2.9 5.3a2.9 2.9 0 0 0 5.8 0c0-1.3-1-2.8-2.9-5.3z"/>'),
+    psa: SVG('<circle cx="12" cy="5.4" r="2.9"/><path d="M10.6 5.3h2.8"/><path d="M9.3 9.3 5.6 12l1.5 2 2.3-1.6V21h2.2l.4-4.6.4 4.6h2.2v-8.6l2.3 1.6 1.5-2-3.7-2.7"/>'),
+    eh: SVG('<path d="M7.5 3.5h4.2v4.2h4.2v4.2h-4.2v4.2H7.5v-4.2H3.3V7.7h4.2z"/><path d="M18.2 13.6c-1.4 1.9-2.1 3-2.1 3.9a2.1 2.1 0 0 0 4.2 0c0-.9-.7-2-2.1-3.9z"/>'),
+    lage: SVG('<circle cx="12" cy="12" r="9.2" stroke-dasharray="2.4 2.6"/><path d="M12 17.6s-3.7-3.3-3.7-6.4a3.7 3.7 0 0 1 7.4 0c0 3.1-3.7 6.4-3.7 6.4z"/><circle cx="12" cy="11.2" r="1.2"/>'),
   };
   // Stoffnamen lesbar: „Wasserstoffperoxid 35 ... <50 %“ → „Wasserstoffperoxid 35 bis < 50 %“
   const nameSchoen = n => String(n || '').replace(/\s?(?:\.\.\.|…)\s?/g, ' bis ').replace(/([<>≤≥])(?=\d)/g, '$1 ').replace(/\s{2,}/g, ' ').trim();
@@ -1563,9 +1574,9 @@
     const leiste = document.createElement('nav');
     leiste.className = 'ez-leiste';
     leiste.setAttribute('aria-label', 'Stoff');
-    leiste.innerHTML = [['datenblatt', 'Stoff&shy;daten&shy;blatt', I.blatt], ['bestaendigkeit', 'Bestän&shy;dig&shy;keiten', I.schild], ['psa', 'PSA', I.psa],
-      ['eh', 'EH/<wbr>Dekon', I.kreuz], ...(window.GSZLage ? [['lage', 'Wind/<wbr>Ab&shy;sper&shy;ren', I.wind]] : [])]
-      .map(([t, n, ic]) => `<a href="${teil === t ? basis : basis + '/' + t}" class="${teil === t ? 'an' : ''}"${teil ? ' data-ersetzen="1"' : ''}>${ic}<span>${n}</span></a>`).join('');
+    leiste.innerHTML = [['datenblatt', 'Daten&shy;blatt', REITER.datenblatt], ['bestaendigkeit', 'Bestän&shy;dig&shy;keit', REITER.bestaendigkeit], ['psa', 'PSA', REITER.psa],
+      ['eh', 'EH/<wbr>Dekon', REITER.eh], ...(window.GSZLage ? [['lage', 'Ab&shy;sperren', REITER.lage]] : [])]
+      .map(([t, n, ic]) => `<a href="${teil === t ? basis : basis + '/' + t}" class="${teil === t ? 'an' : ''}" title="${esc(TEILE[t] || '')}" aria-label="${esc(TEILE[t] || '')}"${teil ? ' data-ersetzen="1"' : ''}>${ic}<span aria-hidden="true">${n}</span></a>`).join('');
     sEl.appendChild(leiste);
     leisteBeobachten(sEl, leiste);
     // Bedienung

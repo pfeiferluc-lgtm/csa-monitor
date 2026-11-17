@@ -5,6 +5,10 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.2.1', datum: '2026-11-17', punkte: [
+    'Neue Piktogramme für die Reiter einer Stoffseite und kürzere Beschriftungen (Datenblatt, Beständigkeit, PSA, EH/Dekon, Absperren), die auch auf kleinen iPhones in höchstens zwei Zeilen passen.',
+    'Die Karte liegt beim Scrollen nicht mehr über der Reiterleiste.',
+  ] },
   { version: '2.2.0', datum: '2026-11-17', punkte: [
     'Wind vom DWD am eigenen Standort (GPS); die App zeigt, wo du gerade bist (Straße und Ort).',
     'Karte im Reiter „Wind/Absperren“: Gefahrenbereich, Erstabsperrung und Zone in Windrichtung maßstäblich auf der Karte – Grundlage ist dein Standort.',

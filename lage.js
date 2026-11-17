@@ -87,7 +87,8 @@
   .lg-wind small, .lg-klein { font-size: .78rem; color: var(--muted); line-height: 1.35; }
   .lg-wind small.lg-standort { color: var(--ink2); }
   /* Karte (Google Maps bzw. OpenStreetMap) */
-  .lg-karte-rahmen { position: relative; margin: .2rem 0 .5rem; }
+  /* eigene Ebene: die Ebenen der Karte (bis z-index 1000) dürfen nicht über Reiterleiste und Kopf liegen */
+  .lg-karte-rahmen { position: relative; z-index: 0; isolation: isolate; margin: .2rem 0 .5rem; }
   .lg-karte { height: min(62vh, 26rem); border-radius: .8rem; overflow: hidden; background: #dfe3e8; border: 1px solid var(--rand); }
   .lg-karte-rahmen.gross .lg-karte { height: calc(100vh - 9rem); }
   .lg-karte-wind { position: absolute; top: .5rem; right: .5rem; z-index: 500; pointer-events: none; background: rgba(10, 12, 15, .78); color: #fff; border-radius: .6rem;
