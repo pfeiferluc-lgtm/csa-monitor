@@ -82,9 +82,23 @@
   const stil = document.createElement('style');
   stil.textContent = `
   .lg-wind { display: grid; grid-template-columns: auto 1fr; gap: .2rem .9rem; align-items: center; }
-  .lg-rose { width: 4.6rem; height: 4.6rem; grid-row: span 3; color: var(--ink); }
+  .lg-rose { width: 4.6rem; height: 4.6rem; grid-row: span 4; align-self: start; color: var(--ink); }
   .lg-wind b.gross { font-size: 1.15rem; } .lg-wind .zug { font-weight: 700; color: var(--akzent); }
   .lg-wind small, .lg-klein { font-size: .78rem; color: var(--muted); line-height: 1.35; }
+  .lg-wind small.lg-standort { color: var(--ink2); }
+  /* Karte (Google Maps bzw. OpenStreetMap) */
+  .lg-karte-rahmen { position: relative; margin: .2rem 0 .5rem; }
+  .lg-karte { height: min(62vh, 26rem); border-radius: .8rem; overflow: hidden; background: #dfe3e8; border: 1px solid var(--rand); }
+  .lg-karte-rahmen.gross .lg-karte { height: calc(100vh - 9rem); }
+  .lg-karte-wind { position: absolute; top: .5rem; right: .5rem; z-index: 500; pointer-events: none; background: rgba(10, 12, 15, .78); color: #fff; border-radius: .6rem;
+    padding: .3rem .55rem; font-size: .75rem; font-weight: 700; display: flex; align-items: center; gap: .35rem; max-width: 70%; }
+  .lg-karte-wind svg { width: 1.1rem; height: 1.1rem; color: #ffd27a; flex: none; }
+  .lg-karte-knoepfe { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .45rem; }
+  .lg-karte-knoepfe .knopf { font-size: .8rem; }
+  .lg-legende { display: flex; flex-wrap: wrap; gap: .3rem .8rem; font-size: .74rem; color: var(--ink2); margin: .2rem 0 .5rem; }
+  .lg-legende i { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; margin-right: .3rem; vertical-align: -.1rem; border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 25%, transparent); }
+  .gk-unfall span { display: block; width: 30px; height: 30px; border-radius: 50%; background: #e5484d; border: 3px solid #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, .55); box-sizing: border-box; }
+  .gk-unfall span::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #fff; }
   .lg-knoepfe { display: flex; gap: .45rem; flex-wrap: wrap; margin-top: .55rem; }
   .lg-knoepfe .knopf { font-size: .84rem; }
   .lg-vorh { display: flex; gap: .35rem; overflow-x: auto; margin-top: .5rem; scrollbar-width: none; }
@@ -151,23 +165,37 @@
   }
 
   // ---------------------------------------------------------------- Standort
+  // Standort: GPS des Geräts (Grundlage für Wind und Karte); hat das Gerät den Standort verweigert, nur auf Knopfdruck neu fragen.
+  // Ohne GPS: zuletzt bekannter Standort, sonst Miehlen.
   async function standortHolen({ gps = false } = {}) {
     const gemerkt = LS.get('gsz-ort');
-    if (gps || LS.get('gsz-gps') === true) {
+    if (navigator.geolocation && (gps || LS.get('gsz-gps') !== false)) {
       try {
-        const pos = await new Promise((ok, fehler) => {
-          if (!navigator.geolocation) { fehler(new Error('Kein Standort verfügbar')); return; }
-          navigator.geolocation.getCurrentPosition(ok, fehler, { enableHighAccuracy: false, timeout: 9000, maximumAge: 10 * 60 * 1000 });
-        });
-        const ort = { lat: Math.round(pos.coords.latitude * 1e4) / 1e4, lon: Math.round(pos.coords.longitude * 1e4) / 1e4, name: 'Standort des Geräts', gps: true, zeit: Date.now() };
+        const pos = await new Promise((ok, fehler) => navigator.geolocation.getCurrentPosition(ok, fehler, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60 * 1000 }));
+        const ort = { lat: Math.round(pos.coords.latitude * 1e5) / 1e5, lon: Math.round(pos.coords.longitude * 1e5) / 1e5, genau: Math.round(pos.coords.accuracy || 0),
+          gps: true, zeit: Date.now(), name: '' };
+        if (gemerkt && gemerkt.gps && gemerkt.name && Math.abs(gemerkt.lat - ort.lat) < 3e-4 && Math.abs(gemerkt.lon - ort.lon) < 3e-4) ort.name = gemerkt.name;
         LS.set('gsz-ort', ort); LS.set('gsz-gps', true);
         return ort;
       } catch (e) {
-        if (gps) throw new Error(e && e.code === 1 ? 'Standort nicht erlaubt (Einstellungen › Datenschutz › Ortungsdienste).' : 'Standort nicht ermittelbar.');
+        if (e && e.code === 1) LS.set('gsz-gps', false);
+        if (gps) throw new Error(e && e.code === 1 ? 'Standort nicht erlaubt (Einstellungen › Datenschutz › Ortungsdienste › Safari bzw. die App).' : 'Standort nicht ermittelbar.');
       }
     }
     return gemerkt || MIEHLEN;
   }
+  // Ortsname zum Standort (OpenStreetMap/Nominatim, frei; gemerkt je ca. 10 m)
+  async function ortName(ort) {
+    if (!ort || ort.standard) return 'Miehlen (Standard)';
+    const k = ort.lat.toFixed(4) + ',' + ort.lon.toFixed(4), cache = LS.get('gsz-ortnamen') || {};
+    if (cache[k]) return cache[k];
+    const j = await json(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${ort.lat}&lon=${ort.lon}&zoom=18&addressdetails=1&accept-language=de`);
+    const a = (j && j.address) || {};
+    const name = [[a.road, a.house_number].filter(Boolean).join(' '), a.village || a.town || a.city || a.hamlet || a.municipality || ''].filter(Boolean).join(', ') || (j && j.display_name) || '';
+    if (name) { cache[k] = name; const n = Object.keys(cache); if (n.length > 60) delete cache[n[0]]; LS.set('gsz-ortnamen', cache); }
+    return name;
+  }
+  const ortText = o => !o || o.standard ? 'Miehlen (Standard – Standort nicht verfügbar)' : `${o.name || 'wird ermittelt …'}${o.gps ? ` (GPS${o.genau ? ' ±' + o.genau + ' m' : ''})` : ''}`;
 
   // ---------------------------------------------------------------- Wind (DWD über Bright Sky – frei, ohne Schlüssel)
   async function json(url) {
@@ -208,8 +236,9 @@
   // Wind: gemerkter Wert (≤ 20 min), sonst neu; manuell bestimmter Wind (≤ 6 h) hat Vorrang
   async function wind({ frisch = false, gps = false } = {}) {
     const alt = LS.get('gsz-wind');
-    if (!frisch && !gps && alt && Date.now() - alt.abgerufen < WIND_GUELTIG_MS) return alt;
     const ort = await standortHolen({ gps });
+    const gleicherOrt = alt && alt.ort && Math.abs(alt.ort.lat - ort.lat) < 0.02 && Math.abs(alt.ort.lon - ort.lon) < 0.02;
+    if (!frisch && !gps && alt && gleicherOrt && Date.now() - alt.abgerufen < WIND_GUELTIG_MS) return alt;
     try { const w = await windAbrufen(ort); LS.set('gsz-wind', w); return w; }
     catch (e) { if (alt) return { ...alt, alt: true, fehler: e.message }; throw e; }
   }
@@ -225,12 +254,13 @@
     const staerke = kmh !== null ? `${Math.round(kmh)} km/h${w.boeen ? `, Böen ${Math.round(w.boeen)}` : ''} · ${GG.beaufort(kmh)} Bft` : '';
     const quelle = m ? `vor Ort bestimmt um ${uhrzeit(m.zeit)}` :
       `DWD ${w.station ? esc(w.station.name) + (w.station.km ? ` (${zahlText(w.station.km)} km entfernt)` : '') : ''}, Messung ${uhrzeit(w.zeit)}${w.alt ? ' · <b>Stand ohne Netz</b>' : ''}`;
+    const stand = LS.get('gsz-ort') || (w && w.ort);
     const vorh = !m && w && w.vorhersage && w.vorhersage.length ? `<div class="lg-vorh" aria-label="Vorhersage">${w.vorhersage.map(v =>
       `<span>${uhrzeit(v.zeit)}${zugPfeil(GG.ausbreitungsrichtung(v.richtung))}<b>${GG.himmelsrichtung(v.richtung)}</b>${v.kmh !== null ? Math.round(v.kmh) + ' km/h' : ''}</span>`).join('')}</div>` : '';
     return `<div class="lg-wind">${rose(von)}
       <b class="gross">Wind aus ${esc(GG.RICHTUNG_LANG[r] || r)} (${Math.round(von)}°)</b>
       <span>Ausbreitung nach <span class="zug">${esc(GG.RICHTUNG_LANG[zug] || zug)}</span>${staerke ? ' · ' + staerke : ''}</span>
-      <small>${quelle}${w && w.ort && !m ? ` · Ort: ${esc(w.ort.standard ? 'Miehlen (Standard)' : w.ort.name)}` : ''}</small></div>${vorh}
+      <small>${quelle}</small><small class="lg-standort">📍 Standort: ${esc(ortText(stand))}</small></div>${vorh}
       <div class="lg-klein" style="margin-top:.45rem">Anfahrt und Aufstellung möglichst mit dem Wind im Rücken – also aus Richtung <b>${esc(GG.RICHTUNG_LANG[r] || r)}</b>.</div>`;
   }
   const kompassHtml = () => { const m = manuell(), r = m ? GG.himmelsrichtung(m.richtung) : '';
@@ -245,7 +275,7 @@
     const zeichnen = () => {
       ziel.innerHTML = windHtml(w, fehler) + `<div class="lg-knoepfe">
         <button type="button" class="knopf" data-lg="neu">${ICON.neu}Neu abrufen</button>
-        <button type="button" class="knopf" data-lg="gps">${ICON.ort}Standort verwenden</button>
+        <button type="button" class="knopf" data-lg="gps">${ICON.ort}Standort neu bestimmen</button>
         ${manuell() ? '<button type="button" class="knopf" data-lg="dwd">DWD-Wert verwenden</button>' : '<button type="button" class="knopf" data-lg="manuell">Wind vor Ort eingeben</button>'}</div>
         <div data-lg-kompass hidden>${kompassHtml()}</div>`;
       ziel.querySelector('[data-lg="neu"]').addEventListener('click', () => laden({ frisch: true }));
@@ -260,6 +290,11 @@
       if (!w) zeichnen();
       try { w = await wind(opt); } catch (e) { fehler = e.message; }
       if (ziel.isConnected) zeichnen();
+      const o = LS.get('gsz-ort');
+      if (o && o.gps && !o.name) {
+        try { const n = await ortName(o); const neu = LS.get('gsz-ort'); if (neu && neu.lat === o.lat && neu.lon === o.lon) { neu.name = n; LS.set('gsz-ort', neu); } if (ziel.isConnected) zeichnen(); }
+        catch { /* ohne Ortsnamen */ }
+      }
     }
     zeichnen();
     laden();
@@ -325,7 +360,7 @@
     return { html: reglerHtml() + bereiche + `<div class="lg-ergaenzend">Ergänzend${un ? ' für UN ' + esc(un) : ''}: Anhaltswerte nach ERG 2024</div>` +
       (kacheln.length ? `<div class="lg-abstaende">${kacheln.join('')}</div>` : '') + ohne + hinweise + t3 + lfHtml + fwHtml +
       `<div class="lg-quelle">Grundlage: ${esc(gl.lang)}${grundlage() === 'fwdv500' ? ' (freigegeben)' : ''}. Die ERG-Werte (Emergency Response Guidebook 2024, Tag/Nacht nach Sonnenstand) helfen beim Anpassen nach der Erkundung. Lage, Messwerte und Weisung der Einsatzleitung gehen vor.</div>`,
-      gefahr_m: gl.gefahrenbereich_m, absperr_m: gl.absperrbereich_m, schutz_km, zone_m: !schutz_km && a && a.gross_m ? a.gross_m : null };
+      gefahr_m: gl.gefahrenbereich_m, absperr_m: gl.absperrbereich_m, erg_m: a && a.absperren_m, schutz_km, zone_m: !schutz_km && a && a.gross_m ? a.gross_m : null };
   }
 
   // Karte auf der Übersicht eines Stoffs
@@ -341,12 +376,103 @@
     const un = stoff && stoff.transport && stoff.transport.un;
     const ab = abstaendeHtml(un, { voll: true });
     return `<section class="kachel ez-karte"><h2>Wind</h2><div data-lg-wind></div></section>
-      <section class="kachel ez-karte"><h2>Absperren${un ? ' · UN ' + esc(un) : ''}</h2><div data-lg-skizze data-abs="${ab.gefahr_m || ''}" data-absperr="${ab.absperr_m || ''}" data-schutz="${ab.schutz_km || ''}" data-zone="${ab.zone_m || ''}"></div>${ab.html}</section>`;
+      <section class="kachel ez-karte"><h2>Absperren${un ? ' · UN ' + esc(un) : ''}</h2>
+        <div class="lg-karte-rahmen" data-lg-karte-rahmen><div class="lg-karte" data-lg-karte data-abs="${ab.gefahr_m || ''}" data-absperr="${ab.absperr_m || ''}" data-erg="${ab.erg_m || ''}" data-schutz="${ab.schutz_km || ''}" data-zone="${ab.zone_m || ''}"></div>
+          <div class="lg-karte-wind" data-lg-karte-wind hidden></div></div>
+        <div class="lg-legende"><span><i style="--c:#e5484d"></i>Gefahrenbereich</span>${ab.absperr_m ? '<span><i style="--c:#26a95b"></i>Absperrbereich</span>' : ''}${ab.erg_m && ab.erg_m > (ab.gefahr_m || 0) ? '<span><i style="--c:#f0794a"></i>ERG: sofort absperren</span>' : ''}${ab.schutz_km || ab.zone_m ? '<span><i style="--c:#f2b01e"></i>ERG: Zone in Windrichtung</span>' : ''}<span><i style="--c:#4c8df0"></i>mein Standort</span></div>
+        <div class="lg-karte-knoepfe"><button type="button" class="knopf" data-lg-k="mitte">Unfallort = Kartenmitte</button><button type="button" class="knopf" data-lg-k="ich">Unfallort = mein Standort</button>
+          <button type="button" class="knopf" data-lg-k="ganz">Alles zeigen</button><button type="button" class="knopf" data-lg-k="gross">Karte groß</button></div>
+        <div class="lg-klein" data-lg-k-info></div>
+        <div data-lg-skizze hidden data-abs="${ab.gefahr_m || ''}" data-absperr="${ab.absperr_m || ''}" data-schutz="${ab.schutz_km || ''}" data-zone="${ab.zone_m || ''}"></div>${ab.html}</section>`;
   }
-  // Ereignisse einer Seite anbinden (Wind laden, Skizze nach Windrichtung zeichnen)
+  // ---------------------------------------------------------------- Karte: Google-Schlüssel (zentral) und Steuerung
+  // Einsatz/_App/Karte/karte.json = { google: '<Schlüssel der Maps JavaScript API>' } – gilt für alle Geräte; ohne Schlüssel OpenStreetMap
+  const KARTE_PFAD = '_App/Karte/karte.json';
+  const googleSchluessel = () => { const k = LS.get('gsz-karte'); return k && k.google ? String(k.google) : ''; };
+  async function karteEinstLaden() {
+    const E = einsatz(), a = E && E.ad && E.ad();
+    if (!a || !a.verbunden || !a.verbunden() || !a.datei) return;
+    if (!(E.dateien || []).some(d => !d.ordner && String(d.pfad).normalize('NFC') === KARTE_PFAD)) { if ((E.dateien || []).length && !(LS.get('gsz-karte') || {}).lokal) LS.set('gsz-karte', null); return; }
+    try { const j = JSON.parse(await (await a.datei(KARTE_PFAD)).text()); if (j && typeof j === 'object') LS.set('gsz-karte', j); } catch { /* gemerkter Stand */ }
+  }
+  async function googleEinrichten() {
+    const alt = googleSchluessel();
+    const k = prompt(alt ? 'Google-Maps-Schlüssel ändern (leer = entfernen, dann OpenStreetMap):' :
+      'Schlüssel der Google Maps JavaScript API eingeben (Google Cloud › APIs › Anmeldedaten). Er gilt für alle Geräte:', alt);
+    if (k === null) return false;
+    const E = einsatz(), a = E && E.ad && E.ad();
+    if (!a || !a.ablegen || !a.verbunden()) { melde('Dafür braucht die App die Verbindung zum Dropbox-App-Ordner.', 6000); return false; }
+    const neu = { google: k.trim(), geaendert: new Date().toISOString(), lokal: true };
+    try { await a.ablegen('_App', 'Karte', [{ name: 'karte.json', blob: new Blob([JSON.stringify({ google: neu.google, geaendert: neu.geaendert }, null, 1)], { type: 'application/json' }) }]); }
+    catch (e) { melde('Nicht gespeichert: ' + e.message, 7000); return false; }
+    LS.set('gsz-karte', neu);
+    melde(neu.google ? 'Google Maps eingerichtet – gilt für alle Geräte.' : 'Google-Schlüssel entfernt – Karte von OpenStreetMap.', 6000);
+    return true;
+  }
+  // Wind auf der Karte (oben rechts)
+  function windAufKarte(el, von) {
+    const z = el.querySelector('[data-lg-karte-wind]');
+    if (!z) return;
+    if (von === null || von === undefined) { z.hidden = true; return; }
+    const r = GG.himmelsrichtung(von), zug = GG.himmelsrichtung(GG.ausbreitungsrichtung(von));
+    z.innerHTML = `${zugPfeil(GG.ausbreitungsrichtung(von))}<span>Wind aus ${esc(GG.RICHTUNG_LANG[r] || r)} · Ausbreitung nach ${esc(GG.RICHTUNG_LANG[zug] || zug)}</span>`;
+    z.hidden = false;
+  }
+  // Karte im Reiter „Wind/Absperren“ starten: Unfallort = gemerkter Unfallort, sonst mein Standort (GPS)
+  async function karteStarten(el, kEl, zugJetzt) {
+    if (!window.GSZKarte) return null;
+    const info = el.querySelector('[data-lg-k-info]'), sk = el.querySelector('[data-lg-skizze]'), rahmen = el.querySelector('[data-lg-karte-rahmen]');
+    const d = kEl.dataset, zahl = x => Number(x) || null;
+    await karteEinstLaden().catch(() => {});
+    const st = await standortHolen().catch(() => MIEHLEN);
+    const u = GSZKarte.unfallort() || GSZKarte.unfallortSetzen(st, st.gps ? 'gps' : 'standard');
+    const nacht = jetztNacht(), schutz = zahl(d.schutz), zoneM = schutz ? schutz * 1000 : zahl(d.zone);
+    let k;
+    const infoZeigen = async () => {
+      const o = GSZKarte.unfallort() || u;
+      const art = o.art === 'hand' ? 'von Hand gesetzt' : o.art === 'gps' ? 'mein Standort' : 'Standard';
+      const zeile = name => `<b>Unfallort:</b> ${esc(name || `${o.lat.toFixed(5)}, ${o.lon.toFixed(5)}`)} <i>(${art})</i> · Karte: ${k && k.art === 'google' ? 'Google Maps' : 'OpenStreetMap'}` +
+        `${k && k.fehler ? ' <span style="color:var(--crit)">(Google: ' + esc(k.fehler) + ')</span>' : ''} · <a href="#" data-lg-google>${googleSchluessel() ? 'Google-Schlüssel ändern' : 'Google Maps einrichten'}</a>`;
+      info.innerHTML = zeile('');
+      const g = () => { const a = info.querySelector('[data-lg-google]'); if (a) a.addEventListener('click', async e => { e.preventDefault(); if (await googleEinrichten()) neuAufbauen(); }); };
+      g();
+      try { const n = await ortName(o); if (n && info.isConnected) { info.innerHTML = zeile(n); g(); } } catch { /* Koordinaten bleiben */ }
+    };
+    try {
+      k = await GSZKarte.zeigen(kEl, { unfallort: u, standort: st.standard ? null : st, gefahr_m: zahl(d.abs), absperr_m: zahl(d.absperr), ergAbs_m: zahl(d.erg),
+        zone: zoneM ? { m: zoneM, text: schutz ? `ERG: Schutzabstand ${zahlText(schutz)} km in Windrichtung (${nacht ? 'Nacht' : 'Tag'})` : `ERG: Räumung in Windrichtung erwägen (${meter(zoneM)})` } : null,
+        zugGrad: zugJetzt(), google: googleSchluessel(), beiVerschieben: () => infoZeigen() });
+    } catch (e) {
+      if (rahmen) rahmen.hidden = true;
+      if (sk) sk.hidden = false;
+      for (const b of el.querySelectorAll('[data-lg-k]')) b.hidden = true;
+      info.textContent = 'Karte nicht verfügbar (' + e.message + ') – stattdessen die Skizze.';
+      return null;
+    }
+    infoZeigen();
+    for (const b of el.querySelectorAll('[data-lg-k]')) b.addEventListener('click', async () => {
+      const w = b.dataset.lgK;
+      if (w === 'mitte') { const m = k.mitte(); GSZKarte.unfallortSetzen(m, 'hand'); k.setzen({ unfallort: m }); infoZeigen(); }
+      if (w === 'ich') {
+        try { const s2 = await standortHolen({ gps: true }); GSZKarte.unfallortSetzen(s2, 'gps'); k.setzen({ unfallort: s2, standort: s2 }); k.zentrieren(); infoZeigen(); }
+        catch (e) { melde(e.message, 7000); }
+      }
+      if (w === 'ganz') k.zentrieren();
+      if (w === 'gross') { rahmen.classList.toggle('gross'); b.textContent = rahmen.classList.contains('gross') ? 'Karte klein' : 'Karte groß';
+        setTimeout(() => { k.groesse(); k.zentrieren(); }, 60); }
+    });
+    return k;
+  }
+
+  // Ereignisse einer Seite anbinden (Wind laden, Skizze bzw. Karte nach Windrichtung zeichnen)
   function beleben(el) {
-    const sk = el.querySelector('[data-lg-skizze]');
+    const sk = el.querySelector('[data-lg-skizze]'), kEl = el.querySelector('[data-lg-karte]');
+    let zug = null, karte = null;
+    if (kEl) karteStarten(el, kEl, () => zug).then(k => { karte = k; if (k) k.setzen({ zugGrad: zug }); });
     windKarteBeleben(el, von => {
+      zug = von === null || von === undefined ? null : GG.ausbreitungsrichtung(von);
+      windAufKarte(el, von);
+      if (karte) karte.setzen({ zugGrad: zug });
       if (sk) sk.innerHTML = skizzeSvg({ absperren_m: Number(sk.dataset.abs) || null, absperr_m: Number(sk.dataset.absperr) || null, schutz_km: Number(sk.dataset.schutz) || null, zone_m: Number(sk.dataset.zone) || null,
         zugGrad: von === null || von === undefined ? null : GG.ausbreitungsrichtung(von) });
     });
@@ -412,6 +538,6 @@
     return { kF, uF };
   }
 
-  window.GSZLage = { wind, standortHolen, startHtml, beleben, stoffKarteHtml, stoffTeilHtml, warntafelOeffnen, skizzeSvg, windHtml, abstaendeHtml,
-    grundlage, regelwerkLaden, umschalten };
+  window.GSZLage = { wind, standortHolen, ortName, startHtml, beleben, stoffKarteHtml, stoffTeilHtml, warntafelOeffnen, skizzeSvg, windHtml, abstaendeHtml,
+    grundlage, regelwerkLaden, umschalten, googleSchluessel };
 })();
