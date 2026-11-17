@@ -4,10 +4,11 @@
 // Läuft im Browser (window.GSZAuswertung) und in Node (require).
 'use strict';
 (function (wurzel, fabrik) {
-  const m = fabrik();
+  const B = (typeof module === 'object' && module.exports) ? require('./bestaendigkeit') : wurzel.GSZBestaendigkeit;
+  const m = fabrik(B);
   if (typeof module === 'object' && module.exports) module.exports = m;
   else wurzel.GSZAuswertung = m;
-})(typeof self !== 'undefined' ? self : this, function () {
+})(typeof self !== 'undefined' ? self : this, function (B) {
   const TEIL_SEITEN = 6, TEIL_BILDER = 6;
   const tx = v => (v === null || v === undefined) ? '' : String(v).replace(/\s+/g, ' ').trim();
   const hatSpalten = d => !!(d && d.ist_liste !== false && d.kopf && Array.isArray(d.kopf.spalten) && d.kopf.spalten.some(s => s && tx(s.id)));
@@ -49,6 +50,7 @@
       teilZeile(teil, nr, anzahl, { pruefung: true }),
       `Spalten in dieser Reihenfolge: ${d.liste.spalten.map(s => `${s.id} = ${s.name}`).join('; ')}.`,
       `Legende: ${(d.liste.legende || []).map(l => `${l.zeichen || '(leer)'} = ${l.text}`).join('; ')}.`,
+      ...(Object.keys(B.fussnoten(d.liste)).length ? [`Fußnoten der Liste: ${Object.entries(B.fussnoten(d.liste)).map(([z, t]) => `${B.hoch(z)} = ${t}`).join('; ')}. Fußnotenzeichen gehören zum Wert.`] : []),
       alle ? 'Übertragene Zeilen der ganzen Liste – prüfe nur die, die auf diesen Seiten bzw. Bildern stehen; fehlende Zeilen nur für diese Seiten melden:'
            : `Übertragene Zeilen dieser Seiten (${zeilen.length}):`,
       kopf, ...tabelle].join('\n');
@@ -99,6 +101,10 @@
     }
     kopf.legende = legende;
     kopf.hinweise = [...new Set(daten.flatMap(t => (t.kopf.hinweise || []).map(tx)).filter(Boolean))];
+    // Fußnoten aller Teile (stehen oft nur auf einzelnen Seiten), je Zeichen einmal
+    const fn = new Map();
+    for (const f of daten.flatMap(t => t.kopf.fussnoten || [])) if (f && tx(f.zeichen) && tx(f.text) && !fn.has(tx(f.zeichen))) fn.set(tx(f.zeichen), { zeichen: tx(f.zeichen), text: tx(f.text) });
+    kopf.fussnoten = [...fn.values()];
     // Die Werkstoffe beschreibt jeder Teil aus denselben Geräteangaben neu, jedes Mal etwas anders (15.11.2026, TESIMAX:
     // 19 Einträge aus 5 Teilen). Es gilt die Beschreibung des Bezugsteils, sonst die erste vorhandene.
     const werkstoffe = t => (t.kopf.werkstoffe || []).map(tx).filter(Boolean);
@@ -113,19 +119,45 @@
   }
 
   // Prüfergebnis eines Teils einsammeln
+  // Fehlt in der Übertragung nur ein Fußnotenzeichen („+“ – Original „+⁵“), ist das keine Abweichung: Das Zeichen wird ergänzt.
   function pruefTeil(daten) {
-    const ab = ((daten && daten.abweichungen) || []).filter(x => x && (tx(x.stoff) || tx(x.feld)))
+    const alle = ((daten && daten.abweichungen) || []).filter(x => x && (tx(x.stoff) || tx(x.feld)))
       .map(x => ({ seite: tx(x.seite), stoff: tx(x.stoff), feld: tx(x.feld), liste: tx(x.liste), original: tx(x.original) }));
     const fe = ((daten && daten.fehlende_zeilen) || []).filter(x => x && tx(x.stoff)).map(x => ({ seite: tx(x.seite), stoff: tx(x.stoff) }));
-    return { abweichungen: ab, fehlend: fe, anmerkung: tx(daten && daten.anmerkung) };
+    const fussnoten = alle.filter(x => B.nurFussnote(x.liste, x.original));
+    return { abweichungen: alle.filter(x => !fussnoten.includes(x)), fehlend: fe, fussnoten, anmerkung: tx(daten && daten.anmerkung) };
+  }
+  // Zeile zu einer Abweichung: gleiche Seite und gleicher Stoff (Schreibweise egal); nur eindeutig
+  const name = s => B.grund(s).replace(/\s+/g, '');      // „Salpetersäure 65 %“ = „Salpetersäure 65%“
+  function zeileZu(d, x) {
+    const s = name(x.stoff), seite = e => !x.seite || String(e.seite) === String(x.seite);
+    let l = d.eintraege.filter(e => name(e.stoff) === s && seite(e));
+    if (l.length !== 1) l = d.eintraege.filter(e => name(e.stoff) === s);
+    if (l.length !== 1 && s) l = d.eintraege.filter(e => seite(e) && name(e.stoff) && (name(e.stoff).includes(s) || s.includes(name(e.stoff))));
+    return l.length === 1 ? l[0] : null;
+  }
+  // Fußnotenzeichen in die Fassung übernehmen → Anzahl ergänzter Zellen
+  function fussnotenErgaenzen(d, liste) {
+    let n = 0;
+    for (const x of liste || []) {
+      const e = zeileZu(d, x), f = B.grund(x.feld);
+      const sp = e && d.liste.spalten.find(s => s.id === x.feld || B.grund(s.id) === f || B.grund(s.name) === f);
+      if (!sp) continue;
+      const wert = B.ohneErklaerung(x.original);
+      e.werte[sp.id] = { ...(e.werte[sp.id] || {}), roh: wert, stufe: B.stufeAus(wert, d.liste) };
+      n++;
+    }
+    return n;
   }
   // Ergebnis der Prüfung in die Fassung schreiben (geprüft, wenn keine Abweichung; eine von Hand geprüfte Fassung bleibt geprüft)
-  function pruefungEintragen(d, { von, modell, teile, abweichungen, fehlend, anmerkungen }) {
+  function pruefungEintragen(d, { von, modell, teile, abweichungen, fehlend, anmerkungen, fussnoten = [] }) {
+    const ergaenzt = fussnotenErgaenzen(d, fussnoten);
+    if (fussnoten.length) anmerkungen = [...anmerkungen, `${ergaenzt} fehlende Fußnotenzeichen ergänzt (z. B. ${fussnoten.slice(0, 3).map(x => `${x.stoff} · ${x.feld}: „${B.ohneErklaerung(x.original)}“`).join('; ')}).`];
     const ok = !abweichungen.length && !fehlend.length;
     const ergebnis = { von, am: new Date().toISOString(), modell,
       umfang: `${d.eintraege.length} Zeilen in ${teile} Teil${teile === 1 ? '' : 'en'} unabhängig ein zweites Mal mit dem Original verglichen`,
       ergebnis: ok ? 'keine Abweichung' : `${abweichungen.length} Abweichung${abweichungen.length === 1 ? '' : 'en'}${fehlend.length ? `, ${fehlend.length} fehlende Zeile${fehlend.length === 1 ? '' : 'n'}` : ''}`,
-      abweichungen: abweichungen.slice(0, 300), fehlende_zeilen: fehlend.slice(0, 200), anmerkung: anmerkungen.join(' ') };
+      abweichungen: abweichungen.slice(0, 300), fehlende_zeilen: fehlend.slice(0, 200), anmerkung: anmerkungen.join(' '), fussnoten_ergaenzt: ergaenzt };
     const aw = d.auswertung || (d.auswertung = {});
     const vonHand = aw.geprueft === true && aw.pruefung && !/Lesedurchgang/.test(String(aw.pruefung.von || ''));
     if (vonHand) aw.pruefung_auto = ergebnis;
@@ -141,5 +173,5 @@
   }
 
   return { TEIL_SEITEN, TEIL_BILDER, tx, hatSpalten, teilKurz, bereiche, teilText, pruefText, pruefZeilen, seitenKorrigieren, teileZusammensetzen,
-    pruefTeil, pruefungEintragen, quelleAppText };
+    pruefTeil, pruefungEintragen, quelleAppText, zeileZu, fussnotenErgaenzen };
 });

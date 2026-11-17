@@ -197,7 +197,7 @@
         meldung(`${g.name || g.ordner}: Liste ausgewertet – ${fassung.eintraege.length} Einträge (${dollar(w.kosten)}).`, 8000);
       } else {
         const d = B.pruefen(JSON.parse(await (await a.datei(`${BL}/${g.ordner}/${B.DATEI}`)).text()));
-        const abweichungen = [], fehlend = [], anmerkungen = [];
+        const abweichungen = [], fehlend = [], anmerkungen = [], fussnoten = [];
         let mod = '';
         for (let i = 0; i < teile.length; i++) {
           const teil = teile[i];
@@ -207,14 +207,14 @@
           const inhalt = [...await teilBloecke(teil), { type: 'text', text: A.pruefText({ ordner: g.ordner, d, teil, nr: i + 1, anzahl: teile.length, zeilen, alle }) }];
           const r = await fragen({ system: B.PRUEF_ANWEISUNG, schema: B.PRUEF_SCHEMA, inhalt, signal: abbruch.signal, aufZeichen: z => { w.zeichen = z; melden(g.ordner); } });
           const p = A.pruefTeil(r.daten);
-          abweichungen.push(...p.abweichungen); fehlend.push(...p.fehlend); if (p.anmerkung) anmerkungen.push(`Teil ${i + 1}: ${p.anmerkung}`);
+          abweichungen.push(...p.abweichungen); fehlend.push(...p.fehlend); fussnoten.push(...p.fussnoten); if (p.anmerkung) anmerkungen.push(`Teil ${i + 1}: ${p.anmerkung}`);
           mod = mod || r.modell; w.kosten += kosten(r.nutzung); dauern.push(Date.now() - t0);
           Object.assign(w, { fertig: i + 1, schnitt_ms: Math.round(dauern.reduce((x, y) => x + y, 0) / dauern.length) }); melden(g.ordner);
         }
-        const { ok, ergebnis } = A.pruefungEintragen(d, { von: `Claude-API (App auf ${geraetText()}) – zweiter Lesedurchgang`, modell: mod, teile: teile.length, abweichungen, fehlend, anmerkungen });
+        const { ok, ergebnis } = A.pruefungEintragen(d, { von: `Claude-API (App auf ${geraetText()}) – zweiter Lesedurchgang`, modell: mod, teile: teile.length, abweichungen, fehlend, anmerkungen, fussnoten });
         await a.geraetDateien(g.ordner, [{ name: B.DATEI, blob: new Blob([JSON.stringify(d, null, 1) + '\n'], { type: 'application/json' }) }],
           { loeschen: ['in-arbeit-app.json', B.PRUEF_DATEI] });
-        meldung(`${g.name || g.ordner}: Prüfung fertig – ${ok ? 'keine Abweichung, jetzt geprüft' : ergebnis.ergebnis} (${dollar(w.kosten)}).`, 9000);
+        meldung(`${g.name || g.ordner}: Prüfung fertig – ${ok ? 'keine Abweichung, jetzt geprüft' : ergebnis.ergebnis}${ergebnis.fussnoten_ergaenzt ? ` · ${ergebnis.fussnoten_ergaenzt} Fußnotenzeichen ergänzt` : ''} (${dollar(w.kosten)}).`, 9000);
       }
       await E.listeHolen(true);
     } catch (e) {

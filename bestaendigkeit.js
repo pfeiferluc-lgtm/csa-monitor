@@ -131,6 +131,7 @@
     legende: L(O({ zeichen: T, text: T, stufe: T })),
     werkstoffe: L(T),
     hinweise: L(T),
+    fussnoten: L(O({ zeichen: T, text: T })),
   });
   const EINTRAG = O({ stoff: T, cas: T, konz: T, temp: T, werte: L(T), seite: T, hinweis: T });
   const SCHEMA = O({ ist_liste: { type: 'boolean' }, kopf: KOPF, eintraege: L(EINTRAG), anmerkung: T });
@@ -142,6 +143,7 @@
     '- Übertrage jeden Eintrag genau so, wie er in der Liste steht. Nichts erfinden, nichts aus eigenem Wissen ergänzen, keine Einträge zusammenfassen oder weglassen.',
     '- Bewertungszeichen genau unterscheiden (z. B. ● gefüllt = sehr gut, ○ leer = gut, △ = bedingt, ✕ = nicht beständig). Ist ein Zeichen nicht sicher erkennbar, schreibe "?" und nenne den Stoff in anmerkung.',
     '- Leere Zellen bleiben "" (= keine Angabe / nicht geprüft).',
+    '- Fußnotenzeichen an einem Wert (hochgestellte Ziffern, Sternchen) gehören zum Wert und werden mit übertragen, z. B. "+⁵" oder "○¹" (hochgestellt als ¹²³⁴⁵⁶⁷⁸⁹⁰ schreiben). Fußnotenzeichen am Stoffnamen bleiben am Namen.',
     '',
     'Felder:',
     '- ist_liste: false, wenn die Vorlage keine Beständigkeits- oder Permeationsliste ist (dann alles andere leer).',
@@ -154,6 +156,7 @@
     '  Steht die Legende nicht auf diesen Seiten, gib die Zeichen trotzdem an und beginne text mit „vorläufig:“ – ein späterer Teil mit der Legende ersetzt den Text.',
     '  Festlegung der Feuerwehr: Jede angegebene Zeit gilt als beständig, ob kurz oder lang. Bei art "permeation" bekommen Zeitklassen stufe "gut"; ebenso Klassen wie „beständig mindestens 3 Stunden“. Texte wie in der Liste; darüber keine Anmerkung.',
     '- kopf.werkstoffe: Werkstoffe des Geräts, falls aus Liste oder Geräteangaben ersichtlich; kopf.hinweise: wichtige allgemeine Hinweise der Liste (Konzentration, Temperatur, Gewährleistung) in kurzen Sätzen.',
+    '- kopf.fussnoten: alle Fußnoten der Liste, je { zeichen: das Fußnotenzeichen ohne Hochstellung, z. B. "5" oder "*", text: der Wortlaut }; ohne Fußnoten []. Fußnoten nicht zusätzlich in kopf.hinweise.',
     '- eintraege: jede Zeile der Tabelle ein Eintrag: stoff (Name wie in der Liste, mit Zusätzen wie "wässrig"), cas (nur, wenn in der Liste angegeben), konz (Konzentration, falls angegeben), temp (Temperatur, falls angegeben), werte (ein Wert je Spalte in der Reihenfolge von kopf.spalten: das Zeichen bzw. die Klasse oder die Durchbruchzeit in Minuten wie ">480"; "" für leer), seite (Seitennummer der Vorlage), hinweis (Fußnote oder Bemerkung zur Zeile). Verweiszeilen wie "Bleichlauge – siehe Natriumhypochloritlauge" als Eintrag mit leeren werten und dem Verweis in hinweis.',
     '- anmerkung: was unsicher oder unleserlich war; leer, wenn alles eindeutig war.',
   ].join('\n');
@@ -177,8 +180,43 @@
     '- Fehlen Zeilen dieser Seiten in der Übertragung? Dann in fehlende_zeilen.',
     'Melde nur echte Abweichungen: feld ist "stoff", "cas", "konz", "temp" oder die Kennung der Spalte; liste = was übertragen wurde, original = was im Original steht.',
     'Keine Abweichung sind: Leerzeichen, Schreibweise von Einheiten (20°C / 20 °C), Zeilenumbrüche, getrennt übertragene Angaben (z. B. „flüssig / 20 °C“ als konz „flüssig“ und temp „20 °C“).',
+    'Fußnotenzeichen (hochgestellte Ziffern, Sternchen) gehören zum Wert: Fehlt in der Übertragung ein Fußnotenzeichen oder steht ein anderes, melde das als Abweichung mit original genau wie gedruckt (z. B. "+⁵"), ohne Erklärung in Klammern.',
     'Ist ein Zeichen im Original nicht sicher lesbar, nenne es in anmerkung statt als Abweichung. Stimmt alles: abweichungen und fehlende_zeilen leer.',
   ].join('\n');
+
+  // ------------------------------------------------------------------ Fußnoten der Liste
+  // „+⁵“: Wert mit Fußnote 5. Die Fußnoten stehen in liste.fussnoten ([{ zeichen, text }]); bei älteren Fassungen in den Hinweisen
+  // („Fußnote 5: FKM in säurebeständiger Ausführung.“, „… prüfen (Fußnote 1).“).
+  const HOCH = { '¹': '1', '²': '2', '³': '3', '⁴': '4', '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9', '⁰': '0' };
+  const ZUM_HOCH = Object.fromEntries(Object.entries(HOCH).map(([h, z]) => [z, h]));
+  const hoch = z => String(z).split('').map(c => ZUM_HOCH[c] || c).join('');
+  // Fußnotenzeichen eines Werts: „+⁵“ → ['5'], „○¹²“ → ['12'], „+*“ → ['*']
+  function fussnotenVon(roh) {
+    const r = String(roh || ''), aus = [];
+    for (const m of r.matchAll(/[¹²³⁴⁵⁶⁷⁸⁹⁰]+/g)) aus.push(m[0].split('').map(c => HOCH[c]).join(''));
+    if (/\*/.test(r)) aus.push('*');
+    return aus;
+  }
+  // { '5': 'FKM in säurebeständiger Ausführung.' }
+  function fussnoten(liste) {
+    const aus = {};
+    for (const f of (liste && liste.fussnoten) || []) if (f && text(f.zeichen)) aus[text(f.zeichen).replace(/[^0-9*]/g, '') || text(f.zeichen)] = text(f.text);
+    for (const h of (liste && liste.hinweise) || []) {
+      const t = text(h); let m;
+      if ((m = /^Fußnote\s*(\d+|\*)\s*[:.)–-]\s*(.+)$/i.exec(t))) { if (!aus[m[1]]) aus[m[1]] = m[2]; continue; }
+      if ((m = /^\(?([¹²³⁴⁵⁶⁷⁸⁹⁰]+)\)?\s+(.+)$/.exec(t))) { const z = m[1].split('').map(c => HOCH[c]).join(''); if (!aus[z]) aus[z] = m[2]; continue; }
+      if ((m = /^(.+?)\s*\(Fußnote\s*(\d+)\)\.?$/i.exec(t))) { if (!aus[m[2]]) aus[m[2]] = m[1]; }
+    }
+    return aus;
+  }
+  // Abweichung nur im Fußnotenzeichen: In der Übertragung fehlt es oder steht ein anderes („+“ – „+⁵ (mit Fußnote 5)“)? Dann gilt
+  // das Zeichen des Originals. Zeigt das Original dagegen keins („+⁵“ – „+“), bleibt es eine Abweichung zum Entscheiden – eine
+  // Fußnote schränkt oft ein und darf nicht unbemerkt verschwinden.
+  const ohneErklaerung = t => text(t).replace(/\s*\(.*\)\s*$/, '').trim();
+  function nurFussnote(liste, original) {
+    const l = ohneErklaerung(liste), o = ohneErklaerung(original);
+    return !!o && l !== o && zeichenKern(l) === zeichenKern(o) && fussnotenVon(o).length > 0;
+  }
 
   // ------------------------------------------------------------------ Kompakte Antwort (eine oder mehrere Teile) → bestaendigkeit.json
   const text = v => (v === null || v === undefined) ? '' : String(v).replace(/\s+/g, ' ').trim();
@@ -239,7 +277,8 @@
                 hersteller: text(kopf.hersteller), werkstoffe: (kopf.werkstoffe || []).map(text).filter(Boolean),
                 info: text(inf.text) },
       liste: { titel: text(kopf.titel), dateien, art: k.art, stand: text(kopf.stand), bedingungen: text(kopf.bedingungen),
-               spalten, relevant, legende, hinweise: (kopf.hinweise || []).map(text).filter(Boolean) },
+               spalten, relevant, legende, hinweise: (kopf.hinweise || []).map(text).filter(Boolean),
+               fussnoten: (kopf.fussnoten || []).map(f => ({ zeichen: text(f && f.zeichen).replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]/g, c => HOCH[c]), text: text(f && f.text) })).filter(f => f.zeichen && f.text) },
       eintraege,
       auswertung: { von: 'Mac-Helfer (Claude)', am: jetzt.toISOString(), modell, geprueft: false, pruefung: null,
                     quelle_hash: quelleHash, anmerkung: anmerkungen.join(' ') },
@@ -396,5 +435,6 @@
   }
 
   return { FORMAT, DATEI, PRUEF_DATEI, PRUEF_SCHEMA, PRUEF_ANWEISUNG, STUFEN, STUFE_TEXT, KATEGORIEN, BILD_WAHL, BILD_STANDARD, bildLesen, bildText, ordnerEinteilen, ordnerName, infoLesen, infoText, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
-           pruefen, gesamtStufe, grund, kern, finde, fuerStoff, widersprueche, zeilenSchluessel, verweisMitWerten, zeichenKern };
+           pruefen, gesamtStufe, grund, kern, finde, fuerStoff, widersprueche, zeilenSchluessel, verweisMitWerten, zeichenKern,
+           fussnoten, fussnotenVon, nurFussnote, hoch, ohneErklaerung };
 });

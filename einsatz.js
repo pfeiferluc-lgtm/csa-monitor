@@ -399,6 +399,14 @@
   li.ez-abw { margin-bottom: .45rem; }
   .ez-wid { display: flex; flex-direction: column; gap: .4rem; margin: .2rem 0 .6rem; } .ez-wid .ez-zeilen { margin: 0; } .ez-wid .knopf { align-self: flex-start; }
   .ez-legende { display: flex; gap: .4rem .8rem; flex-wrap: wrap; font-size: .78rem; color: var(--ink2); margin: .4rem 0 .6rem; }
+  /* Fußnoten der Liste („+⁵“): Text an der Zeile und gesammelt unter der Tabelle */
+  .ez-fn-text { display: block; font-size: .74rem; color: var(--ink2); font-style: normal; font-weight: 400; margin-top: .15rem; }
+  .ez-fn-nr { display: inline-block; min-width: 1.15rem; padding: 0 .3rem; margin-right: .35rem; border-radius: .35rem; background: color-mix(in srgb, var(--akzent) 18%, transparent);
+    color: var(--akzent); font-weight: 800; font-size: .72rem; line-height: 1.15rem; text-align: center; vertical-align: .05rem; font-style: normal; }
+  .ez-fn-text .sp { font-weight: 700; color: var(--ink); }
+  .ez-fussnoten { margin-top: .6rem; padding: .5rem .7rem; border: 1px solid var(--line); border-radius: .55rem; background: var(--surface2); font-size: .8rem; }
+  .ez-fussnoten > b { display: block; margin-bottom: .3rem; }
+  .ez-fussnoten ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .25rem; }
   /* Auswertung durch den Mac-Helfer: Fortschritt */
   .ez-fortschritt { display: flex; flex-direction: column; gap: .35rem; }
   .ez-fortschritt .titel { display: flex; align-items: center; gap: .5rem; font-weight: 700; flex-wrap: wrap; }
@@ -1504,7 +1512,32 @@
   const stoffText = t => String(t || '').replace(/\s+([,;.)])/g, '$1').replace(/\(\s+/g, '(').replace(/\s{2,}/g, ' ').trim();
   // Bedeutung eines Zeichens laut Legende der Liste („○“ → „Gut beständig“), dazu eine Kurzform fürs Band
   // („geeignet für Voll- und Leerschlauchsystem, Dauerbetrieb“ → „geeignet“)
-  const legendeText = (L, roh) => { const l = (L.legende || []).find(x => x.zeichen === roh); return l ? l.text : ''; };
+  // „+⁵“: Bedeutung von „+“ – das Fußnotenzeichen ändert die Bewertung nicht, sein Text steht daneben (fussnotenZu)
+  const legendeText = (L, roh) => { const lg = L.legende || [], k = B.zeichenKern(roh);
+    const l = lg.find(x => x.zeichen === roh) || (k && k !== roh ? lg.find(x => x.zeichen === k) : null); return l ? l.text : ''; };
+  // Fußnoten der Liste (liste.fussnoten, bei älteren Fassungen aus den Hinweisen „Fußnote 5: …“) – je Liste einmal gelesen
+  const fnSpeicher = new WeakMap();
+  const fussnotenDerListe = L => { if (!L) return {}; if (!fnSpeicher.has(L)) fnSpeicher.set(L, B.fussnoten(L)); return fnSpeicher.get(L); };
+  const fnZeichen = z => (z === '*' ? '*' : B.hoch(z));
+  // Fußnoten eines Werts: „+⁵“ → [{ z: '5', text: 'FKM in säurebeständiger Ausführung' }]; „○¹²“ ohne Fußnote 12 = Fußnoten 1 und 2
+  function fussnotenZu(L, roh) {
+    const fn = fussnotenDerListe(L), aus = [];
+    for (const z of B.fussnotenVon(roh)) {
+      if (fn[z] || z.length < 2 || ![...z].every(c => fn[c])) aus.push({ z, text: fn[z] || '' });
+      else for (const c of z) aus.push({ z: c, text: fn[c] });
+    }
+    return aus;
+  }
+  // Fußnoten einer Zeile über die gegebenen Spalten, je Zeichen einmal, mit den Spalten, an denen es steht
+  function zeilenFussnoten(L, eintrag, ids) {
+    const aus = [];
+    for (const id of ids) { const w = eintrag.werte[id]; if (!w || !w.roh) continue;
+      for (const f of fussnotenZu(L, w.roh)) { const da = aus.find(x => x.z === f.z); if (da) da.ids.push(id); else aus.push({ ...f, ids: [id] }); } }
+    return aus;
+  }
+  const fnNr = z => `<b class="ez-fn-nr" aria-label="Fußnote ${esc(z)}">${esc(z)}</b>`;
+  const fnTextHtml = (l, mitSpalten = true) => l.map(f => `<span class="ez-fn-text">${fnNr(f.z)}${mitSpalten ? `<span class="sp">${esc(f.ids.join(', '))}:</span> ` : ''}` +
+    `${esc(f.text || 'Fußnote – Text im Original nachsehen')}</span>`).join('');
   function kurzDefinition(t) {
     let k = String(t || '').split(/[,;.(]| – | - /)[0].trim();
     if (k.length > 24) k = k.split(/\s+(?:für|bei|nur|wenn)\s+/)[0].trim();
@@ -1515,7 +1548,7 @@
   // Zeilen die ungünstigste – bei Durchbruchzeiten die kürzeste)
   function bandHtml(e) {
     const g = e.geraet, L = g.daten && g.daten.liste;
-    const band = (zeichen, text, extra = '', def = '') => `<span class="ez-band ${esc(e.stufe)}${extra}" title="${esc(B.STUFE_TEXT[e.stufe] || '')}"><b>${esc(zeichen)}</b>${def ? `<em>${esc(def)}</em>` : ''}<small>${esc(text)}</small></span>`;
+    const band = (zeichen, text, extra = '', def = '', fn = '') => `<span class="ez-band ${esc(e.stufe)}${extra}" title="${esc((B.STUFE_TEXT[e.stufe] || '') + (fn ? ' – ' + fn : ''))}"><b>${esc(zeichen)}</b>${def ? `<em>${esc(def)}</em>` : ''}<small>${esc(text)}</small></span>`;
     if (e.stufe === 'offen') return band('…', 'noch offen');
     if (e.stufe === 'keine' || !L) return band('–', 'nicht in der Liste');
     if (e.stufe === 'gemischt') return band('±', 'gemischt');
@@ -1530,7 +1563,8 @@
     const zeit = L.art === 'permeation' && /\d/.test(w.roh);
     const def = zeit ? '' : legendeText(L, w.roh);                          // Bedeutung des Zeichens laut Legende, ausgeschrieben
     const unter = zeit ? 'min' : ids.length > 1 || L.spalten.length > 1 ? w.id : (def ? '' : B.STUFE_TEXT[e.stufe] || '');
-    return band(w.roh, unter, w.roh.length > 5 ? ' lang' : '', def);
+    const fn = fussnotenZu(L, w.roh).map(f => `Fußnote ${fnZeichen(f.z)}: ${f.text || 'im Original nachsehen'}`).join(' · ');
+    return band(w.roh, unter, w.roh.length > 5 ? ' lang' : '', def, fn);
   }
   function geraetZeile(e, kontext = '') {
     const g = e.geraet;
@@ -1546,8 +1580,10 @@
       // Konzentration/Temperatur nur, wenn sie nicht schon im Stoffnamen steht („Salzsäure 37 %“ + „37 %“)
       const name = S.wertSchoen(stoffText(t.eintrag.stoff)).replace(/\s+/g, '');
       const zusatz = [t.eintrag.konz, t.eintrag.temp].filter(Boolean).map(x => S.wertSchoen(x)).filter(x => !name.includes(x.replace(/\s+/g, ''))).join(' · ');
+      const fns = zeilenFussnoten(L, t.eintrag, ids);
       return `<div class="eintrag"><span class="kopf">${e.treffer.length > 1 ? stufeBadge(t.stufe) : '<span>Liste:</span>'}<span>„${esc(stoffText(t.eintrag.stoff))}“${zusatz ? ' ' + esc(zusatz) : ''}` +
-        `${t.art === 'aehnlich' ? ' <i>(ähnlicher Name – prüfen)</i>' : ''}${t.widerspruch ? ' <i class="ez-wid-text">⚠ widerspricht einer anderen Zeile</i>' : ''}${t.verweis ? ' <i class="ez-wid-text">⚠ Verweiszeile mit eigenen Werten – Original prüfen</i>' : ''}</span></span>${werte ? `<i>${werte}</i>` : ''}${t.eintrag.hinweis ? `<i>${esc(t.eintrag.hinweis)}</i>` : ''}</div>`;
+        `${t.art === 'aehnlich' ? ' <i>(ähnlicher Name – prüfen)</i>' : ''}${t.widerspruch ? ' <i class="ez-wid-text">⚠ widerspricht einer anderen Zeile</i>' : ''}${t.verweis ? ' <i class="ez-wid-text">⚠ Verweiszeile mit eigenen Werten – Original prüfen</i>' : ''}</span></span>${werte ? `<i>${werte}</i>` : ''}` +
+        `${fns.length ? `<i class="ez-fn">${fnTextHtml(fns, ids.length > 1)}</i>` : ''}${t.eintrag.hinweis ? `<i>${esc(t.eintrag.hinweis)}</i>` : ''}</div>`;
     }).join('');
     const rest = e.treffer.length > 6 ? `<div class="eintrag"><i>… und ${e.treffer.length - 6} weitere Zeilen</i></div>` : '';
     return `<li><a href="#geraet/${kodiere(g.ordner)}${kontext ? '/' + kodiere(kontext) : ''}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}"><div class="ez-zeile-inhalt">
@@ -1781,20 +1817,30 @@
     const aw = d && d.auswertung, pr = aw && aw.pruefung, auto = aw && aw.pruefung_auto;
     // Abweichungen: je Punkt wählen, welche Angabe stimmt (Liste, Original oder eigener Wert); fehlende Zeilen ergänzen oder verwerfen
     const wahlKnopf = (art, i, text, quelle) => `<button type="button" class="knopf" data-abw="${quelle}|${art}|${i}">${text}</button>`;
-    const abwListe = (p, quelle) => [...(p.abweichungen || []).map((a, i) => `<li data-z="•" class="ez-abw">${a.seite ? 'S. ' + esc(a.seite) + ' · ' : ''}<b>${esc(stoffText(a.stoff))}</b>` +
+    // Fehlt nur ein Fußnotenzeichen („+“ – Original „+⁵“), ist das kein inhaltlicher Unterschied: gesammelt, ein Knopf übernimmt alle
+    // (ältere Prüfungen; neue ergänzen die Zeichen selbst)
+    const nurFn = a => B.nurFussnote(a.liste, a.original);
+    const fnAbw = p => ((p && p.abweichungen) || []).filter(nurFn);
+    const abwListe = (p, quelle) => [...(p.abweichungen || []).map((a, i) => nurFn(a) ? '' : `<li data-z="•" class="ez-abw">${a.seite ? 'S. ' + esc(a.seite) + ' · ' : ''}<b>${esc(stoffText(a.stoff))}</b>` +
         `${a.feld ? ' · ' + esc(a.feld) : ''}: Liste „${esc(a.liste)}“ – Original „${esc(a.original)}“` +
         (bearbeitbar ? `<span class="ez-abw-wahl">${wahlKnopf('liste', i, `Liste stimmt <b>${esc(a.liste || 'leer')}</b>`, quelle)}${wahlKnopf('original', i, `Original <b>${esc(originalWert(a.original) || 'leer')}</b>`, quelle)}${wahlKnopf('eigen', i, 'anders …', quelle)}</span>` : '') + '</li>'),
+      ...(fnAbw(p).length ? [`<li data-z="¹" class="ez-abw"><b>${fnAbw(p).length === 1 ? '1 Fußnotenzeichen fehlt' : fnAbw(p).length + ' Fußnotenzeichen fehlen'}</b> in der Übertragung – kein inhaltlicher Unterschied, die Bewertung bleibt.
+        <span class="ez-klein">${fnAbw(p).slice(0, 8).map(a => `${esc(stoffText(a.stoff))}${a.feld ? ' · ' + esc(a.feld) : ''} „${esc(originalWert(a.original))}“`).join('; ')}${fnAbw(p).length > 8 ? ' …' : ''}</span>` +
+        (bearbeitbar ? `<span class="ez-abw-wahl">${wahlKnopf('fussnoten', -1, 'Fußnotenzeichen übernehmen', quelle)}</span>` : '') + '</li>'] : []),
       ...(p.fehlende_zeilen || []).map((f, i) => `<li data-z="•" class="ez-abw">${f.seite ? 'S. ' + esc(f.seite) + ' · ' : ''}<b>${esc(stoffText(f.stoff))}</b> fehlt in der Übertragung` +
         (bearbeitbar ? `<span class="ez-abw-wahl">${wahlKnopf('zeile', i, 'Zeile ergänzen …', quelle)}${wahlKnopf('keinfehler', i, 'kein Fehler', quelle)}</span>` : '') + '</li>')].join('');
-    const alleKnoepfe = (p, quelle) => bearbeitbar && (p.abweichungen || []).length > 1 ? `<div class="ez-abw-alle">${wahlKnopf('alle-original', -1, 'Alle: Original übernehmen', quelle)}${wahlKnopf('alle-liste', -1, 'Alle: Liste stimmt', quelle)}</div>` : '';
+    const alleKnoepfe = (p, quelle) => bearbeitbar && (p.abweichungen || []).filter(a => !nurFn(a)).length > 1 ? `<div class="ez-abw-alle">${wahlKnopf('alle-original', -1, 'Alle: Original übernehmen', quelle)}${wahlKnopf('alle-liste', -1, 'Alle: Liste stimmt', quelle)}</div>` : '';
     const entschiedenHtml = p => p && (p.entscheidungen || []).length ? `<details class="ez-mehr" style="margin-top:.4rem"><summary>Entschieden (${p.entscheidungen.length})</summary><div class="inhalt"><ul class="ez-zeilen">${p.entscheidungen.map(x =>
-        `<li data-z="✓">${x.seite ? 'S. ' + esc(x.seite) + ' · ' : ''}<b>${esc(stoffText(x.stoff))}</b>${x.feld ? ' · ' + esc(x.feld) : ''}: ${x.gewaehlt === 'liste' ? 'Liste stimmt' : x.gewaehlt === 'original' ? 'Original übernommen' : x.gewaehlt === 'zeile' ? 'Zeile ergänzt' : x.gewaehlt === 'keinfehler' ? 'kein Fehler' : 'eigener Wert'}` +
+        `<li data-z="✓">${x.seite ? 'S. ' + esc(x.seite) + ' · ' : ''}<b>${esc(stoffText(x.stoff))}</b>${x.feld ? ' · ' + esc(x.feld) : ''}: ${x.gewaehlt === 'liste' ? 'Liste stimmt' : x.gewaehlt === 'original' ? 'Original übernommen' : x.gewaehlt === 'zeile' ? 'Zeile ergänzt' : x.gewaehlt === 'keinfehler' ? 'kein Fehler' : x.gewaehlt === 'fussnote' ? 'Fußnotenzeichen ergänzt' : 'eigener Wert'}` +
         `${x.wert !== undefined && x.gewaehlt !== 'keinfehler' ? ` „${esc(x.wert)}“` : ''}${x.zeile_gefunden === false ? ' <i>(Zeile nicht eindeutig gefunden – im Original prüfen)</i>' : ''} <span class="ez-klein">${esc(datumZeit(x.am))}</span></li>`).join('')}</ul></div></details>` : '';
     const abwAnzahl = p => (p && ((p.abweichungen || []).length + (p.fehlende_zeilen || []).length)) || 0;
+    // Kopfzeile: echte Abweichungen und fehlende Fußnotenzeichen getrennt
+    const abwText = p => { const n = abwAnzahl(p) - fnAbw(p).length, f = fnAbw(p).length;
+      return [n ? (n === 1 ? '1 mögliche Abweichung' : n + ' mögliche Abweichungen') : '', f ? (f === 1 ? '1 fehlendes Fußnotenzeichen' : f + ' fehlende Fußnotenzeichen') : ''].filter(Boolean).join(', '); };
     const pruefHtml = !d ? '' : g.pruefAuftrag ? '<div class="ez-warn blau" id="ez-pruefung"><div class="ez-fortschritt"><div class="titel">Prüfung angefordert</div><div class="ez-klein">wird abgefragt …</div></div></div>'
-      : (!aw.geprueft && abwAnzahl(pr) ? `<div class="ez-warn rot" id="ez-pruef-abw"><b>Zweiter Lesedurchgang: ${abwAnzahl(pr) === 1 ? '1 mögliche Abweichung' : abwAnzahl(pr) + ' mögliche Abweichungen'}</b> – bitte im Original nachsehen${bearbeitbar ? ' und je Punkt wählen, welche Angabe stimmt. Sind alle entschieden, gilt die Liste als geprüft' : ''}.
+      : (!aw.geprueft && abwAnzahl(pr) ? `<div class="ez-warn rot" id="ez-pruef-abw"><b>Zweiter Lesedurchgang: ${abwText(pr)}</b> – bitte im Original nachsehen${bearbeitbar ? ' und je Punkt wählen, welche Angabe stimmt. Sind alle entschieden, gilt die Liste als geprüft' : ''}.
           ${alleKnoepfe(pr, 'pruefung')}<ul class="ez-zeilen">${abwListe(pr, 'pruefung')}</ul>${entschiedenHtml(pr)}</div>` : '') +
-        (aw.geprueft && abwAnzahl(auto) ? `<div class="ez-warn" id="ez-pruef-abw"><b>Zweiter Lesedurchgang (Mac-Helfer): ${abwAnzahl(auto) === 1 ? '1 mögliche Abweichung' : abwAnzahl(auto) + ' mögliche Abweichungen'}</b> – die Fassung bleibt geprüft.
+        (aw.geprueft && abwAnzahl(auto) ? `<div class="ez-warn" id="ez-pruef-abw"><b>Zweiter Lesedurchgang (Mac-Helfer): ${abwText(auto)}</b> – die Fassung bleibt geprüft.
           <details class="ez-mehr"><summary>Anzeigen und entscheiden</summary><div class="inhalt">${alleKnoepfe(auto, 'pruefung_auto')}<ul class="ez-zeilen">${abwListe(auto, 'pruefung_auto')}</ul></div></details></div>` : '') +
         (aw.geprueft && pr && (pr.entscheidungen || []).length && !abwAnzahl(auto) ? `<div class="ez-klein" style="margin-top:.3rem">${entschiedenHtml(pr)}</div>` : '') +
         (bearbeitbar ? `<div class="ez-pruefen-zeile"><button type="button" class="knopf${aw.geprueft ? '' : ' los'}" id="ez-pruefen">${I.schild}${aw.geprueft || pr ? 'Erneut prüfen lassen' : 'Liste prüfen lassen'}</button>
@@ -1870,14 +1916,21 @@
       <div class="ez-klein">In der Vorlage sind hier vermutlich Zeilen verrutscht – die Werte gehören dann zu einer Nachbarzeile. Im Original nachsehen bzw. beim Hersteller klären.</div>
       <ul class="ez-zeilen">${verweise.map(widZeile).join('')}</ul>` : ''}
       <button type="button" class="knopf" id="ez-wid-filter" aria-pressed="false">Nur diese Zeilen zeigen</button></div>` : '';
+    // Fußnoten der Liste: gesammelt unter der Tabelle; Hinweise, die nur eine Fußnote erklären, stehen dann nicht doppelt
+    const fnListe = Object.entries(fussnotenDerListe(L));
+    const FN_HINWEIS = /^(Fußnote\s*(\d+|\*)\s*[:.)–-]|\(?[¹²³⁴⁵⁶⁷⁸⁹⁰]+\)?\s)|\(Fußnote\s*\d+\)\.?$/i;
+    const hinweiseOhneFn = fnListe.length ? L.hinweise.filter(h => !FN_HINWEIS.test(String(h).trim())) : L.hinweise;
+    const alleIds = sp.map(s => s.id);
     t.innerHTML = `<h2>Geordnete Beständigkeitsliste (${d.eintraege.length} Einträge)</h2>${widHtml}
       <input type="search" class="ez-db-suche" placeholder="Stoff oder CAS-Nr. suchen" aria-label="In der Liste suchen">
       <div class="ez-legende">${L.legende.map(l => `<span>${stufeBadge(l.stufe, l.zeichen || '–')} ${esc(l.text)}</span>`).join('')}
         ${L.art === 'permeation' ? '<span>Durchbruchzeiten in Minuten: Jede eingetragene Zeit gilt als beständig, ob kurz oder lang – die Zeit steht dabei.</span>' : ''}
-        ${L.relevant.length ? `<span>Für das Gerät gelten: <b>${esc(L.relevant.join(', '))}</b> (umrandet)</span>` : ''}</div>
+        ${L.relevant.length ? `<span>Für das Gerät gelten: <b>${esc(L.relevant.join(', '))}</b> (umrandet)</span>` : ''}
+        ${fnListe.length ? '<span>Hochgestellte Zahl (z. B. „+⁵“) = Fußnote der Liste: Text an der Zeile und unter der Tabelle</span>' : ''}</div>
       <div class="ez-tabelle-rahmen"><table class="ez-tabelle"><thead><tr><th>Stoff</th><th>CAS</th><th>Konz./Temp.</th>${sp.map(s => `<th title="${esc(s.name)}">${esc(s.id)}</th>`).join('')}<th>Gerät</th><th>S.</th></tr></thead>
       <tbody></tbody></table></div><div class="ez-klein" id="ez-mehr" style="margin-top:.5rem"></div>
-      ${L.hinweise.length ? `<details style="margin-top:.6rem"><summary class="ez-klein" style="cursor:pointer">Hinweise der Liste</summary><ul class="ez-zeilen" style="margin-top:.4rem">${L.hinweise.map(h => `<li data-z="•">${esc(h)}</li>`).join('')}</ul></details>` : ''}`;
+      ${fnListe.length ? `<div class="ez-fussnoten" id="ez-fussnoten"><b>Fußnoten der Liste</b><ul>${fnListe.map(([z, x]) => `<li>${fnNr(z)}${esc(x)}</li>`).join('')}</ul></div>` : ''}
+      ${hinweiseOhneFn.length ? `<details style="margin-top:.6rem"><summary class="ez-klein" style="cursor:pointer">Hinweise der Liste</summary><ul class="ez-zeilen" style="margin-top:.4rem">${hinweiseOhneFn.map(h => `<li data-z="•">${esc(h)}</li>`).join('')}</ul></details>` : ''}`;
     gEl.appendChild(t);
     const tb = t.querySelector('tbody'), feld = t.querySelector('.ez-db-suche'), mehr = t.querySelector('#ez-mehr');
     let grenze = 150, nurWid = false;
@@ -1892,9 +1945,11 @@
       const nurStoff = !!(sf && sfTreffer.size && roh === sf.anzeige);
       const treffer = (nurStoff ? d.eintraege.filter(e => sfTreffer.has(e)) : d.eintraege.filter(e => !q || B.grund(e.stoff).includes(q) || (e.cas && e.cas.includes(roh))))
         .filter(e => !nurWid || widSet.has(e));
-      tb.innerHTML = treffer.slice(0, grenze).map(e => { const ges = B.gesamtStufe(e, L);
-        return `<tr${widSet.has(e) ? ' class="wid" title="steht mehrfach mit unterschiedlicher Bewertung in der Liste"' : ''}><td>${widSet.has(e) ? '<span class="ez-wid-zeichen" aria-label="widersprüchlich">⚠</span> ' : ''}${esc(stoffText(e.stoff))}${e.hinweis ? `<br><span class="ez-klein">${esc(e.hinweis)}</span>` : ''}</td><td>${esc(e.cas)}</td><td>${esc([e.konz, e.temp].filter(Boolean).map(x => S.wertSchoen(x)).join(' · '))}</td>
-        ${sp.map(s => { const w = e.werte[s.id] || { roh: '', stufe: 'unbekannt' }; return `<td class="w ${w.roh ? esc(w.stufe) : ''}${L.relevant.includes(s.id) ? ' rel' : ''}">${esc(w.roh)}</td>`; }).join('')}
+      tb.innerHTML = treffer.slice(0, grenze).map(e => { const ges = B.gesamtStufe(e, L), fns = fnListe.length ? zeilenFussnoten(L, e, alleIds) : [];
+        return `<tr${widSet.has(e) ? ' class="wid" title="steht mehrfach mit unterschiedlicher Bewertung in der Liste"' : ''}><td>${widSet.has(e) ? '<span class="ez-wid-zeichen" aria-label="widersprüchlich">⚠</span> ' : ''}${esc(stoffText(e.stoff))}${fnTextHtml(fns)}${e.hinweis ? `<br><span class="ez-klein">${esc(e.hinweis)}</span>` : ''}</td><td>${esc(e.cas)}</td><td>${esc([e.konz, e.temp].filter(Boolean).map(x => S.wertSchoen(x)).join(' · '))}</td>
+        ${sp.map(s => { const w = e.werte[s.id] || { roh: '', stufe: 'unbekannt' };
+          const titel = w.roh ? [legendeText(L, w.roh), ...fussnotenZu(L, w.roh).map(f => `Fußnote ${fnZeichen(f.z)}: ${f.text || 'im Original nachsehen'}`)].filter(Boolean).join(' – ') : '';
+          return `<td class="w ${w.roh ? esc(w.stufe) : ''}${L.relevant.includes(s.id) ? ' rel' : ''}"${titel ? ` title="${esc(s.id + ': ' + titel)}"` : ''}>${esc(w.roh)}</td>`; }).join('')}
         <td class="w ${esc(ges)}">${esc(ges === 'unbekannt' ? '–' : ges === 'gut' ? '✓' : ges === 'nicht' ? '✕' : ges === 'bedingt' ? '△' : '±')}</td><td>${esc(e.seite)}</td></tr>`; }).join('');
       mehr.innerHTML = nurStoff ? `${treffer.length === 1 ? '1 Eintrag passt' : treffer.length + ' Einträge passen'} zu „${esc(sf.anzeige)}“ (über CAS-Nr. bzw. Namen) · <a href="#" id="ez-ganz">ganze Liste zeigen</a>`
         : sf && !sfTreffer.size && roh === sf.anzeige ? `„${esc(sf.anzeige)}“ steht nicht in dieser Liste · <a href="#" id="ez-ganz">ganze Liste zeigen</a>`
@@ -1910,6 +1965,7 @@
   const originalWert = t => { const x = String(t || '').trim(); return /^\(?leer\)?$/i.test(x) ? '' : x.replace(/\s*\(.*\)\s*$/, '').trim(); };
   // Zeile zu einer Abweichung: gleiche Seite und gleicher Stoff (Schreibweise egal); nur eindeutig
   function zeileZu(d, x) {
+    if (window.GSZAuswertung && GSZAuswertung.zeileZu) return GSZAuswertung.zeileZu(d, x);
     const s = B.grund(x.stoff);
     let l = d.eintraege.filter(e => B.grund(e.stoff) === s && (!x.seite || String(e.seite) === String(x.seite)));
     if (l.length !== 1) l = d.eintraege.filter(e => B.grund(e.stoff) === s);
@@ -1936,9 +1992,18 @@
     const abw = p.abweichungen || [], fehl = p.fehlende_zeilen || [];
     const entscheiden = (x, wahl, wert) => { const z = zeileZu(d, x); const geaendert = !!(z && wahl !== 'liste' && feldSetzen(z, x.feld, wert, L));
       entsch.push({ seite: x.seite, stoff: x.stoff, feld: x.feld, liste: x.liste, original: x.original, gewaehlt: wahl, wert, zeile_gefunden: !!z, geaendert, am: jetzt, von }); };
-    if (art === 'alle-original' || art === 'alle-liste') {
-      if (!confirm(`${abw.length} Abweichungen: ${art === 'alle-original' ? 'überall den Wert aus dem Original übernehmen' : 'überall die Liste so lassen'}?`)) return false;
-      for (const x of abw) entscheiden(x, art === 'alle-original' ? 'original' : 'liste', art === 'alle-original' ? originalWert(x.original) : x.liste);
+    const nurFn = x => B.nurFussnote(x.liste, x.original);
+    if (art === 'fussnoten') {
+      const fn = abw.filter(nurFn);
+      for (const x of fn) entscheiden(x, 'fussnote', originalWert(x.original));
+      p.abweichungen = abw.filter(x => !fn.includes(x));
+      p.fussnoten_ergaenzt = (Number(p.fussnoten_ergaenzt) || 0) + fn.length;
+    } else if (art === 'alle-original' || art === 'alle-liste') {
+      const echt = abw.filter(x => !nurFn(x)).length;
+      if (!confirm(`${echt} Abweichungen: ${art === 'alle-original' ? 'überall den Wert aus dem Original übernehmen' : 'überall die Liste so lassen'}?` +
+                   `${echt < abw.length ? `\n(Die ${abw.length - echt} fehlenden Fußnotenzeichen werden in jedem Fall ergänzt.)` : ''}`)) return false;
+      for (const x of abw) { const fn = nurFn(x);
+        entscheiden(x, fn ? 'fussnote' : art === 'alle-original' ? 'original' : 'liste', fn || art === 'alle-original' ? originalWert(x.original) : x.liste); }
       p.abweichungen = [];
     } else if (art === 'zeile' || art === 'keinfehler') {
       const f = fehl[i];

@@ -5,6 +5,12 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.2.5', datum: '2026-11-17', punkte: [
+    'Fußnoten der Beständigkeitslisten: Die Prüfung beachtet sie jetzt. Fehlt in der Übertragung nur ein Fußnotenzeichen („+“ statt „+⁵“), zählt das nicht mehr als Abweichung – das Zeichen wird ergänzt.',
+    'Auf der Geräteseite stehen die Fußnoten der Liste im Wortlaut unter der Tabelle, an jeder betroffenen Zeile steht der Text der Fußnote (z. B. „5 · FKM: FKM in säurebeständiger Ausführung“). In den Beständigkeiten eines Stoffs erscheint er, wenn er eine Spalte des Geräts betrifft.',
+    'Ältere Prüfergebnisse, die nur fehlende Fußnotenzeichen melden, lassen sich mit einem Knopf übernehmen.',
+    'Fasspumpe Lutz (Ansaugrohr): Die 16 gemeldeten „Abweichungen“ waren nur Fußnotenzeichen – am Original bestätigt und übernommen, Fußnoten 1–7 ergänzt.',
+  ] },
   { version: '2.2.4', datum: '2026-11-17', punkte: [
     'Prüfung einer Beständigkeitsliste: Bei Abweichungen auf der Geräteseite je Punkt wählen, welche Angabe stimmt – „Liste stimmt“, „Original“ oder ein eigener Wert; fehlende Zeilen ergänzen oder verwerfen. Sind alle entschieden, gilt die Liste als geprüft.',
     'Wichtige Korrektur: Bedeutet „-“ laut Legende einer Liste „unbeständig“ (Lutz-Fasspumpe), zeigt die App das jetzt rot statt grau („keine Angabe“) – betrifft 17 Stoffe der Lutz-Pumpe.',
