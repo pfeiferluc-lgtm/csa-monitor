@@ -288,7 +288,10 @@
   menue.innerHTML = `<button data-a="neu">Neu einlesen</button><button data-a="kennwort">Gespeichertes Kennwort löschen</button>
     <button data-a="pfad">Dateipfad in der Dropbox ändern</button><button data-a="verbinden">Mit Dropbox neu verbinden</button>
     <button data-a="abmelden">Von Dropbox abmelden</button>
-    <button data-a="modus">Hell / Dunkel umschalten</button>
+    <button data-a="modus">Darstellung: automatisch → hell → dunkel</button>
+    <button data-a="handschuh">Handschuh-Modus an/aus (große Schrift und Knöpfe)</button>
+    <button data-a="claude">Claude ohne Mac (API-Schlüssel)</button>
+    <button data-a="push" id="einst-push">Benachrichtigungen vom Mac-Helfer</button>
     <button data-a="abgleich">Einsatz-Ordner abgleichen</button><button data-a="offline-weg">Offline-Dateien vom Gerät löschen</button>
     <button data-a="kurzbefehl">Kurzbefehl „GSZ Claude“ laden (iPhone)</button>
     <div class="klein">Web-App ${K.stand || ''}</div>`;
@@ -520,8 +523,13 @@
     if (!a) return;
     menue.hidden = true;
     if (a === 'neu') { laden(true); hinweis('Wird neu eingelesen …', 2500); }
-    if (a === 'modus') { const hell = document.documentElement.classList.toggle('hell'); SP.set('csa-modus', hell ? 'hell' : 'dunkel');
-      document.dispatchEvent(new Event('gsz-modus')); }
+    if (a === 'modus') {
+      if (window.GSZModus) { const m = GSZModus.wechseln(); hinweis('Darstellung: ' + GSZModus.NAME[m], 2500); }
+      else { const hell = document.documentElement.classList.toggle('hell'); SP.set('csa-modus', hell ? 'hell' : 'dunkel'); document.dispatchEvent(new Event('gsz-modus')); }
+    }
+    if (a === 'handschuh' && window.GSZ && GSZ.grossWechseln) { const an = GSZ.grossWechseln(); hinweis('Handschuh-Modus ' + (an ? 'an' : 'aus'), 2500); }
+    if (a === 'claude' && window.GSZ) GSZ.zeige('claude');
+    if (a === 'push') pushUmschalten().catch(f => hinweis('Benachrichtigungen: ' + f.message, 9000));
     if (a === 'kennwort') { SP.set('csa-kennwort', null); hinweis('Das gespeicherte Kennwort ist gelöscht. Beim nächsten Start fragt die Web-App wieder.'); }
     if (a === 'pfad') {
       const neu = prompt('Pfad der Kopie im App-Ordner der Dropbox (beginnt mit /):', pfad());
@@ -672,6 +680,39 @@
     try { return await herunterladenEinsatz(e); }
     catch (f) { if (f.blob) return f.blob; if (gespeichert) return alsBlob(gespeichert); throw f; }
   }
+  // ---------------------------------------------------------------- Benachrichtigungen vom Mac-Helfer (Web-Push)
+  // Der Helfer legt seinen öffentlichen Schlüssel in Auswertung/push/schluessel.json ab; dieses Gerät sein Abo in
+  // Auswertung/push/<id>.json. Am iPhone nur in der Web-App vom Home-Bildschirm (iOS 16.4 oder neuer).
+  const b64uZuBytes = t => { const s = String(t).replace(/-/g, '+').replace(/_/g, '/'); const b = atob(s + '='.repeat((4 - s.length % 4) % 4)); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+  async function pushUmschalten() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      hinweis(/iPhone|iPad/.test(navigator.userAgent) ? 'Benachrichtigungen gibt es am iPhone nur in der Web-App vom Home-Bildschirm: in Safari „Teilen › Zum Home-Bildschirm“, dann von dort öffnen.'
+        : 'Dieser Browser kann keine Benachrichtigungen der Web-App empfangen.', 10000);
+      return;
+    }
+    if (!verbundenDbx()) throw new Error('erst mit Dropbox verbinden.');
+    const reg = await navigator.serviceWorker.ready;
+    const vorhanden = await reg.pushManager.getSubscription();
+    const id = SP.get('gsz-push-id') || ('geraet-' + Math.random().toString(36).slice(2, 10));
+    if (vorhanden && SP.get('gsz-push-id')) {
+      if (!confirm('Benachrichtigungen vom Mac-Helfer ausschalten?')) return;
+      await vorhanden.unsubscribe().catch(() => {});
+      await dropbox('https://api.dropboxapi.com/2/files/delete_v2', { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: `${AUSWERTUNG}/push/${id}.json` }), fehltOk: true }).catch(() => {});
+      SP.set('gsz-push-id', null);
+      hinweis('Benachrichtigungen ausgeschaltet.', 4000);
+      return;
+    }
+    const sch = await textHolen(`${AUSWERTUNG}/push/schluessel.json`);
+    if (!sch) throw new Error('der Mac-Helfer hat noch keinen Schlüssel abgelegt – er muss einmal mit der neuen Fassung laufen.');
+    const { publicKey } = JSON.parse(sch);
+    if ((await Notification.requestPermission()) !== 'granted') { hinweis('Benachrichtigungen sind für die Web-App nicht erlaubt (Einstellungen › Mitteilungen).', 8000); return; }
+    if (vorhanden) await vorhanden.unsubscribe().catch(() => {});
+    const abo = (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uZuBytes(publicKey) })).toJSON();
+    const geraet = /iPhone/.test(navigator.userAgent) ? 'iPhone' : /iPad/.test(navigator.userAgent) ? 'iPad' : /Android/.test(navigator.userAgent) ? 'Android' : 'Browser';
+    await hochladen(`${AUSWERTUNG}/push/${id}.json`, new TextEncoder().encode(JSON.stringify({ endpoint: abo.endpoint, keys: abo.keys, geraet, erstellt: new Date().toISOString() }, null, 1)));
+    SP.set('gsz-push-id', id);
+    hinweis('Benachrichtigungen eingeschaltet – der Mac-Helfer meldet sich, wenn eine Liste ausgewertet oder geprüft bzw. ein Datenblatt fertig ist.', 8000);
+  }
   async function hochladen(pfadM, inhalt) {
     const r = await dropbox('https://content.dropboxapi.com/2/files/upload', { headers: { 'Content-Type': 'application/octet-stream',
       'Dropbox-API-Arg': kopfJson({ path: pfadM, mode: 'overwrite', autorename: false, mute: true }) }, body: inhalt });
@@ -727,6 +768,28 @@
       }
       letzterVersuch = 0;
       await einsatzAbgleich(true);
+    },
+    // Ablage der App in Einsatz/<bereich>/<unterordner>/ (Einsatzberichte, eigene Datenblätter)
+    async ablegen(bereich, unterordner, dateienListe) {
+      if (!['Einsatzberichte', 'Eigene Datenblätter', '_App'].includes(bereich)) throw new Error('Ungültiger Ablageort.');
+      if (!verbundenDbx()) throw new Error('Nicht mit Dropbox verbunden.');
+      if (darfSchreiben() === false) throw new Error('Der Web-App fehlt das Schreibrecht in ihrem Dropbox-Ordner (⚙ › Mit Dropbox neu verbinden).');
+      if (navigator.onLine === false) throw new Error('Ohne Netz nicht möglich.');
+      const o = String(unterordner || '').replace(/[\/\\]/g, '-').trim();
+      if (!o || o.startsWith('.')) throw new Error('Ungültiger Ordnername.');
+      for (const d of dateienListe) await hochladen(`${EINSATZ}/${bereich}/${o}/${String(d.name).replace(/[\/\\]/g, '-')}`, new Uint8Array(await d.blob.arrayBuffer()));
+      letzterVersuch = 0;
+      einsatzAbgleich(false);
+    },
+    async ablageLoeschen(bereich, unterordner) {
+      if (!['Einsatzberichte', 'Eigene Datenblätter', '_App'].includes(bereich)) throw new Error('Ungültiger Ablageort.');
+      if (!verbundenDbx()) throw new Error('Nicht mit Dropbox verbunden.');
+      const o = String(unterordner || '').replace(/[\/\\]/g, '-').trim();
+      if (!o || o.startsWith('.')) throw new Error('Ungültiger Ordnername.');
+      await dropbox('https://api.dropboxapi.com/2/files/delete_v2', { headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: `${EINSATZ}/${bereich}/${o}` }), fehltOk: true });
+      letzterVersuch = 0;
+      einsatzAbgleich(true);
     },
     // ganzes Gerät (Ordner) löschen – die Dropbox hebt Gelöschtes 30 Tage auf
     async geraetLoeschen(ordner) {

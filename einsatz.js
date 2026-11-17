@@ -11,6 +11,14 @@
   const ORDNER_REIHE = [BL, 'A-Lage', 'B-Lage', 'C-Lage', 'Führungsunterstützung', 'Messen', 'Probenahme'];
 
   const css = `
+  /* Handschuh-Modus (html.gross): Grundschrift ×1,2 (setzt oberflaeche.js), dazu größere Schrift, Suchfelder und Leiste */
+  :root.gross .ez { font-size: 19px; }
+  :root.gross .ez-suchfeld input { font-size: 23px; }
+  :root.gross .ez-db-suche, :root.gross .ez-formular input[type=text], :root.gross .ez-formular select, :root.gross .ez-formular textarea { font-size: 19px; }
+  :root.gross .ez-leiste a { font-size: .95rem; padding: .7rem .3rem; } :root.gross .ez-leiste a svg { width: 1.75rem; height: 1.75rem; }
+  .ez-kopf .gross-knopf { display: inline-flex; align-items: center; gap: .35rem; font-weight: 700; }
+  .ez-kopf .gross-knopf svg { width: 1.25rem; height: 1.25rem; flex: none; }
+  .ez-kopf .gross-knopf[aria-pressed="true"] { background: var(--akzent); color: #fff; border-color: var(--akzent); }
   /* Finger-Zoom nur in Dokumenten (html.zoom-frei) */
   html { touch-action: pan-x pan-y; }
   html.zoom-frei { touch-action: auto; }
@@ -261,7 +269,7 @@
     color: var(--ink2); cursor: pointer; }
   .ez-unwahl button.an { background: var(--akzent); border-color: var(--akzent); color: #fff; font-weight: 600; }
   .ez-leiste { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); box-shadow: 0 -4px 16px rgba(0,0,0,.25);
-    border-top: 1px solid var(--rand); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .45rem;
+    border-top: 1px solid var(--rand); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .45rem;
     padding: .55rem max(calc(.7rem + var(--sicher-rechts)), calc((100vw - 62rem) / 2 + .7rem)) calc(.55rem + var(--sicher-unten))
       max(calc(.7rem + var(--sicher-links)), calc((100vw - 62rem) / 2 + .7rem)); }
   .ez-leiste a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; padding: .45rem .3rem; border-radius: .6rem; text-decoration: none;
@@ -347,6 +355,13 @@
   .ez-tabelle td.nicht { background: var(--crit-t); color: var(--crit); }
   :root.hell .ez-tabelle td.bedingt { color: #8a6100; }
   .ez-tabelle td.w.rel { outline: 2px solid var(--akzent); outline-offset: -2px; }
+  .ez-tabelle tr.wid > td:first-child { box-shadow: inset 4px 0 0 var(--warn); }
+  .ez-gefahrnr { font-size: .86rem; line-height: 1.35; color: var(--ink2); } .ez-gefahrnr b { color: var(--ink); margin-right: .25rem; }
+  .ez-gefahrnr .x { display: block; color: var(--crit); font-weight: 700; }
+  #ez-tafel-platz:empty { display: none; } #ez-tafel-platz { margin-top: .7rem; color: var(--ink); }
+  .ez-wid-zeichen, .ez-wid-text { color: var(--warn); font-weight: 700; } :root.hell .ez-wid-zeichen, :root.hell .ez-wid-text { color: #8a6100; }
+  .ez-wid-badge { font-size: .68rem; font-weight: 700; color: #1a1300; background: var(--warn); border-radius: .3rem; padding: 0 .35rem; white-space: nowrap; }
+  .ez-wid { display: flex; flex-direction: column; gap: .4rem; margin: .2rem 0 .6rem; } .ez-wid .ez-zeilen { margin: 0; } .ez-wid .knopf { align-self: flex-start; }
   .ez-legende { display: flex; gap: .4rem .8rem; flex-wrap: wrap; font-size: .78rem; color: var(--ink2); margin: .4rem 0 .6rem; }
   /* Auswertung durch den Mac-Helfer: Fortschritt */
   .ez-fortschritt { display: flex; flex-direction: column; gap: .35rem; }
@@ -555,6 +570,8 @@
     frage: SVG('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><circle cx="12" cy="17.2" r=".7" fill="currentColor"/>'),
     muell: SVG('<path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>'),
     plus: SVG('<path d="M12 5v14M5 12h14"/>'),
+    wind: SVG('<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>'),
+    tafel: SVG('<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 12h18"/>'),
     bild: SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/>'),
     kreuz: SVG('<path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/>'),
     auge: SVG('<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
@@ -575,7 +592,9 @@
     'C-Lage': ['var(--ser)', SVG('<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7.5 15h9"/>')],
     'Führungsunterstützung': ['var(--akzent)', SVG('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>')],
     Messen: ['#2bb3c0', SVG('<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 7h6v4H9zM9 15h.01M12 15h.01M15 15h.01M9 18h6"/>')],
-    Probenahme: ['#7e8a96', SVG('<path d="M9 3h6M10 3v15a2 2 0 0 0 4 0V3"/><path d="M10 10h4"/>')] };
+    Probenahme: ['#7e8a96', SVG('<path d="M9 3h6M10 3v15a2 2 0 0 0 4 0V3"/><path d="M10 10h4"/>')],
+    'Eigene Datenblätter': ['#2b6cc4', SVG('<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>')],
+    Einsatzberichte: ['var(--crit)', SVG('<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>')] };
   const meldung = (text, dauer = 5000) => {
     let m = document.getElementById('ez-meldung');
     if (!m) { m = document.createElement('div'); m.id = 'ez-meldung'; m.className = 'gsz-ebene'; document.body.appendChild(m);
@@ -593,8 +612,10 @@
       (logo ? (GSZ.logoOriginal ? `<img class="ez-logo" src="${GSZ.logoOriginal}" alt="">` : GSZ.logos()) : '') +
       `<div class="ez-titel"><h1>${esc(titel)}</h1>${unter ? `<div>${unter}</div>` : ''}</div>` +
       `<a class="knopf" href="${haus}" title="Hauptmenü" aria-label="Hauptmenü">${I.haus}<span class="lang">Menü</span></a>` +
+      `<button class="knopf gross-knopf" type="button" aria-pressed="false" title="Handschuh-Modus: große Schrift und Knöpfe – an/aus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 21v-4.5L5 13V8.5a1.5 1.5 0 0 1 3 0V11V5.5a1.5 1.5 0 0 1 3 0V10V4.5a1.5 1.5 0 0 1 3 0V10V6a1.5 1.5 0 0 1 3 0v8.5l-2 2.2V21z"/><path d="M7.5 18.5h8"/></svg><span class="lang" data-gross-text>Handschuh</span></button>` +
       `<button class="knopf modus" title="Hell / Dunkel">◐</button><button class="knopf einst" title="Einstellungen" hidden>⚙</button>`;
     GSZ.modusKnopf(h.querySelector('.modus'));
+    if (GSZ.grossKnopf) GSZ.grossKnopf(h.querySelector('.gross-knopf')); else h.querySelector('.gross-knopf').remove();
     GSZ.einstellungenKnopf(h.querySelector('.einst'));
     const z = h.querySelector('[data-zurueck]');
     if (z) z.addEventListener('click', () => GSZ.zurueck(z.dataset.zurueck));
@@ -630,9 +651,9 @@
       const rest = d.pfad.slice(pre.length);
       if (!rest) continue;
       const i = rest.indexOf('/');
-      if (i >= 0) { const u = rest.slice(0, i); const e = unter.get(u) || { name: u, anzahl: 0 }; if (!d.ordner) e.anzahl++; unter.set(u, e); continue; }
-      if (d.ordner) { if (!unter.has(rest)) unter.set(rest, { name: rest, anzahl: 0 }); continue; }
-      if (/^(\.|liesmich\.txt$|bestaendigkeit.*\.json$)/i.test(rest)) continue;
+      if (i >= 0) { const u = rest.slice(0, i); if (!ordner && u.startsWith('_')) continue; const e = unter.get(u) || { name: u, anzahl: 0 }; if (!d.ordner) e.anzahl++; unter.set(u, e); continue; }
+      if (d.ordner) { if (!ordner && rest.startsWith('_')) continue; if (!unter.has(rest)) unter.set(rest, { name: rest, anzahl: 0 }); continue; }
+      if (/^(\.|liesmich\.txt$|bestaendigkeit.*\.json$|datenblatt\.json$|bericht\.json$)/i.test(rest)) continue;
       liste.push(d);
     }
     return { unter: [...unter.values()].sort((a, b) => a.name.localeCompare(b.name, 'de', { numeric: true })),
@@ -776,12 +797,16 @@
         <button type="button" class="ez-leeren" id="ez-leeren" aria-label="Eingabe löschen" hidden>×</button>
         <button type="submit" class="ez-los" aria-label="Suchen">${I.pfeil}</button></form>
       <div class="ez-held-unter"><button type="button" class="ez-un" id="ez-zahlen" aria-pressed="false" title="Zifferntastatur für UN-Nummern">${I.ziffern}UN-Nr.</button>
+        ${window.GSZLage ? `<button type="button" class="ez-un" id="ez-tafel-knopf" aria-pressed="false" title="Warntafel eintippen oder fotografieren">${I.tafel}Warntafel</button>` : ''}
         <span class="ez-art" id="ez-art">${ART_HINWEIS}</span></div>
+      <div id="ez-tafel-platz"></div>
       <div id="ez-erg"></div>
       <div class="ez-import-zeile"><label class="ez-import-knopf"><span class="sym">${I.blatt}</span>
         <span><b>Sicherheitsdatenblatt importieren</b><small>Foto oder PDF – Kennwerte, GHS, UN-Nr., Löschmittel und PSA</small></span><span class="pfeil">›</span>
         <input type="file" id="ez-sdb-datei" accept="image/*,application/pdf,.pdf" multiple aria-label="Sicherheitsdatenblatt importieren (Bild oder PDF)"></label></div>`;
     eEl.appendChild(held);
+    // Lage: Wind vom DWD (Warntafel über den Knopf in der Suche)
+    if (window.GSZLage) eEl.insertAdjacentHTML('beforeend', GSZLage.startHtml());
     // zuletzt geöffnet, eigene Datenblätter, Unterlagen, Stand
     const zl = document.createElement('section');
     zl.className = 'ez-bereich'; zl.id = 'ez-letzte-bereich'; zl.hidden = true;
@@ -830,6 +855,14 @@
       q.placeholder = platzhalter(an);
       q.focus();
     });
+    const tafelKnopf = held.querySelector('#ez-tafel-knopf'), tafelPlatz = held.querySelector('#ez-tafel-platz');
+    if (tafelKnopf) tafelKnopf.addEventListener('click', () => {
+      const an = tafelKnopf.getAttribute('aria-pressed') !== 'true';
+      tafelKnopf.setAttribute('aria-pressed', String(an));
+      if (!an) { tafelPlatz.innerHTML = ''; return; }
+      const { uF } = GSZLage.warntafelOeffnen(tafelPlatz, { suchen: t => { q.value = t; suchText = t; artZeigen(); suchen(t, true); } });
+      uF.focus();
+    });
     if (suchErgebnis) trefferZeigen(suchErgebnis);
   }
   let suchNr = 0;
@@ -874,15 +907,29 @@
   function trefferZeigen(r) {
     const erg = eEl.querySelector('#ez-erg');
     if (!erg) return;
+    // UN-Nummer: Benennung nach ADR, Gefahrnummer und Absperrabstände (ERG) – auch ohne Netz
+    const unInfo = () => {
+      if (r.art !== 'un' || !window.GSZGefahrgut || !window.GSZLage) return '';
+      const n = GSZGefahrgut.unEintraege(r.wert);
+      if (!n.length) return '';
+      return `<div class="kachel ez-karte" style="margin-top:.6rem"><h2>UN ${esc(r.wert)} nach ADR</h2><ul class="ez-zeilen">${n.slice(0, 6).map(x => `<li data-z="•">${esc(x.name)}${x.klasse ? ` · Klasse ${esc(x.klasse)}` : ''}${x.gefahrnummer ? ` · Gefahrnr. ${esc(x.gefahrnummer)}` : ''}</li>`).join('')}</ul>
+        <p style="margin:.5rem 0 0"><button class="knopf" type="button" data-tafel-un="${esc(r.wert)}" data-tafel-k="${esc(n[0].gefahrnummer || '')}">${I.tafel}Warntafel, Gefahrnummer und Absperrabstände</button></p></div>`;
+    };
+    const unKnopf = () => { const b = erg.querySelector('[data-tafel-un]'); if (!b) return;
+      b.addEventListener('click', () => { const platz = eEl.querySelector('#ez-tafel-platz'), k = eEl.querySelector('#ez-tafel-knopf');
+        if (!platz) return; if (k) k.setAttribute('aria-pressed', 'true'); GSZLage.warntafelOeffnen(platz, { suchen: t => suchen(t, true), kemler: b.dataset.tafelK, un: b.dataset.tafelUn });
+        platz.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); };
     if (!r.treffer.length) {
-      erg.innerHTML = r.offline ? `<div class="ez-warn">Keine Verbindung zu GESTIS (${esc(r.fehler)}). Offline sind nur zuletzt geöffnete Stoffe abrufbar – dieser ist nicht dabei.</div>`
+      erg.innerHTML = (r.offline ? `<div class="ez-warn">Keine Verbindung zu GESTIS (${esc(r.fehler)}). Offline sind nur zuletzt geöffnete Stoffe abrufbar – dieser ist nicht dabei.</div>`
         : `<div class="ez-leer">Kein Treffer in GESTIS für ${esc(G.ART_TEXT[r.art])} „${esc(r.wert)}“.` +
-          (r.art === 'un' ? ' Für manche UN-Nummern (z. B. Gemische wie 1965 Flüssiggas) gibt es kein GESTIS-Datenblatt – nach dem Stoffnamen suchen.' : '') + '</div>';
+          (r.art === 'un' ? ' Für manche UN-Nummern (z. B. Gemische wie 1965 Flüssiggas) gibt es kein GESTIS-Datenblatt – nach dem Stoffnamen suchen.' : '') + '</div>') + unInfo();
+      unKnopf();
       return;
     }
     erg.innerHTML = (r.offline ? '<div class="ez-warn" style="margin-top:.6rem">Offline – Treffer aus den zuletzt geöffneten Stoffen.</div>' : '') +
       `<ul class="ez-treffer">${r.treffer.map(t => `<li><a href="#stoff/${esc(t.zvg)}"><b>${esc(nameSchoen(t.name))}</b><span class="pfeil">›</span>
-        <small>${t.cas ? 'CAS ' + esc(t.cas) : 'ohne CAS-Nr.'}${r.art === 'un' ? (t.unOk ? ` · <span class="ok">UN ${esc(r.wert)} ✓</span>` : t.unOk === false ? ' · Treffer über die GESTIS-Nr., nicht über die UN-Nr.' : '') : ''}</small></a></li>`).join('')}</ul>`;
+        <small>${t.cas ? 'CAS ' + esc(t.cas) : 'ohne CAS-Nr.'}${r.art === 'un' ? (t.unOk ? ` · <span class="ok">UN ${esc(r.wert)} ✓</span>` : t.unOk === false ? ' · Treffer über die GESTIS-Nr., nicht über die UN-Nr.' : '') : ''}</small></a></li>`).join('')}</ul>` + (r.offline ? unInfo() : '');
+    unKnopf();
   }
   const datumKurz = d => { d = new Date(d); if (isNaN(d)) return ''; const h = new Date();
     const tag = d.toDateString() === h.toDateString() ? 'heute' : new Date(h - 864e5).toDateString() === d.toDateString() ? 'gestern' : `${p2(d.getDate())}.${p2(d.getMonth() + 1)}.`;
@@ -905,7 +952,14 @@
     let l = [];
     try { l = (await SP.alle('sdb')).map(x => x.wert).sort((a, b) => String(b.zeit).localeCompare(String(a.zeit))).slice(0, 6); } catch { /* ohne */ }
     el.hidden = !l.length;
-    el.innerHTML = l.length ? `<h2>Eigene Datenblätter <small>auf diesem Gerät</small></h2><ul class="ez-treffer" style="margin-top:0">${l.map(d => `<li><a href="#sdb/${esc(d.id)}">
+    const geteilt = l.some(d => d.geteilt);
+    // geteilte Datenblätter der anderen Geräte: abgleichen, sobald sich in der Dropbox etwas daran geändert hat
+    const stand = dateien.filter(d => !d.ordner && /^Eigene Datenblätter\/[^/]+\/datenblatt\.json$/i.test(String(d.pfad).normalize('NFC'))).map(d => d.pfad + '|' + (d.rev || d.groesse || '')).join(',');
+    if (stand && stand !== eigeneZeigen.stand && window.GSZSdbImport && GSZSdbImport.abgleichen) {
+      eigeneZeigen.stand = stand;
+      GSZSdbImport.abgleichen().then(n => { if (n) eigeneZeigen(); }).catch(() => { eigeneZeigen.stand = ''; });
+    }
+    el.innerHTML = l.length ? `<h2>Eigene Datenblätter <small>${geteilt ? 'für alle Geräte (Dropbox)' : 'auf diesem Gerät'}</small></h2><ul class="ez-treffer" style="margin-top:0">${l.map(d => `<li><a href="#sdb/${esc(d.id)}">
       <b>${esc(nameSchoen((d.claude && d.claude.name) || (d.ocr && d.ocr.name) || d.name || 'Sicherheitsdatenblatt'))}</b><span class="pfeil">›</span>
       <small>${esc(datumZeit(d.zeit))} · ${esc(window.GSZSdbImport ? GSZSdbImport.statusText(d) : '')}</small></a></li>`).join('')}</ul>` : '';
   }
@@ -983,7 +1037,8 @@
   addEventListener('offline', () => { if (GSZ.aktuell.ansicht === 'einsatz') statusZeigen(); });
   GSZ.ansicht('einsatz', {
     element: eEl, titel: () => 'Einsatz',
-    anzeigen() { if (!eEl.firstChild) einsatzAufbauen(); letzteZeigen(); eigeneZeigen(); ordnerZeigen(); statusZeigen(); listeHolen(false); },
+    anzeigen() { if (!eEl.firstChild) einsatzAufbauen(); letzteZeigen(); eigeneZeigen(); ordnerZeigen(); statusZeigen(); listeHolen(false);
+      if (window.GSZLage) { const l = eEl.querySelector('#lg-start'); if (l) GSZLage.beleben(l); } },
     einrichten(adapter) {
       if (adapter.einsatz && adapter.einsatz.abruf) G.setzeAbruf(adapter.einsatz.abruf);
       if (adapter.einsatz && adapter.einsatz.beiAenderung) adapter.einsatz.beiAenderung(() => listeHolen(false));
@@ -993,7 +1048,7 @@
 
   // ---------------------------------------------------------------- Einsatzbildschirm (GESTIS und eigenes Datenblatt)
   const sEl = ansichtElement('stoffansicht');
-  const TEILE = { '': 'Übersicht', datenblatt: 'Stoffdatenblatt', bestaendigkeit: 'Beständigkeiten', psa: 'PSA', eh: 'Erste Hilfe · Dekontamination' };
+  const TEILE = { '': 'Übersicht', datenblatt: 'Stoffdatenblatt', bestaendigkeit: 'Beständigkeiten', psa: 'PSA', eh: 'Erste Hilfe · Dekontamination', lage: 'Wind · Absperren' };
   function symbol(art, code, groesse) {
     const Y = window.GSZSymbole;
     if (Y && Y[art]) { try { return Y[art](code, { groesse }); } catch { /* unten */ } }
@@ -1174,11 +1229,19 @@
       <div style="flex:1;min-width:11rem;display:flex;flex-direction:column;gap:.4rem">
         ${t ? `<div class="ez-transport"><span class="kl">Klasse ${esc(t.klasse || '–')}</span><span>${esc(t.klassenText || adrText(t.klasse))}</span></div>`
           : '<div class="ez-hinweis">Kein Gefahrgut-Eintrag (UN-Nr.) vorhanden.</div>'}
+        ${t ? gefahrnummerHtml(t.kemler) : ''}
         ${zettel ? `<div class="ez-symbole">${zettel}</div>` : ''}
       </div></div>
       ${ghs || g.signalwort ? `<div class="ez-oben" style="margin-top:.7rem;align-items:center"><div class="ez-symbole">${ghs}</div>
         ${g.signalwort ? `<span class="ez-signal ${/achtung/i.test(g.signalwort) ? 'achtung' : ''}">${esc(g.signalwort)}</span>` : ''}</div>`
         : '<div class="ez-klein" style="margin-top:.5rem">Keine GHS-Einstufung angegeben.</div>'}`;
+  }
+  // Bedeutung der Gefahrnummer (oben auf der Warntafel)
+  function gefahrnummerHtml(kemler) {
+    const g = window.GSZGefahrgut && kemler ? GSZGefahrgut.gefahrnummer(kemler) : null;
+    if (!g) return '';
+    const text = g.text || g.teile.map(x => x.text + (x.verstaerkt ? ' (verstärkt)' : '')).filter(Boolean).join(', ');
+    return text ? `<div class="ez-gefahrnr"><b>${esc(g.code)}</b> ${esc(text)}${g.x ? `<span class="x">X: ${esc(g.xText)}</span>` : ''}</div>` : '';
   }
   function transportDetails(stoff) {
     const { t } = transportListe(stoff);
@@ -1215,6 +1278,7 @@
       ${stoff.anmerkung ? `<div class="ez-warn blau">${esc(stoff.anmerkung)}</div>` : ''}
       <section class="kachel ez-karte"><div class="ez-klein" style="margin-bottom:.45rem">${esc(kurz)}${stoff.synonyme.length ? ' · auch: ' + esc(stoff.synonyme.slice(0, 4).join(', ')) : ''}</div>
         <h2>Kennzeichnung · Gefahrenklasse · GHS</h2>${kennzeichnungHtml(stoff)}</section>
+      ${window.GSZLage ? GSZLage.stoffKarteHtml(stoff, basis) : ''}
       <section class="kachel ez-karte"><h2>Kennwerte</h2>${kennwerteHtml(stoff)}</section>
       <section class="kachel ez-karte"><h2>Löschmittel</h2>${loeschHtml(stoff.loeschmittel)}</section>
       ${hSaetzeHtml(stoff.ghs)}
@@ -1420,13 +1484,13 @@
       const name = S.wertSchoen(stoffText(t.eintrag.stoff)).replace(/\s+/g, '');
       const zusatz = [t.eintrag.konz, t.eintrag.temp].filter(Boolean).map(x => S.wertSchoen(x)).filter(x => !name.includes(x.replace(/\s+/g, ''))).join(' · ');
       return `<div class="eintrag"><span class="kopf">${e.treffer.length > 1 ? stufeBadge(t.stufe) : '<span>Liste:</span>'}<span>„${esc(stoffText(t.eintrag.stoff))}“${zusatz ? ' ' + esc(zusatz) : ''}` +
-        `${t.art === 'aehnlich' ? ' <i>(ähnlicher Name – prüfen)</i>' : ''}</span></span>${werte ? `<i>${werte}</i>` : ''}${t.eintrag.hinweis ? `<i>${esc(t.eintrag.hinweis)}</i>` : ''}</div>`;
+        `${t.art === 'aehnlich' ? ' <i>(ähnlicher Name – prüfen)</i>' : ''}${t.widerspruch ? ' <i class="ez-wid-text">⚠ widerspricht einer anderen Zeile</i>' : ''}${t.verweis ? ' <i class="ez-wid-text">⚠ Verweiszeile mit eigenen Werten – Original prüfen</i>' : ''}</span></span>${werte ? `<i>${werte}</i>` : ''}${t.eintrag.hinweis ? `<i>${esc(t.eintrag.hinweis)}</i>` : ''}</div>`;
     }).join('');
     const rest = e.treffer.length > 6 ? `<div class="eintrag"><i>… und ${e.treffer.length - 6} weitere Zeilen</i></div>` : '';
     return `<li><a href="#geraet/${kodiere(g.ordner)}${kontext ? '/' + kodiere(kontext) : ''}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}">
       ${g.foto ? `<span class="ez-bild ez-bildmini${bildFuellen(bildVon(g))}" style="${bildStil(bildVon(g), false)}"><img data-foto="${esc(g.foto)}" alt=""></span>` : '<span class="ez-bild">kein Bild</span>'}
       <b>${esc(titel)}</b>
-      <div class="zeile">${stufeBadge(e.stufe)}${e.nurAehnlich ? '<span class="ez-ungeprueft">nur ähnlicher Name</span>' : ''}${pruefBadge(g)}</div>
+      <div class="zeile">${stufeBadge(e.stufe)}${e.nurAehnlich ? '<span class="ez-ungeprueft">nur ähnlicher Name</span>' : ''}${e.widerspruch ? '<span class="ez-wid-badge" title="Der Stoff steht mehrfach mit unterschiedlicher Bewertung in der Liste – im Original nachsehen; bis dahin gilt die ungünstigere Angabe">⚠ widersprüchlich</span>' : ''}${pruefBadge(g)}</div>
       ${eintraege}${rest}${bandHtml(e)}</a></li>`;
   }
 
@@ -1444,6 +1508,7 @@
     else if (teil === 'datenblatt') { inhaltEl.insertAdjacentHTML('beforeend', `<section class="kachel ez-karte">${datenblattHtml(stoff)}</section><div class="ez-quelle">${quelleHtml(stoff)}</div>`); }
     else if (teil === 'psa') inhaltEl.insertAdjacentHTML('beforeend', psaHtml(stoff));
     else if (teil === 'eh') inhaltEl.insertAdjacentHTML('beforeend', ehHtml(stoff) + dekonHtml(stoff) + `<div class="ez-quelle">${quelleHtml(stoff)}</div>`);
+    else if (teil === 'lage') inhaltEl.insertAdjacentHTML('beforeend', window.GSZLage ? GSZLage.stoffTeilHtml(stoff) : '<div class="ez-leer">Nicht verfügbar.</div>');
     else if (teil === 'bestaendigkeit') inhaltEl.insertAdjacentHTML('beforeend', `<section class="kachel ez-karte"><h2>Unsere Ausrüstung · ${esc(stoff.name)}</h2><div id="ez-best">
       <div class="ez-leer">wird geladen …</div></div></section>`);
     sEl.appendChild(inhaltEl);
@@ -1451,7 +1516,7 @@
     leiste.className = 'ez-leiste';
     leiste.setAttribute('aria-label', 'Stoff');
     leiste.innerHTML = [['datenblatt', 'Stoff&shy;daten&shy;blatt', I.blatt], ['bestaendigkeit', 'Bestän&shy;dig&shy;keiten', I.schild], ['psa', 'PSA', I.psa],
-      ['eh', 'EH/<wbr>Dekon', I.kreuz]]
+      ['eh', 'EH/<wbr>Dekon', I.kreuz], ...(window.GSZLage ? [['lage', 'Wind/<wbr>Ab&shy;sper&shy;ren', I.wind]] : [])]
       .map(([t, n, ic]) => `<a href="${teil === t ? basis : basis + '/' + t}" class="${teil === t ? 'an' : ''}"${teil ? ' data-ersetzen="1"' : ''}>${ic}<span>${n}</span></a>`).join('');
     sEl.appendChild(leiste);
     leisteBeobachten(sEl, leiste);
@@ -1459,6 +1524,7 @@
     for (const b of sEl.querySelectorAll('.ez-unwahl button')) b.addEventListener('click', () => { unWahl.set(stoff.zvg || stoff.id, b.dataset.un); stoff.transport = stoff.transporte.find(t => t.un === b.dataset.un) || stoff.transport; stoffSeite(stoff, basis, teil, { eltern, extra, ziel, nachher }); });
     for (const a of sEl.querySelectorAll('a[data-cas]')) a.addEventListener('click', e => { e.preventDefault(); suchenUndZeigen(a.dataset.cas); });
     if (nachher) nachher(sEl);
+    if (window.GSZLage && (!teil || teil === 'lage')) GSZLage.beleben(sEl);
     if (teil === 'datenblatt') datenblattSuche(sEl, stoff);
     if (teil === 'bestaendigkeit') bestaendigkeitHtml(stoff, sEl.querySelector('#ez-best'));
     if (teil === 'psa') { const z = sEl.querySelector('#ez-psa-unsere .ez-leer').parentElement; bestaendigkeitHtml(stoff, z, { nurKategorie: 'Schutzkleidung' })
@@ -1486,6 +1552,7 @@
         const un = unWahl.get(zvg);
         if (un && stoff.transporte.find(t => t.un === un)) stoff.transport = stoff.transporte.find(t => t.un === un);
         stoffSeite(stoff, '#stoff/' + zvg, TEILE[teil] !== undefined ? teil : '');
+        document.dispatchEvent(new CustomEvent('gsz-stoff', { detail: { zvg, stoff } }));
       } catch (e) {
         if (nr !== stoffNr) return;
         sEl.innerHTML = ''; sEl.appendChild(kopf({ titel: 'Stoff nicht abrufbar', eltern: 'einsatz' }));
@@ -1692,13 +1759,28 @@
     if (zurListe) zurListe.addEventListener('click', () => { const z = document.getElementById('ez-liste-karte'); if (z) z.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     if (!d && g.quellen.length) auswertungBeobachten(g);
     fotoEinsetzen(kopfK);
+    if (window.GSZClaude) GSZClaude.geraetKarte(gEl, g);
     if (!L) return;
     if (L.spalten.length > 1) gEl.appendChild(spaltenwahlKarte(g));
     const t = document.createElement('section');
     t.className = 'kachel ez-karte';
     t.id = 'ez-liste-karte';
     const sp = L.spalten;
-    t.innerHTML = `<h2>Geordnete Beständigkeitsliste (${d.eintraege.length} Einträge)</h2>
+    // Stoffe, die mehrfach mit unterschiedlicher Bewertung in der Liste stehen (gleiche CAS-Nr. bzw. gleicher Name, Konzentration, Temperatur)
+    const wid = B.widersprueche(d.eintraege, L), verweise = B.verweisMitWerten(d.eintraege);
+    const widSet = new Set([...wid.flatMap(w => w.eintraege), ...verweise]);
+    const relIds = L.relevant.length ? L.relevant : sp.map(s => s.id);
+    const widZeile = e => `<li>„${esc(stoffText(e.stoff))}“${e.cas ? ' · CAS ' + esc(e.cas) : ''}${e.seite ? ' · S. ' + esc(e.seite) : ''}: ` +
+      relIds.map(id => { const w = e.werte[id]; return w && w.roh ? `${esc(id)} <b>${esc(w.roh)}</b> (${esc(B.STUFE_TEXT[w.stufe] || w.stufe)})` : ''; }).filter(Boolean).join(' · ') + '</li>';
+    const widHtml = wid.length || verweise.length ? `<div class="ez-warn ez-wid" id="ez-wid">
+      ${wid.length ? `<b>${wid.length === 1 ? '1 Stoff steht' : wid.length + ' Stoffe stehen'} mehrfach mit unterschiedlicher Bewertung in der Liste</b>
+      <div class="ez-klein">Ein Lesefehler oder ein echter Unterschied der Herstellerliste – im Original nachsehen. Bis dahin gilt die ungünstigere Angabe.</div>
+      ${wid.map(w => `<ul class="ez-zeilen">${w.eintraege.map(widZeile).join('')}</ul>`).join('')}` : ''}
+      ${verweise.length ? `<b>${verweise.length === 1 ? '1 Verweiszeile hat' : verweise.length + ' Verweiszeilen haben'} eigene Werte („… siehe …“)</b>
+      <div class="ez-klein">In der Vorlage sind hier vermutlich Zeilen verrutscht – die Werte gehören dann zu einer Nachbarzeile. Im Original nachsehen bzw. beim Hersteller klären.</div>
+      <ul class="ez-zeilen">${verweise.map(widZeile).join('')}</ul>` : ''}
+      <button type="button" class="knopf" id="ez-wid-filter" aria-pressed="false">Nur diese Zeilen zeigen</button></div>` : '';
+    t.innerHTML = `<h2>Geordnete Beständigkeitsliste (${d.eintraege.length} Einträge)</h2>${widHtml}
       <input type="search" class="ez-db-suche" placeholder="Stoff oder CAS-Nr. suchen" aria-label="In der Liste suchen">
       <div class="ez-legende">${L.legende.map(l => `<span>${stufeBadge(l.stufe, l.zeichen || '–')} ${esc(l.text)}</span>`).join('')}
         ${L.art === 'permeation' ? '<span>Durchbruchzeiten in Minuten: Jede eingetragene Zeit gilt als beständig, ob kurz oder lang – die Zeit steht dabei.</span>' : ''}
@@ -1708,16 +1790,20 @@
       ${L.hinweise.length ? `<details style="margin-top:.6rem"><summary class="ez-klein" style="cursor:pointer">Hinweise der Liste</summary><ul class="ez-zeilen" style="margin-top:.4rem">${L.hinweise.map(h => `<li data-z="•">${esc(h)}</li>`).join('')}</ul></details>` : ''}`;
     gEl.appendChild(t);
     const tb = t.querySelector('tbody'), feld = t.querySelector('.ez-db-suche'), mehr = t.querySelector('#ez-mehr');
-    let grenze = 150;
+    let grenze = 150, nurWid = false;
+    const widKnopf = t.querySelector('#ez-wid-filter');
+    if (widKnopf) widKnopf.addEventListener('click', () => { nurWid = !nurWid; widKnopf.setAttribute('aria-pressed', String(nurWid));
+      widKnopf.textContent = nurWid ? 'Wieder alle Zeilen zeigen' : 'Nur diese Zeilen zeigen'; if (nurWid) feld.value = ''; grenze = 150; zeilen(); });
     // aus der Stoffsuche: Suchfeld mit dem Stoff vorbelegt, Zeilen wie in „Beständigkeiten“ über CAS-Nr. und Namen zugeordnet
     const sfTreffer = sf ? new Set(B.finde(d, sf).map(x => x.eintrag)) : null;
     if (sf) feld.value = sf.anzeige;
     const zeilen = () => {
       const roh = feld.value.trim(), q = B.grund(roh);
       const nurStoff = !!(sf && sfTreffer.size && roh === sf.anzeige);
-      const treffer = nurStoff ? d.eintraege.filter(e => sfTreffer.has(e)) : d.eintraege.filter(e => !q || B.grund(e.stoff).includes(q) || (e.cas && e.cas.includes(roh)));
+      const treffer = (nurStoff ? d.eintraege.filter(e => sfTreffer.has(e)) : d.eintraege.filter(e => !q || B.grund(e.stoff).includes(q) || (e.cas && e.cas.includes(roh))))
+        .filter(e => !nurWid || widSet.has(e));
       tb.innerHTML = treffer.slice(0, grenze).map(e => { const ges = B.gesamtStufe(e, L);
-        return `<tr><td>${esc(stoffText(e.stoff))}${e.hinweis ? `<br><span class="ez-klein">${esc(e.hinweis)}</span>` : ''}</td><td>${esc(e.cas)}</td><td>${esc([e.konz, e.temp].filter(Boolean).map(x => S.wertSchoen(x)).join(' · '))}</td>
+        return `<tr${widSet.has(e) ? ' class="wid" title="steht mehrfach mit unterschiedlicher Bewertung in der Liste"' : ''}><td>${widSet.has(e) ? '<span class="ez-wid-zeichen" aria-label="widersprüchlich">⚠</span> ' : ''}${esc(stoffText(e.stoff))}${e.hinweis ? `<br><span class="ez-klein">${esc(e.hinweis)}</span>` : ''}</td><td>${esc(e.cas)}</td><td>${esc([e.konz, e.temp].filter(Boolean).map(x => S.wertSchoen(x)).join(' · '))}</td>
         ${sp.map(s => { const w = e.werte[s.id] || { roh: '', stufe: 'unbekannt' }; return `<td class="w ${w.roh ? esc(w.stufe) : ''}${L.relevant.includes(s.id) ? ' rel' : ''}">${esc(w.roh)}</td>`; }).join('')}
         <td class="w ${esc(ges)}">${esc(ges === 'unbekannt' ? '–' : ges === 'gut' ? '✓' : ges === 'nicht' ? '✕' : ges === 'bedingt' ? '△' : '±')}</td><td>${esc(e.seite)}</td></tr>`; }).join('');
       mehr.innerHTML = nurStoff ? `${treffer.length === 1 ? '1 Eintrag passt' : treffer.length + ' Einträge passen'} zu „${esc(sf.anzeige)}“ (über CAS-Nr. bzw. Namen) · <a href="#" id="ez-ganz">ganze Liste zeigen</a>`
@@ -2274,7 +2360,7 @@
   // ---------------------------------------------------------------- Neu zeichnen nach Änderungen
   function neuZeichnen() {
     const a = GSZ.aktuell;
-    if (a.ansicht === 'einsatz') { ordnerZeigen(); statusZeigen(); }
+    if (a.ansicht === 'einsatz') { ordnerZeigen(); statusZeigen(); eigeneZeigen(); }
     else if (a.ansicht === 'ordner') ordnerSeite(dekodiere(a.param));
     else statusZeigen();
     schilderAktualisieren();
@@ -2286,5 +2372,6 @@
   // für sdb-import.js und die Tests
   window.GSZEinsatz = { stoffSeite, stoffElement: sEl, dateiZeigen, kopf, ansichtElement, esc, datumZeit, groesse, meldung, I, zoomErlauben,
     ehHtml, dekonHtml,
-    listeHolen, geraete, get dateien() { return dateien; }, stoffHolen, suchen: suchenUndZeigen, symbol, zuletzt, miniTafel, nameSchoen };
+    listeHolen, geraete, get dateien() { return dateien; }, stoffHolen, suchen: suchenUndZeigen, symbol, zuletzt, miniTafel, nameSchoen,
+    stoffInfoVon, kategorie, pruefBadge, STUFE_FARBE, ad };
 })();

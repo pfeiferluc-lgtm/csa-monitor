@@ -60,12 +60,82 @@
   }
   // Claude-Auftrag unterwegs? (abgelegt, noch kein Ergebnis; ältere Datensätze mit Ergebnis gelten als erledigt)
   const auftragOffen = d => !!(d && d.auftrag && d.auftrag.abgelegt && !d.auftrag.erledigt && !(d.claude && !d.auftrag.id));
+  const vonText = v => v === 'iphone' ? 'iPhone' : v === 'api' ? 'Claude-API' : 'Mac';
   function statusText(d) {
-    if (auftragOffen(d) && d.claude) return `von Claude ausgewertet (${d.claudeVon === 'iphone' ? 'iPhone' : 'Mac'}) · wird erneut ausgewertet`;
-    if (d.claude) return `von Claude ausgewertet (${d.claudeVon === 'iphone' ? 'iPhone' : 'Mac'})`;
+    if (auftragOffen(d) && d.claude) return `von Claude ausgewertet (${vonText(d.claudeVon)}) · wird erneut ausgewertet`;
+    if (d.claude) return `von Claude ausgewertet (${vonText(d.claudeVon)})`;
     if (d.status === 'liest') return 'wird gelesen …';
     if (d.status === 'fehler') return 'Fehler beim Lesen';
     return auftragOffen(d) ? 'Texterkennung · Claude ausstehend' : 'Texterkennung';
+  }
+
+  // ---------------------------------------------------------------- Teilen über die Dropbox (Einsatz/Eigene Datenblätter/<id Name>/)
+  // datenblatt.json (Ergebnisse ohne Dateien) und die Originale; andere Geräte übernehmen beides beim Abgleich (abgleichen()).
+  const TEIL_BEREICH = 'Eigene Datenblätter';
+  const ordnerName = d => (d.id + ' ' + (stoffVon(d).name || d.name || '')).replace(/[\/\\:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim().slice(0, 90);
+  const geraetName = () => istIphone() ? 'iPhone/iPad' : (ad() && ad().art === 'web') ? 'Browser' : 'Programm';
+  const datenOhneDateien = d => ({ format: 'gsz-sdb-1', id: d.id, zeit: d.zeit, name: d.name, dateien: d.dateien.map(f => ({ name: f.name, typ: f.typ, groesse: f.groesse })),
+    text: d.text || '', textArt: d.textArt || '', ocr: d.ocr || null, claude: d.claude || null, claudeVon: d.claudeVon || '', claudeZeit: d.claudeZeit || '',
+    geteiltVon: geraetName(), geteiltAm: new Date().toISOString() });
+  async function teilen(id, { nurDaten = false } = {}) {
+    const a = ad();
+    if (!a || !a.ablegen || !a.verbunden() || navigator.onLine === false) return false;
+    const d = await hole(id);
+    if (!d || d.status === 'liest') return false;
+    const ordner = (d.geteilt && d.geteilt.ordner) || ordnerName(d);
+    const liste = [{ name: 'datenblatt.json', blob: new Blob([JSON.stringify(datenOhneDateien(d), null, 1)], { type: 'application/json' }) }];
+    if (!nurDaten && !(d.geteilt && d.geteilt.dateien)) for (const f of d.dateien) if (f.blob) liste.push({ name: String(f.name).replace(/[\/\\]/g, '-'), blob: f.blob });
+    try { await a.ablegen(TEIL_BEREICH, ordner, liste); } catch { return false; }
+    const x = await hole(id);
+    if (x) { x.geteilt = { ...(x.geteilt || {}), ordner, am: new Date().toISOString(), dateien: true }; await speichern(x); }
+    return true;
+  }
+  // Geteilte Datenblätter der anderen Geräte übernehmen bzw. ihre neueren Ergebnisse (Claude) einspielen → Anzahl Änderungen
+  let abgleichLaeuft = null;
+  function abgleichen() {
+    if (abgleichLaeuft) return abgleichLaeuft;
+    abgleichLaeuft = (async () => {
+      const a = ad();
+      if (!a || !a.verbunden() || !a.datei) return 0;
+      const re = /^Eigene Datenblätter\/([^/]+)\/datenblatt\.json$/i;
+      const jsons = (E.dateien || []).filter(f => !f.ordner && re.test(String(f.pfad).normalize('NFC')));
+      if (!jsons.length) return 0;
+      const lokal = new Map((await SP.alle('sdb').catch(() => [])).map(x => [String(x.schluessel), x.wert]));
+      const ausgeblendet = new Set((await SP.hole('meta', 'sdb-ausgeblendet').catch(() => null)) || []);
+      let n = 0;
+      for (const f of jsons) {
+        const ordner = re.exec(String(f.pfad).normalize('NFC'))[1], id = ordner.split(' ')[0];
+        const stand = String(f.rev || f.geaendert || f.groesse || '');
+        const l = lokal.get(id);
+        if (ausgeblendet.has(id) || (l && l.geteilt && l.geteilt.stand === stand)) continue;
+        try {
+          const j = JSON.parse(await (await a.datei(f.pfad)).text());
+          if (!j || j.format !== 'gsz-sdb-1' || String(j.id) !== id) continue;
+          if (l) {
+            let neu = false;
+            // Ergebnis eines anderen Geräts nur, wenn es nach der letzten Änderung auf diesem Gerät geteilt wurde
+            const eigen = String(l.geaendert || l.claudeZeit || l.textZeit || '');
+            if (j.claude && (!l.claude || String(j.geteiltAm || '') > eigen)) { l.claude = j.claude; l.claudeVon = j.claudeVon; l.claudeZeit = j.claudeZeit; neu = true; }
+            if (!l.ocr && j.ocr) { l.ocr = j.ocr; neu = true; }
+            l.geteilt = { ...(l.geteilt || {}), ordner, stand, dateien: true };
+            await speichern(l); if (neu) n++;
+          } else {
+            await speichern({ ...j, status: 'gelesen', auftrag: null, fehler: '', fremd: true,
+              dateien: (j.dateien || []).map(x => ({ ...x, pfad: `Eigene Datenblätter/${ordner}/${String(x.name).replace(/[\/\\]/g, '-')}` })),
+              geteilt: { ordner, stand, dateien: true } });
+            n++;
+          }
+        } catch { /* beim nächsten Abgleich */ }
+      }
+      return n;
+    })();
+    abgleichLaeuft.finally(() => { abgleichLaeuft = null; });
+    return abgleichLaeuft;
+  }
+  // Dateien mit Inhalt (geteilte Datenblätter anderer Geräte: aus der Dropbox laden)
+  async function mitInhalt(d) {
+    const a = ad();
+    return Promise.all(d.dateien.map(async f => f.blob ? f : { ...f, blob: await a.datei(f.pfad) }));
   }
 
   // ---------------------------------------------------------------- Ablauf
@@ -84,12 +154,13 @@
     if (!d) return;
     try {
       fortschritt.set(id, { text: 'Text wird gelesen …', anteil: 0 }); melden(id, true);
-      const r = await window.GSZOcr.textAus(d.dateien, (text, anteil) => { fortschritt.set(id, { text, anteil }); melden(id, true); });
+      const r = await window.GSZOcr.textAus(await mitInhalt(d), (text, anteil) => { fortschritt.set(id, { text, anteil }); melden(id, true); });
       const x = await hole(id);
       x.text = r.text; x.textArt = r.art; x.textZeit = new Date().toISOString();
       x.ocr = window.GSZSdbParser ? GSZSdbParser.sdbLesen(r.text, { dateiname: d.name }) : S.normalisieren({ quelle: 'sdb', quelleText: 'Sicherheitsdatenblatt – Texterkennung' });
-      x.status = 'gelesen'; x.fehler = '';
+      x.status = 'gelesen'; x.fehler = ''; x.geaendert = new Date().toISOString();
       await speichern(x);
+      setTimeout(() => teilen(id, { nurDaten: !!(x.geteilt && x.geteilt.dateien) }), 0);
     } catch (e) {
       const x = await hole(id);
       x.status = 'fehler'; x.fehler = e.message;
@@ -105,7 +176,7 @@
     const kennung = nummer > 1 ? `${d.id}-${nummer}` : d.id;
     const dateien = [];
     let n = 0;
-    for (const f of d.dateien) {
+    for (const f of await mitInhalt(d)) {
       n++;
       if (/pdf/i.test(f.typ) || /\.pdf$/i.test(f.name)) { if (f.blob.size < 25 * 1048576) dateien.push({ name: `datenblatt-${n}.pdf`, blob: f.blob }); }
       else { try { dateien.push({ name: `seite-${String(n).padStart(2, '0')}.jpg`, blob: await window.GSZOcr.bildVerkleinern(f.blob) }); } catch { /* Bild unlesbar */ } }
@@ -143,7 +214,9 @@
             if (x.auftrag) x.auftrag = { ...x.auftrag, erledigt: jetzt, fehler: '' }; }
       catch (e) { x.auftrag = { ...(x.auftrag || {}), fehler: 'Antwort von Claude (iPhone) nicht lesbar: ' + e.message }; }
     } else return false;
+    x.geaendert = new Date().toISOString();
     await speichern(x); melden(id);
+    if (x.claude) setTimeout(() => teilen(id, { nurDaten: true }), 0);
     return true;
   }
   async function antwortUebernehmen(id, text) {
@@ -151,7 +224,9 @@
     x.claude = S.antwortLesen(text, 'Sicherheitsdatenblatt – ausgewertet von Claude (iPhone)');
     x.claudeVon = 'iphone'; x.claudeZeit = new Date().toISOString();
     if (x.auftrag) x.auftrag = { ...x.auftrag, erledigt: x.claudeZeit, fehler: '' };
+    x.geaendert = new Date().toISOString();
     await speichern(x); melden(id);
+    setTimeout(() => teilen(id, { nurDaten: true }), 0);
   }
   // Text für die Claude-App: die einsatzwichtigen Abschnitte (Kurzbefehl-Links bleiben handlich)
   function anfrageFuer(d) {
@@ -211,7 +286,9 @@
   const balken = anteil => anteil === 'unbestimmt' ? '<div class="sdb-balken unbestimmt"><i></i></div>'
     : typeof anteil === 'number' ? `<div class="sdb-balken" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(anteil * 100)}"><i style="width:${(anteil * 100).toFixed(1)}%"></i></div>` : '';
   // Zustand der Auswertung durch Claude: aus dem Auftrag und dem Lebenszeichen des Mac-Helfers (Auswertung/mac-helfer.json)
+  const apiLauf = new Map();                   // id → { text, anteil }: Auswertung über die Claude-API läuft
   function claudeZustand(d) {
+    if (apiLauf.has(d.id)) { const f = apiLauf.get(d.id); return { text: f.text, anteil: f.anteil }; }
     const a = ad(), offen = auftragOffen(d);
     const verbunden = !!(a && a.auftragAblegen && a.verbunden && a.verbunden());
     if (offen) {
@@ -225,7 +302,7 @@
       if (w) return { text: `In der Warteschlange – der Mac-Helfer wertet gerade ${w.art === 'sdb' ? 'ein anderes Datenblatt' : `„${w.ordner || ''}“`} aus.`, anteil: 'unbestimmt' };
       return { text: 'In der Warteschlange – Claude beginnt in Kürze.', anteil: 'unbestimmt' };
     }
-    if (d.claude) return { text: `✓ Von Claude ausgewertet (${d.claudeVon === 'iphone' ? 'iPhone' : 'Mac'})${d.claudeZeit ? ', ' + datumZeit(d.claudeZeit) : ''}`, klasse: 'fertig' };
+    if (d.claude) return { text: `✓ Von Claude ausgewertet (${vonText(d.claudeVon)})${d.claudeZeit ? ', ' + datumZeit(d.claudeZeit) : ''}`, klasse: 'fertig' };
     if (d.auftrag && d.auftrag.fehler) return { text: d.auftrag.fehler, klasse: 'fehler' };
     if (!verbunden) return { text: 'Braucht die Verbindung zum Dropbox-App-Ordner (⚙ › Mit Dropbox verbinden).', anteil: null, ohneMac: true };
     if (navigator.onLine === false) return { text: 'Ohne Netz – mit Netz prüft Claude nach.', anteil: null, ohneMac: true };
@@ -242,6 +319,9 @@
       knoepfe.push('<button class="knopf" id="sdb-einfuegen">Antwort aus der Zwischenablage übernehmen</button>');
     }
     if (d.text) knoepfe.push('<button class="knopf" id="sdb-kopieren">Anfrage für Claude kopieren</button>');
+    // Claude-API mit eigenem Schlüssel (liest PDF und Fotos selbst – wie der Mac-Helfer)
+    if (window.GSZClaude) knoepfe.unshift(GSZClaude.bereit() ? `<button class="knopf" id="sdb-api">${I.neu}Mit Claude-API auswerten (ohne Mac)</button>`
+      : '<a class="knopf" href="#claude">Claude ohne Mac einrichten (API-Schlüssel)</a>');
     const ohneMac = knoepfe.length && (!d.claude || offen) && !(offen && helferLebt()) ? `<details class="sdb-mehr"><summary>Ohne Mac mit Claude auswerten</summary><div class="sdb-zeile">${knoepfe.join('')}</div>
       ${istIphone() ? '<div class="ez-klein" style="margin-top:.4rem">Braucht einmalig den Kurzbefehl „GSZ Claude“: <a href="GSZ-Claude.shortcut" download="GSZ Claude.shortcut">hier laden</a>.</div>' : ''}</details>` : '';
     const tx = f ? { text: f.text, anteil: f.anteil || 0 }
@@ -287,7 +367,7 @@
       const liste = document.createElement('div');
       liste.style.cssText = 'display:flex;flex-direction:column;gap:.8rem';
       rEl.appendChild(liste);
-      for (const f of d.dateien) { const box = document.createElement('div'); liste.appendChild(box); await E.dateiZeigen(box, { name: f.name, blob: f.blob }); }
+      for (const f of d.dateien) { const box = document.createElement('div'); liste.appendChild(box); await E.dateiZeigen(box, { name: f.name, blob: f.blob, pfad: f.blob ? undefined : f.pfad }); }
       return;
     }
     const s = stoffVon(d);
@@ -297,11 +377,32 @@
     const g = el.querySelector('[data-gestis]');
     if (g) g.addEventListener('click', () => E.suchen(g.dataset.gestis));
     const w = el.querySelector('#sdb-loeschen');
-    if (w) w.addEventListener('click', async () => { if (!confirm('Dieses Datenblatt vom Gerät löschen?')) return; await SP.loesche('sdb', d.id); GSZ.zeige('einsatz', true); });
+    if (w) w.addEventListener('click', async () => {
+      if (!confirm('Dieses Datenblatt löschen?')) return;
+      const a = ad();
+      if (d.geteilt && a && a.ablageLoeschen) {
+        if (confirm('Auch für alle anderen Geräte löschen (aus der Dropbox)?\n\nOK = für alle löschen · Abbrechen = nur auf diesem Gerät ausblenden')) {
+          try { await a.ablageLoeschen(TEIL_BEREICH, d.geteilt.ordner); } catch (e) { meldung('In der Dropbox nicht gelöscht: ' + e.message, 7000); }
+        } else {
+          const weg = (await SP.hole('meta', 'sdb-ausgeblendet').catch(() => null)) || [];
+          await SP.setze('meta', 'sdb-ausgeblendet', [...new Set([...weg, d.id])]).catch(() => {});
+        }
+      }
+      await SP.loesche('sdb', d.id); GSZ.zeige('einsatz', true);
+    });
     const box = el.querySelector('#sdb-auswertung');
     if (box) auswertungBedienung(box, d);
   }
   function auswertungBedienung(el, d) {
+    const api = el.querySelector('#sdb-api');
+    if (api) api.addEventListener('click', async () => {
+      if (apiLauf.has(d.id)) return;
+      api.disabled = true;
+      apiLauf.set(d.id, { text: 'Claude-API: wird vorbereitet …', anteil: 0.02 }); melden(d.id, true);
+      try { await GSZClaude.sdbAuswerten(d.id, { fortschritt: (text, anteil) => { apiLauf.set(d.id, { text: 'Claude-API: ' + text, anteil }); melden(d.id, true); } }); }
+      catch (e) { meldung('Claude-API: ' + e.message, 9000); }
+      finally { apiLauf.delete(d.id); melden(d.id); }
+    });
     const c = el.querySelector('#sdb-claude');
     if (c) c.addEventListener('click', async () => {
       c.disabled = true;
@@ -376,5 +477,5 @@
     } catch { /* später */ }
   }, 20000);
 
-  window.GSZSdbImport = { statusText, verarbeiten, textLesen, auftragAblegen, auftragOffen, ergebnisHolen, antwortUebernehmen, anfrageFuer, importieren };
+  window.GSZSdbImport = { statusText, verarbeiten, textLesen, auftragAblegen, auftragOffen, ergebnisHolen, antwortUebernehmen, anfrageFuer, importieren, teilen, abgleichen };
 })();

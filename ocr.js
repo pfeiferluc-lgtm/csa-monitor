@@ -133,5 +133,80 @@
   }
   async function beenden() { if (worker) { try { await worker.terminate(); } catch { /* egal */ } worker = null; } }
 
-  window.GSZOcr = { textAus, bildVerkleinern, vorbereiten, beenden, pdfText, verfuegbar: () => typeof WebAssembly === 'object' };
+  // ---------------------------------------------------------------- Warntafel (orange Tafel: oben Gefahrnummer, unten UN-Nummer)
+  // Orange Flächen suchen (verkleinert), die beiden größten übereinanderliegenden Felder sind die Hälften der Tafel.
+  function orangeFelder(c) {
+    const f = Math.min(1, 240 / Math.max(c.width, c.height));
+    const w = Math.max(1, Math.round(c.width * f)), h = Math.max(1, Math.round(c.height * f));
+    const k = document.createElement('canvas'); k.width = w; k.height = h;
+    const x = k.getContext('2d', { willReadFrequently: true }); x.drawImage(c, 0, 0, w, h);
+    const px = x.getImageData(0, 0, w, h).data, maske = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2];
+      maske[i] = r > 140 && r - b > 85 && r - g > 25 && g > 45 && g < 205 && b < 120 ? 1 : 0;
+    }
+    const nr = new Int32Array(w * h), felder = [];
+    for (let i = 0; i < w * h; i++) {
+      if (!maske[i] || nr[i]) continue;
+      const id = felder.length + 1, stapel = [i]; nr[i] = id;
+      let n = 0, x0 = w, y0 = h, x1 = 0, y1 = 0;
+      while (stapel.length) {
+        const j = stapel.pop(), jx = j % w, jy = (j - jx) / w; n++;
+        if (jx < x0) x0 = jx; if (jx > x1) x1 = jx; if (jy < y0) y0 = jy; if (jy > y1) y1 = jy;
+        for (const d of [j - 1, j + 1, j - w, j + w]) if (d >= 0 && d < w * h && maske[d] && !nr[d] && Math.abs((d % w) - jx) <= 1) { nr[d] = id; stapel.push(d); }
+      }
+      felder.push({ n, x0: x0 / f, y0: y0 / f, x1: (x1 + 1) / f, y1: (y1 + 1) / f });
+    }
+    const gross = felder.filter(a => a.n > w * h * 0.004).sort((a, b) => b.n - a.n).slice(0, 6);
+    if (!gross.length) return null;
+    const A = gross[0], bA = A.x1 - A.x0, hA = A.y1 - A.y0;
+    // Partner: ähnlich breit, waagrecht überlappend, direkt darüber oder darunter
+    const B = gross.slice(1).find(b => { const bb = b.x1 - b.x0, ueber = Math.min(A.x1, b.x1) - Math.max(A.x0, b.x0);
+      const abstand = b.y0 >= A.y1 ? b.y0 - A.y1 : A.y0 - b.y1;
+      return bb > bA * 0.6 && bb < bA * 1.6 && ueber > Math.min(bA, bb) * 0.6 && abstand > -hA * 0.1 && abstand < hA * 0.6; });
+    if (B) { const [o, u] = A.y0 < B.y0 ? [A, B] : [B, A]; return { oben: o, unten: u }; }
+    // nur ein Feld (Trennlinie nicht erkannt): in der Mitte teilen
+    const mitte = (A.y0 + A.y1) / 2;
+    return { oben: { ...A, y1: mitte }, unten: { ...A, y0: mitte } };
+  }
+  // Ausschnitt → schwarze Ziffern auf weißem Grund, Höhe ca. 120 px, mit Rand
+  function ziffernBild(c, r) {
+    const rx = Math.max(0, r.x0), ry = Math.max(0, r.y0), rw = Math.min(c.width - rx, r.x1 - r.x0), rh = Math.min(c.height - ry, r.y1 - r.y0);
+    const s = Math.min(4, 120 / Math.max(1, rh)), w = Math.max(1, Math.round(rw * s)), h = Math.max(1, Math.round(rh * s)), rand = 30;
+    const k = document.createElement('canvas'); k.width = w + 2 * rand; k.height = h + 2 * rand;
+    const x = k.getContext('2d', { willReadFrequently: true });
+    x.fillStyle = '#fff'; x.fillRect(0, 0, k.width, k.height);
+    x.drawImage(c, rx, ry, rw, rh, rand, rand, w, h);
+    const d = x.getImageData(0, 0, k.width, k.height), p = d.data;
+    for (let i = 0; i < p.length; i += 4) { const l = 0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2]; const v = l < 105 ? 0 : 255; p[i] = p[i + 1] = p[i + 2] = v; }
+    x.putImageData(d, 0, 0);
+    return k;
+  }
+  async function warntafel(blob, fortschritt = () => {}) {
+    fortschritt('Foto wird vorbereitet …', 0);
+    const c = await bildLaden(blob);
+    const felder = orangeFelder(c);
+    const w = await arbeiter(fortschritt);
+    const ziffern = '0123456789X';
+    fortschritt('Nummern werden gelesen …', 0.1);
+    try {
+      if (felder) {
+        await w.setParameters({ tessedit_char_whitelist: ziffern, tessedit_pageseg_mode: '7' });
+        const oben = (await erkennen(ziffernBild(c, felder.oben))).replace(/[^0-9X]/g, '');
+        fortschritt('Nummern werden gelesen …', 0.55);
+        const unten = (await erkennen(ziffernBild(c, felder.unten))).replace(/[^0-9X]/g, '');
+        const t = window.GSZGefahrgut ? GSZGefahrgut.warntafelText(oben + '\n' + unten) : { kemler: oben, un: unten };
+        if (t.un || t.kemler) return { ...t, text: oben + ' / ' + unten, tafel: true };
+      }
+      // keine Tafel gefunden: ganzes Bild lesen
+      await w.setParameters({ tessedit_char_whitelist: ziffern, tessedit_pageseg_mode: '6' });
+      const text = await erkennen(c);
+      const t = window.GSZGefahrgut ? GSZGefahrgut.warntafelText(text) : { kemler: '', un: (/\d{4}/.exec(text) || [''])[0] };
+      return { ...t, text, tafel: false };
+    } finally {
+      try { await w.setParameters({ tessedit_char_whitelist: '', tessedit_pageseg_mode: '3' }); } catch { /* egal */ }
+    }
+  }
+
+  window.GSZOcr = { textAus, bildVerkleinern, vorbereiten, beenden, pdfText, warntafel, verfuegbar: () => typeof WebAssembly === 'object' };
 })();

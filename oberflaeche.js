@@ -100,6 +100,18 @@
   .st-kachel.st-haupt em .warn { color: #ffe2a8; }
   .st-kachel.st-haupt em .gut { color: #d6ffe4; }
   #st-einsatz-info:empty { display: none; }
+  /* Was ist neu */
+  .st-neu { position: relative; background: var(--surface); box-shadow: var(--schatten); border-radius: 1rem; padding: .85rem 2.6rem .85rem 1rem; border-left: 4px solid var(--akzent); }
+  .st-neu h2 { margin: 0 0 .4rem; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--akzent); }
+  .st-neu ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: .3rem; font-size: .9rem; line-height: 1.4; }
+  .st-neu .zu { position: absolute; top: .45rem; right: .45rem; width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 0; background: var(--surface2); color: var(--ink2); font-size: 1.2rem; cursor: pointer; }
+  .st-neu a, .st-alle-neu { color: var(--akzent); font-weight: 600; }
+  #st-handschuh { display: inline-flex; align-items: center; gap: .35rem; } #st-handschuh svg { width: 1.1rem; height: 1.1rem; }
+  #st-handschuh[aria-pressed="true"] { background: var(--akzent); color: #fff; border-color: var(--akzent); }
+  #gsz-neu-ebene { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, .55); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  #gsz-neu-ebene > div { background: var(--surface); color: var(--ink); border-radius: 1rem; box-shadow: var(--schatten); max-width: 40rem; width: 100%; max-height: 85vh; overflow: auto; padding: 1rem 1.2rem; }
+  #gsz-neu-ebene h2 { margin: 0 0 .6rem; } #gsz-neu-ebene h3 { margin: .9rem 0 .3rem; font-size: .95rem; }
+  #gsz-neu-ebene ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: .25rem; font-size: .92rem; line-height: 1.4; }
   .st-zuletzt h2 { margin: 0 0 .55rem; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink2); }
   .st-chips { display: flex; gap: .55rem; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: .15rem .1rem .45rem; }
   .st-chips::-webkit-scrollbar { display: none; }
@@ -345,13 +357,15 @@
         <a class="st-kachel" href="#uebungen" id="st-uebungen" style="--c:var(--akzent)">${ICON_UEBUNGEN}<span class="pfeil">›</span>
           <b>Übungen</b><span>CSA-Monitor (Belastungsübung) und Übungsanwesenheit</span><em id="st-uebungen-info">Personaltabelle wird beim Öffnen geladen</em></a>
       </nav>
+      <section class="st-neu" id="st-neu" hidden aria-live="polite"></section>
       <section class="st-zuletzt" id="st-zuletzt" hidden><h2>Zuletzt geöffnet</h2><div class="st-chips" id="st-chips"></div></section>
       <div class="st-fuss">
         <label>beim Start <select id="st-direkt"><option value="">Hauptmenü</option><option value="einsatz">Einsatz</option>
           <option value="monitor">CSA-Monitor</option></select> zeigen</label>
-        <span><button class="knopf" id="st-modus" title="Hell / Dunkel">◐</button>
+        <span><button class="knopf" id="st-handschuh" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 21v-4.5L5 13V8.5a1.5 1.5 0 0 1 3 0V11V5.5a1.5 1.5 0 0 1 3 0V10V4.5a1.5 1.5 0 0 1 3 0V10V6a1.5 1.5 0 0 1 3 0v8.5l-2 2.2V21z"/><path d="M7.5 18.5h8"/></svg><span data-gross-text="stand">Handschuh-Modus: aus</span></button>
+        <button class="knopf" id="st-modus" title="Hell / Dunkel">◐</button>
         <button class="knopf" id="st-einst" title="Einstellungen" hidden>⚙</button></span>
-        <span id="st-version"></span>
+        <span><a href="#" class="st-alle-neu" id="st-alle-neu">Was ist neu</a> · <span id="st-version"></span></span>
       </div>
     </div>`;
   const ue = document.createElement('main');
@@ -474,7 +488,7 @@
     for (const m of document.querySelectorAll('body > main.gsz-ansicht')) m.classList.toggle('aktiv', m === el);
     document.title = (fremde[a] && fremde[a].titel ? fremde[a].titel(param) : TITEL[a]) || TITEL.start;
     // feste Grundschrift außer im Monitor (der passt seine Schrift selbst an den Bildschirm an)
-    if (a !== 'monitor') document.documentElement.style.fontSize = (innerWidth <= 640 ? 15 : 16) + 'px';
+    grundschrift();
     if (vorher === 'anwesenheit' && a !== 'anwesenheit') sofortUebertragen();
     if (vorher && vorher !== a && fremde[vorher] && fremde[vorher].verlassen) { try { fremde[vorher].verlassen(); } catch (e) { console.error(e); } }
     if (adapter.ansichtGewechselt) { try { adapter.ansichtGewechselt(a); } catch (e) { console.error(e); } }
@@ -497,13 +511,59 @@
   };
   addEventListener('popstate', verlaufGeaendert);
   addEventListener('hashchange', verlaufGeaendert);
-  addEventListener('resize', () => { if (ansicht && ansicht !== 'monitor') document.documentElement.style.fontSize = (innerWidth <= 640 ? 15 : 16) + 'px'; });
+  addEventListener('resize', grundschrift);
+  // Handschuh-Modus (html.gross): größere Schrift und Knöpfe auf den Einsatz-Seiten – an- und ausschaltbar (Kopf der
+  // Einsatz-Seiten, Fuß der Startseite, Einstellungen); gilt für dieses Gerät
+  function grundschrift() {
+    if (!ansicht || ansicht === 'monitor') return;
+    const basis = innerWidth <= 640 ? 15 : 16, gross = document.documentElement.classList.contains('gross') && !['start', 'uebungen', 'anwesenheit'].includes(ansicht);
+    document.documentElement.style.fontSize = (gross ? Math.round(basis * 1.2) : basis) + 'px';
+  }
+  function grossKnoepfe(liste) {
+    const an = document.documentElement.classList.contains('gross');
+    for (const k of liste || document.querySelectorAll('[data-gross-knopf]')) { k.setAttribute('aria-pressed', String(an));
+      k.title = an ? 'Handschuh-Modus ist an (große Schrift und Knöpfe) – tippen zum Ausschalten' : 'Handschuh-Modus einschalten: große Schrift und Knöpfe';
+      const t = k.querySelector('[data-gross-text]'); if (t && t.dataset.grossText === 'stand') t.textContent = 'Handschuh-Modus: ' + (an ? 'an' : 'aus'); }
+  }
+  function grossWechseln() {
+    const an = document.documentElement.classList.toggle('gross');
+    SP.set('gsz-gross', an ? '1' : '');
+    grundschrift(); grossKnoepfe();
+    return an;
+  }
+  // Knopf anmelden – er steht beim Anlegen oft noch nicht im Dokument, deshalb seinen Zustand direkt setzen
+  function grossKnopf(k) { if (!k) return; k.dataset.grossKnopf = '1'; k.addEventListener('click', grossWechseln); grossKnoepfe([k]); }
+  if (SP.get('gsz-gross') === '1') document.documentElement.classList.add('gross');
 
   // Hauptmenü
   const kachelInfos = {};
+  // ---------------------------------------------------------------- Was ist neu (app/neuigkeiten.js)
+  const NEU = Array.isArray(window.GSZNeuigkeiten) ? window.GSZNeuigkeiten : [];
+  function neuZeichnen() {
+    const el = $('st-neu'), n = NEU[0];
+    if (!el || !n || SP.get('gsz-neu-gesehen') === n.version) { if (el) el.hidden = true; return; }
+    el.innerHTML = `<h2>Neu in Version ${esc(n.version)}</h2><ul>${n.punkte.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+      <button class="zu" type="button" aria-label="Ausblenden" title="Ausblenden">×</button>`;
+    el.hidden = false;
+    el.querySelector('.zu').addEventListener('click', () => { SP.set('gsz-neu-gesehen', n.version); el.hidden = true; });
+  }
+  function alleNeuigkeiten() {
+    let e = document.getElementById('gsz-neu-ebene');
+    if (e) e.remove();
+    e = document.createElement('div'); e.id = 'gsz-neu-ebene'; e.className = 'gsz-ebene';
+    e.innerHTML = `<div role="dialog" aria-modal="true" aria-label="Was ist neu"><h2>Was ist neu</h2>${NEU.map(n => `<h3>Version ${esc(n.version)}${n.datum ? ` · ${esc(n.datum.split('-').reverse().join('.'))}` : ''}</h3>
+      <ul>${n.punkte.map(p => `<li>${esc(p)}</li>`).join('')}</ul>`).join('')}<p><button class="knopf" type="button">Schließen</button></p></div>`;
+    const zu = () => { e.remove(); if (NEU[0]) { SP.set('gsz-neu-gesehen', NEU[0].version); neuZeichnen(); } };
+    e.addEventListener('click', ev => { if (ev.target === e || ev.target.closest('button')) zu(); });
+    document.body.appendChild(e);
+  }
+  $('st-alle-neu').addEventListener('click', ev => { ev.preventDefault(); alleNeuigkeiten(); });
+  setTimeout(() => grossKnopf($('st-handschuh')), 0);
+
   function hauptmenueZeichnen() {
     uhrStellen();
     zuletztZeichnen();
+    neuZeichnen();
     const w = SP.get('gsz-start') || '';
     $('st-direkt').value = ['einsatz', 'monitor'].includes(w) ? w : '';
     if (kachelInfos.einsatz) $('st-einsatz-info').innerHTML = kachelInfos.einsatz;
@@ -837,10 +897,11 @@
   });
   $('aw-speichern').addEventListener('click', () => { zumAusgang(false); senden(); });
   function modusWechseln() {
+    if (window.GSZModus) { GSZModus.wechseln(); return; }
     const hell = document.documentElement.classList.toggle('hell');
     try { localStorage.setItem('csa-modus', hell ? 'hell' : 'dunkel'); } catch { /* privat */ }
   }
-  function modusKnopf(knopf) { knopf.addEventListener('click', modusWechseln); }
+  function modusKnopf(knopf) { if (!knopf) return; knopf.addEventListener('click', modusWechseln); if (window.GSZModus) GSZModus.knopf(knopf); }
   for (const id of ['st-modus', 'ue-modus', 'aw-modus']) modusKnopf($(id));
   const einstKnoepfe = [];
   function einstellungenKnopf(knopf) {
@@ -873,7 +934,7 @@
     fremde[name] = def;
     if (def.element && !def.element.parentNode) { def.element.classList.add('gsz-ansicht'); document.body.appendChild(def.element); }
   }
-  window.GSZ = { einrichten, daten, zeige, zurueck, ansicht: ansichtAnmelden, kachelInfo, modusKnopf, einstellungenKnopf, logos, logoOriginal,
+  window.GSZ = { einrichten, daten, zeige, zurueck, ansicht: ansichtAnmelden, kachelInfo, modusKnopf, einstellungenKnopf, logos, logoOriginal, grossKnopf, grossWechseln, alleNeuigkeiten,
                  get aktuell() { return { ansicht, param: ansichtParam }; }, get adapter() { return adapter; },
                  get ausgang() { return ausgang.slice(); } };
 })();

@@ -309,6 +309,55 @@
     return treffer;
   }
 
+  // ------------------------------------------------------------------ Widersprüche innerhalb einer Liste
+  // Dieselbe Zeile – gleicher Stoff (CAS-Nummer, sonst voller Name) bei gleicher Konzentration, Temperatur und gleichem Zusatz
+  // („wässrig“, „konz.“) – steht mehrfach in der Liste, und die relevanten Spalten sind verschieden bewertet. Das kann ein
+  // Lesefehler sein oder ein echter Unterschied der Herstellerliste (z. B. verschiedene Prüfnormen) – die App zeigt beides an,
+  // im Zweifel gilt die ungünstigere Angabe.
+  function zeilenSchluessel(e, { nurZusatz = false } = {}) {
+    const g = grund(e.stoff);
+    const zusatz = [...(g.match(MENGE) || []).map(x => x.replace(/\s+/g, '')), ...(g.match(ZUSAETZE) || []).filter(w => !/^(und|oder|in|bis|ca)$/.test(w)),
+      grund(e.konz).replace(/\s+/g, ''), grund(e.temp).replace(/\s+/g, '')].filter(Boolean).sort().join(' ');
+    if (nurZusatz) return 'stoff|' + zusatz;
+    const c = casAus(e.cas);
+    return (c.length ? 'cas:' + c.sort().join('+') : 'name:' + kern(e.stoff)) + '|' + zusatz;
+  }
+  function stufenVon(e, liste) {
+    const ids = liste.relevant && liste.relevant.length ? liste.relevant : liste.spalten.map(s => s.id);
+    return ids.map(id => (e.werte && e.werte[id] && e.werte[id].stufe) || 'unbekannt');
+  }
+  // eintraege: Zeilen einer Liste (oder die Treffer für einen Stoff) → [{ schluessel, eintraege: [e, …] }] mit abweichender Bewertung
+  // gleicherStoff: alle Zeilen meinen denselben Stoff (Treffer für einen Stoff) – dann zählt nur der Zusatz (Konzentration usw.)
+  function widersprueche(eintraege, liste, { gleicherStoff = false } = {}) {
+    if (!liste || !Array.isArray(eintraege)) return [];
+    const gruppen = new Map();
+    for (const e of eintraege) {
+      const st = stufenVon(e, liste);
+      if (st.every(x => x === 'unbekannt')) continue;                 // Verweiszeilen, Zeilen ohne Angabe
+      const k = zeilenSchluessel(e, { nurZusatz: gleicherStoff });
+      if (!gleicherStoff && (k.startsWith('name:|') || /^name:.{0,2}\|/.test(k))) continue;
+      if (!gruppen.has(k)) gruppen.set(k, []);
+      gruppen.get(k).push({ e, st: st.join('/') });
+    }
+    const aus = [];
+    for (const [schluessel, l] of gruppen) if (l.length > 1 && new Set(l.map(x => x.st)).size > 1) aus.push({ schluessel, eintraege: l.map(x => x.e) });
+    return aus;
+  }
+
+  // Verweiszeilen mit Werten („Isopropylalkohol siehe Isopropanol“ mit eigener Bewertung): in der Vorlage sind dort oft Zeilen
+  // verrutscht (17.11.2026: IBS-Schlauchliste S. 6 und S. 10 – die Werte stehen im Verweis, die echte Zeile ist leer).
+  const VERWEIS = /(^|\s)(siehe|s\.)\s+\S/i;
+  // Teilweise Verweise (ELRO: „siehe Ölsäure (Elastomere)“, Kunststoffe und Metalle direkt bewertet) sind gewollt – auffällig ist
+  // nur ein Verweis, der fast in jeder Spalte (mindestens 80 %) eigene Werte trägt.
+  function verweisMitWerten(eintraege) {
+    return (eintraege || []).filter(e => {
+      if (!(VERWEIS.test(String(e.stoff || '')) || /^\s*(siehe|s\.)\s/i.test(String(e.hinweis || '')))) return false;
+      const w = Object.values(e.werte || {}), voll = w.filter(x => x && x.roh && !/^[-–?]$/.test(String(x.roh).trim())).length;
+      return w.length > 0 && voll >= Math.max(1, Math.ceil(w.length * 0.8));
+    });
+  }
+
+
   // Alle Geräte für einen Stoff: geraete = [{ ordner, daten (bestaendigkeit.json) | null, foto, quellen }]
   // → [{ geraet, treffer: [{ eintrag, art, stufe }], stufe }] sortiert: beständig zuerst, dann bedingt, nicht, ohne Angabe
   function fuerStoff(geraete, stoff) {
@@ -323,12 +372,15 @@
       const bekannt = basis.map(t => t.stufe).filter(s => s !== 'unbekannt');
       const SCHLECHT = { gut: 0, bedingt: 1, gemischt: 2, nicht: 3 };
       const stufe = bekannt.length ? bekannt.reduce((a, b) => (SCHLECHT[b] > SCHLECHT[a] ? b : a)) : 'unbekannt';
-      return { geraet: g, treffer, stufe, nurAehnlich: !sicher.length };
+      const wid = widersprueche(basis.map(t => t.eintrag), g.daten.liste, { gleicherStoff: true });
+      const widEintraege = new Set(wid.flatMap(w => w.eintraege)), verweis = new Set(verweisMitWerten(basis.map(t => t.eintrag)));
+      for (const t of treffer) { if (widEintraege.has(t.eintrag)) t.widerspruch = true; if (verweis.has(t.eintrag)) t.verweis = true; }
+      return { geraet: g, treffer, stufe, nurAehnlich: !sicher.length, widerspruch: wid.length > 0 || verweis.size > 0 };
     });
     return ergebnis.sort((a, b) => (RANG_LISTE[a.stufe] - RANG_LISTE[b.stufe]) ||
       String(a.geraet.ordner).localeCompare(String(b.geraet.ordner), 'de', { numeric: true }));
   }
 
   return { FORMAT, DATEI, PRUEF_DATEI, PRUEF_SCHEMA, PRUEF_ANWEISUNG, STUFEN, STUFE_TEXT, KATEGORIEN, BILD_WAHL, BILD_STANDARD, bildLesen, bildText, ordnerEinteilen, ordnerName, infoLesen, infoText, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
-           pruefen, gesamtStufe, grund, kern, finde, fuerStoff };
+           pruefen, gesamtStufe, grund, kern, finde, fuerStoff, widersprueche, zeilenSchluessel, verweisMitWerten };
 });

@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#0a0c0f">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob: data: https://api.dropboxapi.com https://content.dropboxapi.com https://gestis-api.dguv.de; worker-src 'self' blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob: data: https://api.dropboxapi.com https://content.dropboxapi.com https://gestis-api.dguv.de https://api.brightsky.dev https://api.anthropic.com; worker-src 'self' blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root {
   --crit: #e5484d; --ser: #f0794a; --warn: #f2b01e; --good: #26a95b; --akzent: #4c8df0;
@@ -381,7 +381,7 @@ body:not([data-ansicht]) > * { visibility: hidden; }
 
 <script>
 // let statt const: Das Programm CSA-Monitor setzt die Daten nach dem Einlesen der Excel-Datei neu (start.js)
-let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-16T11:46"};
+let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-17T00:05"};
 
 const KAT = {
   1: { label: 'überfällig', c: 'var(--crit)' },
@@ -421,7 +421,32 @@ const S = { get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch 
             set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
 $('termin').value = S.get('csa-termin', '');
 $('pa').value = S.get('csa-pa', '6');
-if (S.get('csa-modus', 'dunkel') === 'hell') document.documentElement.classList.add('hell');
+// Darstellung: automatisch wie das Gerät (Standard), hell oder dunkel – gespeichert in csa-modus ('auto' | 'hell' | 'dunkel').
+// Alle Knöpfe ◐ laufen über GSZModus: Automatisch → Hell → Dunkel → Automatisch.
+window.GSZModus = (() => {
+  const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') : null;
+  const ZEICHEN = { auto: '◐', hell: '☀', dunkel: '☾' };
+  const NAME = { auto: 'automatisch (wie das Gerät)', hell: 'hell', dunkel: 'dunkel' };
+  const NAECHST = { auto: 'hell', hell: 'dunkel', dunkel: 'auto' };
+  const stand = () => { const m = S.get('csa-modus', 'auto'); return m === 'hell' || m === 'dunkel' ? m : 'auto'; };
+  const istHell = () => document.documentElement.classList.contains('hell');
+  function anwenden() {
+    const m = stand(), hell = m === 'hell' || (m === 'auto' && !!(mq && mq.matches));
+    const vorher = istHell();
+    document.documentElement.classList.toggle('hell', hell);
+    for (const k of document.querySelectorAll('[data-modus-knopf]')) {
+      k.textContent = ZEICHEN[m];
+      k.title = `Darstellung: ${NAME[m]} – tippen für ${NAME[NAECHST[m]]}`;
+      k.setAttribute('aria-label', k.title);
+    }
+    if (vorher !== hell) document.dispatchEvent(new Event('gsz-modus'));
+  }
+  function wechseln() { S.set('csa-modus', NAECHST[stand()]); anwenden(); return stand(); }
+  function knopf(k) { if (k) { k.dataset.modusKnopf = '1'; anwenden(); } }
+  if (mq) { if (mq.addEventListener) mq.addEventListener('change', anwenden); else if (mq.addListener) mq.addListener(anwenden); }
+  anwenden();
+  return { stand, wechseln, anwenden, knopf, NAME };
+})();
 
 function personen(h) {
   return DATEN.leute.map(p => {
@@ -765,10 +790,8 @@ document.addEventListener('mousemove', e => {
 
 $('termin').addEventListener('input', () => { S.set('csa-termin', $('termin').value); zeichnen(); });
 $('pa').addEventListener('input', () => { S.set('csa-pa', $('pa').value); zeichnen(); });
-$('modus').addEventListener('click', () => {
-  const hell = document.documentElement.classList.toggle('hell');
-  S.set('csa-modus', hell ? 'hell' : 'dunkel');
-});
+GSZModus.knopf($('modus'));
+$('modus').addEventListener('click', () => GSZModus.wechseln());
 $('vollbild').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.();
 });
@@ -793,8 +816,15 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) zeic
 <script src="aegl.js"></script>
 <script src="sdb-parser.js"></script>
 <script src="ocr.js"></script>
+<script src="auswertung.js"></script>
+<script src="neuigkeiten.js"></script>
 <script src="oberflaeche.js"></script>
+<script src="gefahrgut-daten.js"></script>
+<script src="gefahrgut.js"></script>
+<script src="lage.js"></script>
 <script src="einsatz.js"></script>
+<script src="einsatzbericht.js"></script>
+<script src="claude-direkt.js"></script>
 <script src="sdb-import.js"></script>
 <script src="web-start.js"></script>
 </body>
