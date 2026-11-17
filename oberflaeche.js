@@ -310,17 +310,20 @@
     '<circle cx="24" cy="24" r="18" opacity=".25"/><path d="M24 6a18 18 0 0 1 17.1 23.6"/><path d="M24 15v10l6 4"/></svg>';
   const ICON_HAUS = '<svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="none" stroke="currentColor" stroke-width="2.2" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>';
-  // Einsatz: Einsatzkraft im Chemikalienschutzanzug (Haube mit Sichtscheibe); Übungen: Atemschutz-Vollmaske (CSA-Belastungsübung)
+  // Einsatz: Blaulicht (Rundumkennleuchte mit blauer Kuppel und Lichtstrahlen); Übungen: Klemmbrett mit Abhakliste
+  // (Übungsanwesenheit) und Stoppuhr (CSA-Belastungsübung)
   const ICON_EINSATZ = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M24 3c-6.9 0-11.5 5.4-11.5 12.3V19h23v-3.7C35.5 8.4 30.9 3 24 3Z" fill="currentColor" fill-opacity=".18"/>' +
-    '<rect x="16.4" y="8.8" width="15.2" height="8.4" rx="4.2" fill="currentColor" fill-opacity=".6"/>' +
-    '<path d="M12.5 19h23l2 15h-27Z" fill="currentColor" fill-opacity=".18"/><path d="M12.8 20.6 6.5 30l3.3 4.2M35.2 20.6l6.3 9.4-3.3 4.2"/>' +
-    '<path d="M12 34 11 45h8l5-9 5 9h8l-1-11"/><path d="M24 21v9"/></svg>';
+    '<g stroke="#bcd7ff" stroke-width="2.6"><path d="M24 3.5v5M11.4 8.9l3.4 3.4M36.6 8.9l-3.4 3.4M4.5 21.5h5M38.5 21.5h5"/></g>' +
+    '<path d="M13.5 33V25a10.5 10.5 0 0 1 21 0v8Z" fill="#2f7dff" stroke="currentColor"/>' +
+    '<path d="M18.6 30.5v-5.3a5.4 5.4 0 0 1 5.4-5.4" stroke="#e3eeff" stroke-width="2.4"/>' +
+    '<rect x="9.5" y="33" width="29" height="6.6" rx="2.2" fill="currentColor" fill-opacity=".28"/>' +
+    '<path d="M7 43.5h34"/></svg>';
   const ICON_UEBUNGEN = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M24 5.5c-8.6 0-14.5 6.4-14.5 14.8C9.5 31.2 16.6 43.5 24 43.5S38.5 31.2 38.5 20.3C38.5 11.9 32.6 5.5 24 5.5Z" fill="currentColor" fill-opacity=".14"/>' +
-    '<path d="M13.8 19.2c1.4-6.8 19-6.8 20.4 0 .5 2.6-.8 5-3.2 5.8-4.4 1.6-9.6 1.6-14 0-2.4-.8-3.7-3.2-3.2-5.8Z" fill="currentColor" fill-opacity=".55"/>' +
-    '<circle cx="24" cy="33.4" r="5.2" fill="currentColor" fill-opacity=".3"/><path d="M21.6 32.1h4.8M21.6 34.7h4.8"/>' +
-    '<path d="M17 7.2 14.5 3.5M31 7.2l2.5-3.7M24 5.5V2.5"/></svg>';
+    '<rect x="6.5" y="8" width="23" height="34" rx="3.4" fill="currentColor" fill-opacity=".12"/>' +
+    '<path d="M13 10V5.6h10V10Z" fill="currentColor" fill-opacity=".45"/>' +
+    '<path d="M11 17.6l2.1 2.1 3.7-4.2M19.6 18.2h5.6M11 26.1l2.1 2.1 3.7-4.2M19.6 26.7h4.4M11 34.4h6"/>' +
+    '<circle cx="34.5" cy="33.5" r="9" style="fill:var(--surface)"/><circle cx="34.5" cy="33.5" r="9" fill="currentColor" fill-opacity=".14"/>' +
+    '<path d="M34.5 24.5v-2.8M31.7 21.7h5.6M40.8 27.2l1.6-1.6M34.5 28.8v4.7l3.1 2"/></svg>';
   const ICON_LUPE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">' +
     '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>';
   const ICON_LISTE = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +

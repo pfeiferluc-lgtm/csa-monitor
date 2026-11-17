@@ -106,16 +106,20 @@
       for (const f of jsons) {
         const ordner = re.exec(String(f.pfad).normalize('NFC'))[1], id = ordner.split(' ')[0];
         const stand = String(f.rev || f.geaendert || f.groesse || '');
-        const l = lokal.get(id);
-        if (ausgeblendet.has(id) || (l && l.geteilt && l.geteilt.stand === stand)) continue;
+        const l0 = lokal.get(id);
+        if (ausgeblendet.has(id) || (l0 && l0.geteilt && l0.geteilt.stand === stand)) continue;
         try {
           const j = JSON.parse(await (await a.datei(f.pfad)).text());
           if (!j || j.format !== 'gsz-sdb-1' || String(j.id) !== id) continue;
+          // frisch lesen: während des Abrufs kann auf diesem Gerät ein neues Ergebnis gekommen sein – die alte Kopie
+          // vom Anfang des Abgleichs darf es nicht überschreiben
+          const l = l0 ? await hole(id) : null;
           if (l) {
             let neu = false;
-            // Ergebnis eines anderen Geräts nur, wenn es nach der letzten Änderung auf diesem Gerät geteilt wurde
+            // Ergebnis eines anderen Geräts nur, wenn es anders ist und nach der letzten Änderung auf diesem Gerät geteilt wurde
             const eigen = String(l.geaendert || l.claudeZeit || l.textZeit || '');
-            if (j.claude && (!l.claude || String(j.geteiltAm || '') > eigen)) { l.claude = j.claude; l.claudeVon = j.claudeVon; l.claudeZeit = j.claudeZeit; neu = true; }
+            const anders = JSON.stringify(j.claude || null) !== JSON.stringify(l.claude || null);
+            if (j.claude && anders && (!l.claude || String(j.geteiltAm || '') > eigen)) { l.claude = j.claude; l.claudeVon = j.claudeVon; l.claudeZeit = j.claudeZeit; neu = true; }
             if (!l.ocr && j.ocr) { l.ocr = j.ocr; neu = true; }
             l.geteilt = { ...(l.geteilt || {}), ordner, stand, dateien: true };
             await speichern(l); if (neu) n++;

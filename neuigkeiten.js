@@ -5,6 +5,9 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.2.3', datum: '2026-11-17', punkte: [
+    'Neue Symbole auf der Startseite: Blaulicht für den Einsatz, Klemmbrett mit Abhakliste und Stoppuhr für die Übungen.',
+  ] },
   { version: '2.2.2', datum: '2026-11-17', punkte: [
     'Beständigkeiten: Das farbige Band an den Geräten zeigt die Bedeutung des Zeichens jetzt vollständig (z. B. „geringe oder keine Beeinträchtigung des Materials, beständig“); die Zeile wächst mit.',
   ] },
