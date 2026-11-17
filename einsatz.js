@@ -311,21 +311,21 @@
   .ez-stufe.gut { --c: var(--good); } .ez-stufe.bedingt { --c: #c48a00; } .ez-stufe.nicht { --c: var(--crit); }
   .ez-stufe.gemischt { --c: var(--ser); } .ez-stufe.unbekannt, .ez-stufe.keine, .ez-stufe.offen { --c: #6b7480; }
   .ez-geraete { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
-  .ez-geraete > li > a, .ez-geraete > li > div { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: .3rem .75rem; padding: .6rem;
-    border-radius: .65rem; background: var(--surface2); border: 1px solid var(--line); color: var(--ink); text-decoration: none;
-    position: relative; overflow: hidden; padding-right: 5.7rem; }
+  .ez-geraete > li > a, .ez-geraete > li > div { display: flex; align-items: stretch; border-radius: .65rem; background: var(--surface2); border: 1px solid var(--line);
+    color: var(--ink); text-decoration: none; position: relative; overflow: hidden; }
+  .ez-zeile-inhalt { flex: 1; min-width: 0; display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: .3rem .75rem; padding: .6rem; align-content: start; }
   /* Band rechts über die volle Höhe: grün beständig (mit Zeit bzw. Klasse), rot nicht beständig, gelb bedingt, grau ohne Angabe */
-  .ez-band { position: absolute; top: 0; right: 0; bottom: 0; width: 5rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  .ez-band { flex: none; width: 5.6rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: .2rem; padding: .35rem .3rem; box-sizing: border-box; text-align: center; color: #fff; background: #6b7480; }
   .ez-band.gut { background: var(--good); } .ez-band.nicht { background: var(--crit); } .ez-band.bedingt { background: #c48a00; } .ez-band.gemischt { background: var(--ser); }
   .ez-band b { font-size: 1.25rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   .ez-band.lang b { font-size: .95rem; }
   .ez-band small { font-size: .62rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; line-height: 1.15; opacity: .92; overflow-wrap: anywhere; }
-  .ez-band em { font-style: normal; font-size: .68rem; font-weight: 700; line-height: 1.15; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: anywhere; max-width: 100%; }
+  .ez-band em { font-style: normal; font-size: .68rem; font-weight: 700; line-height: 1.18; -webkit-hyphens: auto; hyphens: auto; overflow-wrap: break-word; max-width: 100%; }
   .ez-bild { width: 4.2rem; height: 4.2rem; border-radius: .45rem; background: var(--surface); border: 1px solid var(--line); object-fit: contain; grid-row: span 3;
     display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: .65rem; text-align: center; overflow: hidden; }
   /* Bild links über die ersten Zeilen, alles andere immer in der rechten Spalte (sonst rutschen weitere Listenzeilen unter das Bild) */
-  .ez-geraete > li > a > :not(.ez-bild):not(.ez-band), .ez-geraete > li > div > :not(.ez-bild):not(.ez-band) { grid-column: 2; min-width: 0; }
+  .ez-zeile-inhalt > :not(.ez-bild) { grid-column: 2; min-width: 0; }
   .ez-geraete .ez-bild { grid-column: 1; grid-row: 1 / span 3; background: var(--bild-bg, var(--surface)); }
   .ez-geraete b { font-weight: 600; overflow-wrap: anywhere; }
   .ez-geraete .zeile { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; font-size: .8rem; color: var(--ink2); }
@@ -539,9 +539,9 @@
   }
   @media (max-width: 360px) { .ez-suchfeld input { font-size: 17px; } .ez-suchfeld { padding-left: .6rem; } .ez-zuletzt { width: 8.6rem; } }
   @media (max-width: 380px) {
-    .ez-geraete > li > a, .ez-geraete > li > div { padding-right: 5rem; grid-template-columns: 3.6rem minmax(0, 1fr); }
+    .ez-zeile-inhalt { grid-template-columns: 3.6rem minmax(0, 1fr); gap: .3rem .6rem; }
     .ez-geraete .ez-bild { width: 3.6rem; height: 3.6rem; }
-    .ez-band { width: 4.4rem; } .ez-band b { font-size: 1.05rem; } .ez-band.lang b { font-size: .82rem; } .ez-band em { font-size: .62rem; }
+    .ez-band { width: 5rem; } .ez-band b { font-size: 1.05rem; } .ez-band.lang b { font-size: .82rem; } .ez-band em { font-size: .64rem; }
     .ez > .ez-kopf .ez-titel h1 { font-size: 1.25rem; }
   }
   @media (max-width: 380px) { .ez-ordner { gap: .5rem; } .ez-ok { padding: .75rem .65rem .7rem; } .ez-kw { gap: .4rem; } .ez-kw > div:not(.ez-ausbr) { padding: .45rem .5rem; } .ez-aegl th, .ez-aegl td { font-size: .76rem; padding: .28rem .1rem; } .ez-aegl th:first-child, .ez-aegl td:first-child { width: 3.3rem; }
@@ -1524,7 +1524,7 @@
     const zahl = w => { const m = /(\d+(?:[.,]\d+)?)/.exec(w.roh); return m ? Number(m[1].replace(',', '.')) : Infinity; };
     const w = L.art === 'permeation' ? kand.reduce((a, b) => (zahl(b) < zahl(a) ? b : a)) : kand[0];
     const zeit = L.art === 'permeation' && /\d/.test(w.roh);
-    const def = zeit ? '' : kurzDefinition(legendeText(L, w.roh));          // Bedeutung des Zeichens laut Legende
+    const def = zeit ? '' : legendeText(L, w.roh);                          // Bedeutung des Zeichens laut Legende, ausgeschrieben
     const unter = zeit ? 'min' : ids.length > 1 || L.spalten.length > 1 ? w.id : (def ? '' : B.STUFE_TEXT[e.stufe] || '');
     return band(w.roh, unter, w.roh.length > 5 ? ' lang' : '', def);
   }
@@ -1546,11 +1546,11 @@
         `${t.art === 'aehnlich' ? ' <i>(ähnlicher Name – prüfen)</i>' : ''}${t.widerspruch ? ' <i class="ez-wid-text">⚠ widerspricht einer anderen Zeile</i>' : ''}${t.verweis ? ' <i class="ez-wid-text">⚠ Verweiszeile mit eigenen Werten – Original prüfen</i>' : ''}</span></span>${werte ? `<i>${werte}</i>` : ''}${t.eintrag.hinweis ? `<i>${esc(t.eintrag.hinweis)}</i>` : ''}</div>`;
     }).join('');
     const rest = e.treffer.length > 6 ? `<div class="eintrag"><i>… und ${e.treffer.length - 6} weitere Zeilen</i></div>` : '';
-    return `<li><a href="#geraet/${kodiere(g.ordner)}${kontext ? '/' + kodiere(kontext) : ''}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}">
+    return `<li><a href="#geraet/${kodiere(g.ordner)}${kontext ? '/' + kodiere(kontext) : ''}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}"><div class="ez-zeile-inhalt">
       ${g.foto ? `<span class="ez-bild ez-bildmini${bildFuellen(bildVon(g))}" style="${bildStil(bildVon(g), false)}"><img data-foto="${esc(g.foto)}" alt=""></span>` : '<span class="ez-bild">kein Bild</span>'}
       <b>${esc(titel)}</b>
       <div class="zeile">${stufeBadge(e.stufe)}${e.nurAehnlich ? '<span class="ez-ungeprueft">nur ähnlicher Name</span>' : ''}${e.widerspruch ? '<span class="ez-wid-badge" title="Der Stoff steht mehrfach mit unterschiedlicher Bewertung in der Liste – im Original nachsehen; bis dahin gilt die ungünstigere Angabe">⚠ widersprüchlich</span>' : ''}${pruefBadge(g)}</div>
-      ${eintraege}${rest}${bandHtml(e)}</a></li>`;
+      ${eintraege}${rest}</div>${bandHtml(e)}</a></li>`;
   }
 
   // Seite des Einsatzbildschirms aufbauen: stoff (Stoffobjekt), basis (#stoff/<zvg> bzw. #sdb/<id>), teil

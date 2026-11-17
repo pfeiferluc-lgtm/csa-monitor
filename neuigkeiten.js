@@ -5,6 +5,9 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.2.2', datum: '2026-11-17', punkte: [
+    'Beständigkeiten: Das farbige Band an den Geräten zeigt die Bedeutung des Zeichens jetzt vollständig (z. B. „geringe oder keine Beeinträchtigung des Materials, beständig“); die Zeile wächst mit.',
+  ] },
   { version: '2.2.1', datum: '2026-11-17', punkte: [
     'Neue Piktogramme für die Reiter einer Stoffseite und kürzere Beschriftungen (Datenblatt, Beständigkeit, PSA, EH/Dekon, Absperren), die auch auf kleinen iPhones in höchstens zwei Zeilen passen.',
     'Die Karte liegt beim Scrollen nicht mehr über der Reiterleiste.',
