@@ -5,6 +5,11 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.2.4', datum: '2026-11-17', punkte: [
+    'Prüfung einer Beständigkeitsliste: Bei Abweichungen auf der Geräteseite je Punkt wählen, welche Angabe stimmt – „Liste stimmt“, „Original“ oder ein eigener Wert; fehlende Zeilen ergänzen oder verwerfen. Sind alle entschieden, gilt die Liste als geprüft.',
+    'Wichtige Korrektur: Bedeutet „-“ laut Legende einer Liste „unbeständig“ (Lutz-Fasspumpe), zeigt die App das jetzt rot statt grau („keine Angabe“) – betrifft 17 Stoffe der Lutz-Pumpe.',
+    'Werte mit Fußnotenzeichen (z. B. „+⁵“) werden richtig eingestuft.',
+  ] },
   { version: '2.2.3', datum: '2026-11-17', punkte: [
     'Neue Symbole auf der Startseite: Blaulicht für den Einsatz, Klemmbrett mit Abhakliste und Stoppuhr für die Übungen.',
   ] },

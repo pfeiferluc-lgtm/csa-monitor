@@ -393,6 +393,10 @@
   #ez-tafel-platz:empty { display: none; } #ez-tafel-platz { margin-top: .7rem; color: var(--ink); }
   .ez-wid-zeichen, .ez-wid-text { color: var(--warn); font-weight: 700; } :root.hell .ez-wid-zeichen, :root.hell .ez-wid-text { color: #8a6100; }
   .ez-wid-badge { font-size: .68rem; font-weight: 700; color: #1a1300; background: var(--warn); border-radius: .3rem; padding: 0 .35rem; white-space: nowrap; }
+  .ez-abw-wahl, .ez-abw-alle { display: flex; flex-wrap: wrap; gap: .35rem; margin: .35rem 0 .15rem; }
+  .ez-abw-wahl .knopf, .ez-abw-alle .knopf { font-size: .78rem; padding: .35rem .6rem; }
+  .ez-abw-wahl .knopf b { margin-left: .25rem; }
+  li.ez-abw { margin-bottom: .45rem; }
   .ez-wid { display: flex; flex-direction: column; gap: .4rem; margin: .2rem 0 .6rem; } .ez-wid .ez-zeilen { margin: 0; } .ez-wid .knopf { align-self: flex-start; }
   .ez-legende { display: flex; gap: .4rem .8rem; flex-wrap: wrap; font-size: .78rem; color: var(--ink2); margin: .4rem 0 .6rem; }
   /* Auswertung durch den Mac-Helfer: Fortschritt */
@@ -1775,15 +1779,24 @@
     const mehrTitel = [infoLang && 'Angaben zum Gerät', listeTxt && 'Liste', anmerkung && 'Hinweise der Auswertung'].filter(Boolean);
     // Prüfung auf Wunsch: Claude liest die Liste über den Mac ein zweites Mal und vergleicht jede Zeile mit dem Original
     const aw = d && d.auswertung, pr = aw && aw.pruefung, auto = aw && aw.pruefung_auto;
-    const abwListe = p => [...(p.abweichungen || []).map(a => `<li data-z="•">${a.seite ? 'S. ' + esc(a.seite) + ' · ' : ''}<b>${esc(stoffText(a.stoff))}</b>` +
-        `${a.feld ? ' · ' + esc(a.feld) : ''}: Liste „${esc(a.liste)}“ – Original „${esc(a.original)}“</li>`),
-      ...(p.fehlende_zeilen || []).map(f => `<li data-z="•">${f.seite ? 'S. ' + esc(f.seite) + ' · ' : ''}<b>${esc(stoffText(f.stoff))}</b> fehlt in der Übertragung</li>`)].join('');
+    // Abweichungen: je Punkt wählen, welche Angabe stimmt (Liste, Original oder eigener Wert); fehlende Zeilen ergänzen oder verwerfen
+    const wahlKnopf = (art, i, text, quelle) => `<button type="button" class="knopf" data-abw="${quelle}|${art}|${i}">${text}</button>`;
+    const abwListe = (p, quelle) => [...(p.abweichungen || []).map((a, i) => `<li data-z="•" class="ez-abw">${a.seite ? 'S. ' + esc(a.seite) + ' · ' : ''}<b>${esc(stoffText(a.stoff))}</b>` +
+        `${a.feld ? ' · ' + esc(a.feld) : ''}: Liste „${esc(a.liste)}“ – Original „${esc(a.original)}“` +
+        (bearbeitbar ? `<span class="ez-abw-wahl">${wahlKnopf('liste', i, `Liste stimmt <b>${esc(a.liste || 'leer')}</b>`, quelle)}${wahlKnopf('original', i, `Original <b>${esc(originalWert(a.original) || 'leer')}</b>`, quelle)}${wahlKnopf('eigen', i, 'anders …', quelle)}</span>` : '') + '</li>'),
+      ...(p.fehlende_zeilen || []).map((f, i) => `<li data-z="•" class="ez-abw">${f.seite ? 'S. ' + esc(f.seite) + ' · ' : ''}<b>${esc(stoffText(f.stoff))}</b> fehlt in der Übertragung` +
+        (bearbeitbar ? `<span class="ez-abw-wahl">${wahlKnopf('zeile', i, 'Zeile ergänzen …', quelle)}${wahlKnopf('keinfehler', i, 'kein Fehler', quelle)}</span>` : '') + '</li>')].join('');
+    const alleKnoepfe = (p, quelle) => bearbeitbar && (p.abweichungen || []).length > 1 ? `<div class="ez-abw-alle">${wahlKnopf('alle-original', -1, 'Alle: Original übernehmen', quelle)}${wahlKnopf('alle-liste', -1, 'Alle: Liste stimmt', quelle)}</div>` : '';
+    const entschiedenHtml = p => p && (p.entscheidungen || []).length ? `<details class="ez-mehr" style="margin-top:.4rem"><summary>Entschieden (${p.entscheidungen.length})</summary><div class="inhalt"><ul class="ez-zeilen">${p.entscheidungen.map(x =>
+        `<li data-z="✓">${x.seite ? 'S. ' + esc(x.seite) + ' · ' : ''}<b>${esc(stoffText(x.stoff))}</b>${x.feld ? ' · ' + esc(x.feld) : ''}: ${x.gewaehlt === 'liste' ? 'Liste stimmt' : x.gewaehlt === 'original' ? 'Original übernommen' : x.gewaehlt === 'zeile' ? 'Zeile ergänzt' : x.gewaehlt === 'keinfehler' ? 'kein Fehler' : 'eigener Wert'}` +
+        `${x.wert !== undefined && x.gewaehlt !== 'keinfehler' ? ` „${esc(x.wert)}“` : ''}${x.zeile_gefunden === false ? ' <i>(Zeile nicht eindeutig gefunden – im Original prüfen)</i>' : ''} <span class="ez-klein">${esc(datumZeit(x.am))}</span></li>`).join('')}</ul></div></details>` : '';
     const abwAnzahl = p => (p && ((p.abweichungen || []).length + (p.fehlende_zeilen || []).length)) || 0;
     const pruefHtml = !d ? '' : g.pruefAuftrag ? '<div class="ez-warn blau" id="ez-pruefung"><div class="ez-fortschritt"><div class="titel">Prüfung angefordert</div><div class="ez-klein">wird abgefragt …</div></div></div>'
-      : (!aw.geprueft && abwAnzahl(pr) ? `<div class="ez-warn rot" id="ez-pruef-abw"><b>Zweiter Lesedurchgang: ${abwAnzahl(pr) === 1 ? '1 mögliche Abweichung' : abwAnzahl(pr) + ' mögliche Abweichungen'}</b> – bitte im Original nachsehen.
-          <ul class="ez-zeilen">${abwListe(pr)}</ul></div>` : '') +
+      : (!aw.geprueft && abwAnzahl(pr) ? `<div class="ez-warn rot" id="ez-pruef-abw"><b>Zweiter Lesedurchgang: ${abwAnzahl(pr) === 1 ? '1 mögliche Abweichung' : abwAnzahl(pr) + ' mögliche Abweichungen'}</b> – bitte im Original nachsehen${bearbeitbar ? ' und je Punkt wählen, welche Angabe stimmt. Sind alle entschieden, gilt die Liste als geprüft' : ''}.
+          ${alleKnoepfe(pr, 'pruefung')}<ul class="ez-zeilen">${abwListe(pr, 'pruefung')}</ul>${entschiedenHtml(pr)}</div>` : '') +
         (aw.geprueft && abwAnzahl(auto) ? `<div class="ez-warn" id="ez-pruef-abw"><b>Zweiter Lesedurchgang (Mac-Helfer): ${abwAnzahl(auto) === 1 ? '1 mögliche Abweichung' : abwAnzahl(auto) + ' mögliche Abweichungen'}</b> – die Fassung bleibt geprüft.
-          <details class="ez-mehr"><summary>Anzeigen</summary><div class="inhalt"><ul class="ez-zeilen">${abwListe(auto)}</ul></div></details></div>` : '') +
+          <details class="ez-mehr"><summary>Anzeigen und entscheiden</summary><div class="inhalt">${alleKnoepfe(auto, 'pruefung_auto')}<ul class="ez-zeilen">${abwListe(auto, 'pruefung_auto')}</ul></div></details></div>` : '') +
+        (aw.geprueft && pr && (pr.entscheidungen || []).length && !abwAnzahl(auto) ? `<div class="ez-klein" style="margin-top:.3rem">${entschiedenHtml(pr)}</div>` : '') +
         (bearbeitbar ? `<div class="ez-pruefen-zeile"><button type="button" class="knopf${aw.geprueft ? '' : ' los'}" id="ez-pruefen">${I.schild}${aw.geprueft || pr ? 'Erneut prüfen lassen' : 'Liste prüfen lassen'}</button>
           <span class="ez-klein">${aw.geprueft ? 'Claude liest die Liste über den Mac noch einmal und vergleicht jede Zeile mit dem Original.'
             : 'Claude liest die Liste über den Mac ein zweites Mal und vergleicht jede Zeile mit dem Original. Ohne Abweichung gilt sie danach als geprüft.'}</span></div>` : '');
@@ -1825,6 +1838,13 @@
       geraetSeite(g.ordner);
     });
     if (g.pruefAuftrag && d) pruefungBeobachten(g);
+    for (const b of kopfK.querySelectorAll('[data-abw]')) b.addEventListener('click', async () => {
+      const [quelle, art, i] = b.dataset.abw.split('|');
+      for (const x of kopfK.querySelectorAll('[data-abw]')) x.disabled = true;
+      try { if (await abweichungEntscheiden(g, quelle, art, Number(i))) { geraeteCache = null; await listeHolen(true); geraetSeite(g.ordner); return; } }
+      catch (e) { meldung('Nicht gespeichert: ' + e.message, 8000); }
+      for (const x of kopfK.querySelectorAll('[data-abw]')) x.disabled = false;
+    });
     const zurListe = kopfK.querySelector('#ez-zur-liste');
     if (zurListe) zurListe.addEventListener('click', () => { const z = document.getElementById('ez-liste-karte'); if (z) z.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     if (!d && g.quellen.length) auswertungBeobachten(g);
@@ -1885,6 +1905,77 @@
     feld.addEventListener('input', () => { grenze = 150; zeilen(); });
     zeilen();
   }
+  // ---------------------------------------------------------------- Abweichungen der Prüfung entscheiden
+  // „Original“ der Prüfung ohne Erklärung in Klammern („+⁵ (mit Fußnote 5)“ → „+⁵“, „(leer)“ → leer)
+  const originalWert = t => { const x = String(t || '').trim(); return /^\(?leer\)?$/i.test(x) ? '' : x.replace(/\s*\(.*\)\s*$/, '').trim(); };
+  // Zeile zu einer Abweichung: gleiche Seite und gleicher Stoff (Schreibweise egal); nur eindeutig
+  function zeileZu(d, x) {
+    const s = B.grund(x.stoff);
+    let l = d.eintraege.filter(e => B.grund(e.stoff) === s && (!x.seite || String(e.seite) === String(x.seite)));
+    if (l.length !== 1) l = d.eintraege.filter(e => B.grund(e.stoff) === s);
+    if (l.length !== 1) l = d.eintraege.filter(e => (!x.seite || String(e.seite) === String(x.seite)) && (B.grund(e.stoff).includes(s) || s.includes(B.grund(e.stoff))));
+    return l.length === 1 ? l[0] : null;
+  }
+  // Feld setzen: Spalte (Wert und Stufe) oder Stoff, CAS, Konzentration, Temperatur, Hinweis, Seite
+  function feldSetzen(e, feld, wert, L) {
+    const f = B.grund(feld);
+    const sp = L.spalten.find(sp => sp.id === feld || B.grund(sp.id) === f || B.grund(sp.name) === f);
+    if (sp) { e.werte[sp.id] = { ...(e.werte[sp.id] || {}), roh: wert, stufe: B.stufeAus(wert, L) }; return true; }
+    const k = { stoff: 'stoff', name: 'stoff', cas: 'cas', 'cas nr': 'cas', konz: 'konz', konzentration: 'konz', temp: 'temp', temperatur: 'temp', hinweis: 'hinweis', bemerkung: 'hinweis', seite: 'seite' }[f.replace(/\s+/g, ' ')];
+    if (k) { e[k] = wert; return true; }
+    return false;
+  }
+  // quelle: 'pruefung' | 'pruefung_auto'; art: liste | original | eigen | alle-original | alle-liste | zeile | keinfehler; i: Nummer des Punkts
+  async function abweichungEntscheiden(g, quelle, art, i) {
+    const a = ad();
+    const d = B.pruefen(JSON.parse(await (await a.datei(`${BL}/${g.ordner}/${B.DATEI}`)).text()));   // frisch aus der Dropbox
+    const aw = d.auswertung, p = aw && aw[quelle];
+    if (!p) throw new Error('Prüfergebnis nicht mehr vorhanden – Seite neu laden.');
+    const L = d.liste, jetzt = new Date().toISOString(), von = /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone/iPad' : a.art === 'web' ? 'Browser' : 'Programm';
+    const entsch = p.entscheidungen || (p.entscheidungen = []);
+    const abw = p.abweichungen || [], fehl = p.fehlende_zeilen || [];
+    const entscheiden = (x, wahl, wert) => { const z = zeileZu(d, x); const geaendert = !!(z && wahl !== 'liste' && feldSetzen(z, x.feld, wert, L));
+      entsch.push({ seite: x.seite, stoff: x.stoff, feld: x.feld, liste: x.liste, original: x.original, gewaehlt: wahl, wert, zeile_gefunden: !!z, geaendert, am: jetzt, von }); };
+    if (art === 'alle-original' || art === 'alle-liste') {
+      if (!confirm(`${abw.length} Abweichungen: ${art === 'alle-original' ? 'überall den Wert aus dem Original übernehmen' : 'überall die Liste so lassen'}?`)) return false;
+      for (const x of abw) entscheiden(x, art === 'alle-original' ? 'original' : 'liste', art === 'alle-original' ? originalWert(x.original) : x.liste);
+      p.abweichungen = [];
+    } else if (art === 'zeile' || art === 'keinfehler') {
+      const f = fehl[i];
+      if (!f) throw new Error('Punkt nicht mehr vorhanden – Seite neu laden.');
+      if (art === 'zeile') {
+        const t = prompt(`„${f.stoff}“ ergänzen – Werte in dieser Reihenfolge, mit ; getrennt:\n${L.spalten.map(x => x.id).join('; ')}`, '');
+        if (t === null) return false;
+        const werte = t.split(';').map(x => x.trim());
+        const e = { stoff: f.stoff, cas: '', konz: '', temp: '', seite: f.seite || '', hinweis: 'von Hand ergänzt nach der Prüfung', werte: {} };
+        L.spalten.forEach((x, k) => { const w = werte[k] || ''; e.werte[x.id] = { roh: w, stufe: B.stufeAus(w, L) }; });
+        const nach = d.eintraege.findIndex(z => Number(z.seite) > Number(f.seite));
+        if (nach >= 0) d.eintraege.splice(nach, 0, e); else d.eintraege.push(e);
+        entsch.push({ seite: f.seite, stoff: f.stoff, feld: '', gewaehlt: 'zeile', wert: t, zeile_gefunden: true, geaendert: true, am: jetzt, von });
+      } else entsch.push({ seite: f.seite, stoff: f.stoff, feld: '', gewaehlt: 'keinfehler', zeile_gefunden: true, geaendert: false, am: jetzt, von });
+      fehl.splice(i, 1); p.fehlende_zeilen = fehl;
+    } else {
+      const x = abw[i];
+      if (!x) throw new Error('Punkt nicht mehr vorhanden – Seite neu laden.');
+      let wert = art === 'liste' ? x.liste : art === 'original' ? originalWert(x.original) : null;
+      if (art === 'eigen') { wert = prompt(`Richtiger Wert für „${x.stoff}“${x.feld ? ' · ' + x.feld : ''} (leer = keine Angabe):`, originalWert(x.original)); if (wert === null) return false; wert = wert.trim(); }
+      entscheiden(x, art, wert);
+      abw.splice(i, 1); p.abweichungen = abw;
+    }
+    // alles entschieden: geprüft – von Hand, damit spätere automatische Prüfungen sie nicht zurückstufen
+    const rest = (p.abweichungen || []).length + (p.fehlende_zeilen || []).length;
+    if (!rest && quelle === 'pruefung' && !aw.geprueft) {
+      aw.geprueft = true;
+      p.von_vorher = p.von;
+      p.von = `Abweichungen von Hand entschieden in der App (${von})`;
+      p.ergebnis = `${entsch.length} Abweichung${entsch.length === 1 ? '' : 'en'} entschieden – geprüft`;
+      p.am = jetzt;
+    }
+    await a.geraetDateien(g.ordner, [{ name: B.DATEI, blob: new Blob([JSON.stringify(d, null, 1) + '\n'], { type: 'application/json' }) }]);
+    meldung(rest ? `Gespeichert – noch ${rest} offen.` : quelle === 'pruefung' ? 'Alle Abweichungen entschieden – die Liste gilt jetzt als geprüft.' : 'Gespeichert.', 6000);
+    return true;
+  }
+
   // Karte „Für unser Gerät gilt“: Spalten der Liste antippen (Werkstoff bzw. Ausführung) → info.txt „Spalten: …“
   function spaltenwahlKarte(g) {
     const L = g.daten.liste, k = document.createElement('section');

@@ -190,12 +190,18 @@
   // Festlegung der TE (Lucas, 15.11.2026): Bei Permeationslisten gilt jede eingetragene Durchbruchzeit als beständig –
   // ob kurz oder lang. Die Zeit steht in der App immer daneben. Leer heißt „keine Angabe“.
   const OHNE_ANGABE = /^(nicht\s+(geprüft|getestet|untersucht|bekannt)|keine\s+angaben?|k\.\s?a\.?)$/i;
+  // Zeichen ohne Fußnotenzeichen: „+⁵“ → „+“, „○¹⁾“ → „○“ (die Fußnote ändert die Bewertung nicht, sie steht als Hinweis dabei)
+  const zeichenKern = roh => text(roh).replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰⁾⁽*]+/g, '').replace(/\s*\(.*\)\s*$/, '').trim();
+  // Die Legende der Liste geht vor: In der Lutz-Liste heißt „-“ „starker Angriff, unbeständig“, in der IBS-Liste „keine Angabe“
+  // (17.11.2026: vorher galt „-“ immer als „keine Angabe“ – 1352 Zellen der Lutz-Liste standen deshalb grau statt rot).
   function stufeAus(roh, kopf) {
     const r = text(roh);
-    if (!r || r === '-' || r === '–' || r === '?') return 'unbekannt';
+    if (!r) return 'unbekannt';
     if (kopf.art === 'permeation' && minutenAus(r) !== null) return 'gut';
-    const leg = (kopf.legende || []).find(l => text(l.zeichen) && text(l.zeichen) === r);
+    const kernR = zeichenKern(r);
+    const leg = (kopf.legende || []).find(l => text(l.zeichen) && text(l.zeichen) === r) || (kernR && kernR !== r && (kopf.legende || []).find(l => text(l.zeichen) && text(l.zeichen) === kernR));
     if (leg && STUFEN.includes(leg.stufe)) return leg.stufe;
+    if (r === '-' || r === '–' || r === '?') return 'unbekannt';
     if (OHNE_ANGABE.test(r)) return 'unbekannt';                  // „nicht geprüft“ ist keine Bewertung
     if (/^(nicht|ungeeignet|nein|unbeständig|x|✕|✗|×)/i.test(r)) return 'nicht';
     if (/^(bedingt|eingeschränkt|begrenzt)/i.test(r)) return 'bedingt';
@@ -247,7 +253,15 @@
     d.liste.relevant = (d.liste.relevant || []).filter(id => d.liste.spalten.some(s => s.id === id));
     d.geraet = d.geraet || {};
     d.auswertung = d.auswertung || { geprueft: false };
-    for (const e of d.eintraege) { e.werte = e.werte || {}; for (const s of d.liste.spalten) if (!e.werte[s.id]) e.werte[s.id] = { roh: '', stufe: 'unbekannt' }; }
+    for (const e of d.eintraege) {
+      e.werte = e.werte || {};
+      for (const s of d.liste.spalten) {
+        const w = e.werte[s.id];
+        if (!w) { e.werte[s.id] = { roh: '', stufe: 'unbekannt' }; continue; }
+        // als „unbekannt“ gespeichert, nach der Legende aber bewertet (z. B. „-“ = unbeständig, „+⁵“ = beständig): nachbewerten
+        if ((!w.stufe || w.stufe === 'unbekannt') && text(w.roh)) { const neu = stufeAus(w.roh, d.liste); if (neu !== 'unbekannt') w.stufe = neu; }
+      }
+    }
     return d;
   }
 
@@ -382,5 +396,5 @@
   }
 
   return { FORMAT, DATEI, PRUEF_DATEI, PRUEF_SCHEMA, PRUEF_ANWEISUNG, STUFEN, STUFE_TEXT, KATEGORIEN, BILD_WAHL, BILD_STANDARD, bildLesen, bildText, ordnerEinteilen, ordnerName, infoLesen, infoText, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
-           pruefen, gesamtStufe, grund, kern, finde, fuerStoff, widersprueche, zeilenSchluessel, verweisMitWerten };
+           pruefen, gesamtStufe, grund, kern, finde, fuerStoff, widersprueche, zeilenSchluessel, verweisMitWerten, zeichenKern };
 });
