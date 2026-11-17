@@ -17,6 +17,7 @@
   :root.gross .ez-db-suche, :root.gross .ez-formular input[type=text], :root.gross .ez-formular select, :root.gross .ez-formular textarea { font-size: 19px; }
   :root.gross .ez-leiste a { font-size: .95rem; padding: .7rem .3rem; } :root.gross .ez-leiste a svg { width: 1.75rem; height: 1.75rem; }
   .ez-kopf .gross-knopf { display: inline-flex; align-items: center; gap: .35rem; font-weight: 700; }
+  @media (max-width: 480px) { .ez-kopf .gross-knopf[aria-pressed="false"] { display: none; } }
   .ez-kopf .gross-knopf svg { width: 1.25rem; height: 1.25rem; flex: none; }
   .ez-kopf .gross-knopf[aria-pressed="true"] { background: var(--akzent); color: #fff; border-color: var(--akzent); }
   /* Finger-Zoom nur in Dokumenten (html.zoom-frei) */
@@ -73,7 +74,8 @@
   .ez-kopf img { height: 3.4rem; width: auto; aspect-ratio: 19 / 25; object-fit: cover; border-radius: .45rem; flex: none; }
   .ez-kopf .zur { flex: none; padding: .45rem .6rem; }
   .ez-titel { flex: 1; min-width: 0; }
-  .ez-titel h1 { margin: 0; font-size: 1.35rem; line-height: 1.15; overflow-wrap: anywhere; -webkit-hyphens: manual; hyphens: manual; }
+  .ez-titel h1 { margin: 0; font-size: 1.35rem; line-height: 1.15; overflow: hidden; overflow-wrap: normal; -webkit-hyphens: manual; hyphens: manual; }
+  .ez-titel h1.frei { -webkit-hyphens: auto; hyphens: auto; overflow-wrap: break-word; }
   .ez-titel div { color: var(--muted); font-size: .8rem; line-height: 1.3; overflow-wrap: anywhere; }
   .ez-karte { padding: .8rem .9rem .9rem; }
   .ez-hinweis { font-size: .85rem; color: var(--ink2); line-height: 1.4; }
@@ -338,6 +340,34 @@
     color: var(--ink2); cursor: pointer; }
   .ez-filter button.an { background: var(--akzent); border-color: var(--akzent); color: #fff; font-weight: 600; }
   .ez-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: .7rem; }
+  /* Anordnung der Geräte (Liste, Symbole, 2×2, 3×3, 4×4, Groß) – gewählt mit .ez-anordnung, gemerkt je Gerät */
+  .ez-raster-kopf { display: flex; flex-wrap: wrap; gap: .55rem .8rem; align-items: center; justify-content: space-between; margin: 0 0 .75rem; }
+  .ez-raster-kopf .ez-filter { margin: 0; flex: 1 1 13rem; }
+  .ez-anordnung { display: inline-flex; gap: .15rem; padding: .2rem; border-radius: .75rem; background: var(--surface2); border: 1px solid var(--rand); flex: none; margin-left: auto; }
+  .ez-anordnung button { min-width: 2.35rem; height: 2.2rem; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: .55rem;
+    background: transparent; color: var(--ink2); cursor: pointer; padding: 0 .35rem; font: inherit; font-size: .74rem; font-weight: 800; letter-spacing: -.02em; }
+  .ez-anordnung button svg { width: 1.15rem; height: 1.15rem; }
+  .ez-anordnung button[aria-checked="true"] { background: var(--akzent); color: #fff; }
+  .ez-raster:not(.an-auto) a.bild-gross { grid-column: auto !important; }
+  .ez-raster.an-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ez-raster.an-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; }
+  .ez-raster.an-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .45rem; }
+  .ez-raster.an-3 .unter, .ez-raster.an-4 .unter { padding: .35rem .4rem .45rem; gap: .15rem; }
+  .ez-raster.an-3 b, .ez-raster.an-4 b, .ez-raster.an-symbole b { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
+  .ez-raster.an-3 b { font-size: .78rem; -webkit-line-clamp: 3; } .ez-raster.an-3 small { font-size: .66rem; }
+  .ez-raster.an-4 b { font-size: .68rem; -webkit-line-clamp: 3; line-height: 1.15; }
+  .ez-raster.an-4 small, .ez-raster.an-4 .unter > span:last-child, .ez-raster.an-symbole small, .ez-raster.an-symbole .unter > span:last-child { display: none; }
+  .ez-raster.an-symbole { grid-template-columns: repeat(auto-fill, minmax(4.7rem, 1fr)); gap: .75rem .5rem; }
+  .ez-raster.an-symbole a { background: transparent; box-shadow: none; overflow: visible; align-items: stretch; text-align: center; }
+  .ez-raster.an-symbole .foto { aspect-ratio: 1; border-radius: 1rem; box-shadow: var(--schatten); overflow: hidden; }
+  .ez-raster.an-symbole .unter { padding: .35rem .05rem 0; align-items: center; }
+  .ez-raster.an-symbole b { font-size: .68rem; font-weight: 600; -webkit-line-clamp: 2; line-height: 1.2; }
+  .ez-raster.an-liste { grid-template-columns: 1fr; gap: .45rem; }
+  .ez-raster.an-liste a { flex-direction: row; align-items: center; }
+  .ez-raster.an-liste .foto { width: 4.4rem; flex: none; aspect-ratio: 1; align-self: stretch; }
+  .ez-raster.an-liste .unter { flex: 1; min-width: 0; padding: .5rem .75rem; }
+  .ez-raster.an-gross { grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); gap: .9rem; }
+  .ez-raster.an-gross .foto { aspect-ratio: 16 / 10; } .ez-raster.an-gross b { font-size: 1.05rem; }
   .ez-raster a { display: flex; flex-direction: column; border-radius: .7rem; background: var(--surface); box-shadow: var(--schatten); overflow: hidden;
     color: var(--ink); text-decoration: none; }
   .ez-raster .foto { aspect-ratio: 4 / 3; background: var(--bild-bg, #fff); display: flex; align-items: center; justify-content: center; color: #6b7480; font-size: .75rem; overflow: hidden; }
@@ -610,7 +640,7 @@
     h.className = 'kachel ez-kopf';
     h.innerHTML = (eltern ? `<button class="knopf zur" data-zurueck="${esc(eltern)}" title="Zurück" aria-label="Zurück">${I.zurueck}</button>` : '') +
       (logo ? (GSZ.logoOriginal ? `<img class="ez-logo" src="${GSZ.logoOriginal}" alt="">` : GSZ.logos()) : '') +
-      `<div class="ez-titel"><h1>${esc(titel)}</h1>${unter ? `<div>${unter}</div>` : ''}</div>` +
+      `<div class="ez-titel"><h1 lang="de">${trennstellen(esc(titel))}</h1>${unter ? `<div>${unter}</div>` : ''}</div>` +
       `<a class="knopf" href="${haus}" title="Hauptmenü" aria-label="Hauptmenü">${I.haus}<span class="lang">Menü</span></a>` +
       `<button class="knopf gross-knopf" type="button" aria-pressed="false" title="Handschuh-Modus: große Schrift und Knöpfe – an/aus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 21v-4.5L5 13V8.5a1.5 1.5 0 0 1 3 0V11V5.5a1.5 1.5 0 0 1 3 0V10V4.5a1.5 1.5 0 0 1 3 0V10V6a1.5 1.5 0 0 1 3 0v8.5l-2 2.2V21z"/><path d="M7.5 18.5h8"/></svg><span class="lang" data-gross-text>Handschuh</span></button>` +
       `<button class="knopf modus" title="Hell / Dunkel">◐</button><button class="knopf einst" title="Einstellungen" hidden>⚙</button>`;
@@ -619,8 +649,26 @@
     GSZ.einstellungenKnopf(h.querySelector('.einst'));
     const z = h.querySelector('[data-zurueck]');
     if (z) z.addEventListener('click', () => GSZ.zurueck(z.dataset.zurueck));
+    requestAnimationFrame(() => titelEinpassen(h));
     return h;
   }
+  // Bevorzugte Trennstellen langer Wörter (weiches Trennzeichen), damit „Beständigkeits-/listen“ statt „Beständigkeitslist/en“
+  const TRENN = [['Beständigkeitslisten', 'Beständigkeits\u00ADlisten'], ['Beständigkeiten', 'Beständig\u00ADkeiten'], ['Sicherheitsdatenblatt', 'Sicherheits\u00ADdaten\u00ADblatt'],
+    ['Stoffdatenblatt', 'Stoff\u00ADdaten\u00ADblatt'], ['Führungsunterstützung', 'Führungs\u00ADunter\u00ADstützung'], ['Einsatzberichte', 'Einsatz\u00ADberichte'],
+    ['Datenblätter', 'Daten\u00ADblätter'], ['Dokumentation', 'Dokumen\u00ADtation'], ['Schutzkleidung', 'Schutz\u00ADkleidung']];
+  const trennstellen = t => TRENN.reduce((x, [w, m]) => x.split(w).join(m), t);
+  // Titel einpassen: höchstens zwei Zeilen, ein einzelnes Wort möglichst in einer – sonst kleiner; erst ganz zuletzt freie Trennung
+  function titelEinpassen(h) {
+    const t = h && h.querySelector('.ez-titel h1');
+    if (!t || !t.isConnected || !t.clientWidth) return;
+    t.style.fontSize = ''; t.classList.remove('frei');
+    const zeilen = () => Math.round(t.scrollHeight / (parseFloat(getComputedStyle(t).lineHeight) || 1));
+    const einWort = !/\s/.test(t.textContent.trim());
+    let gr = parseFloat(getComputedStyle(t).fontSize);
+    while (gr > 14 && (t.scrollWidth > t.clientWidth + 1 || zeilen() > (einWort ? 1 : 2))) { gr -= 1; t.style.fontSize = gr + 'px'; }
+    if (t.scrollWidth > t.clientWidth + 1 || zeilen() > 2) t.classList.add('frei');
+  }
+  addEventListener('resize', () => { clearTimeout(titelEinpassen.t); titelEinpassen.t = setTimeout(() => { for (const h of document.querySelectorAll('main.aktiv .ez-kopf')) titelEinpassen(h); }, 150); });
   function ansichtElement(id) { const m = document.createElement('main'); m.id = id; m.className = 'gsz-ansicht ez'; return m; }
   const ad = () => (GSZ.adapter && GSZ.adapter.einsatz) || null;
 
@@ -1638,13 +1686,24 @@
     }
     const kats = ['Alle', ...B.KATEGORIEN.filter(c => G_.some(g => kategorie(g) === c))];
     let f = 'Alle';
+    // Anordnung: gemerkte Wahl, sonst 2×2 auf dem Handy und 4×4 auf großen Bildschirmen
+    const ANORDNUNG = [['liste', 'Liste', SVG('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/>')],
+      ['symbole', 'Symbole', SVG('<rect x="3.5" y="3.5" width="4" height="4" rx="1"/><rect x="10" y="3.5" width="4" height="4" rx="1"/><rect x="16.5" y="3.5" width="4" height="4" rx="1"/><rect x="3.5" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><rect x="16.5" y="10" width="4" height="4" rx="1"/><rect x="3.5" y="16.5" width="4" height="4" rx="1"/><rect x="10" y="16.5" width="4" height="4" rx="1"/>')],
+      ['2', '2 × 2', '2×2'], ['3', '3 × 3', '3×3'], ['4', '4 × 4', '4×4'],
+      ['gross', 'Groß', SVG('<rect x="3.5" y="4.5" width="17" height="12" rx="2"/><path d="M6 20h12"/>')]];
+    let anordnung = (() => { try { return localStorage.getItem('gsz-geraete-anordnung'); } catch { return null; } })();
+    if (!ANORDNUNG.some(a => a[0] === anordnung)) anordnung = innerWidth <= 640 ? '2' : '4';
     const zeigen = () => {
       const sicht = G_.filter(g => f === 'Alle' || kategorie(g) === f).sort((a, b) => (Number(a.nr) || 999) - (Number(b.nr) || 999) || a.name.localeCompare(b.name, 'de'));
-      k.innerHTML = neuKnopf + `<div class="ez-filter">${kats.map(c => `<button class="${c === f ? 'an' : ''}" data-k="${esc(c)}">${esc(c)}</button>`).join('')}</div>
-        <div class="ez-raster">${sicht.map(g => { const b = bildVon(g); return `<a href="#geraet/${kodiere(g.ordner)}" class="bild-${esc(b.groesse)}${bildFuellen(b)}"><div class="foto" style="${bildStil(b)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="">` : 'kein Bild'}</div>
+      k.innerHTML = neuKnopf + `<div class="ez-raster-kopf"><div class="ez-filter">${kats.map(c => `<button class="${c === f ? 'an' : ''}" data-k="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+        <div class="ez-anordnung" role="radiogroup" aria-label="Anordnung der Geräte">${ANORDNUNG.map(([id, name, sym]) =>
+          `<button type="button" role="radio" aria-checked="${id === anordnung}" data-ansicht-wahl="${id}" title="Anordnung: ${esc(name)}" aria-label="${esc(name)}">${sym}</button>`).join('')}</div></div>
+        <div class="ez-raster an-${esc(anordnung)}">${sicht.map(g => { const b = bildVon(g); return `<a href="#geraet/${kodiere(g.ordner)}" class="bild-${esc(b.groesse)}${bildFuellen(b)}" title="${esc((g.nr ? g.nr + ' · ' : '') + g.name)}"><div class="foto" style="${bildStil(b)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="">` : 'kein Bild'}</div>
           <div class="unter"><b>${esc((g.nr ? g.nr + ' · ' : '') + g.name)}</b><small>${esc(kategorie(g))} · ${g.daten ? `${g.daten.eintraege.length} Einträge` : g.quellen.length ? `<span data-auswertung="${esc(nfc(g.ordner))}">noch nicht ausgewertet</span>` : 'keine Liste'}</small>
           <span>${pruefBadge(g)}</span></div></a>`; }).join('')}</div>`;
       for (const b of k.querySelectorAll('.ez-filter button')) b.addEventListener('click', () => { f = b.dataset.k; zeigen(); });
+      for (const b of k.querySelectorAll('[data-ansicht-wahl]')) b.addEventListener('click', () => {
+        anordnung = b.dataset.ansichtWahl; try { localStorage.setItem('gsz-geraete-anordnung', anordnung); } catch { /* privat */ } zeigen(); });
       fotoEinsetzen(k);
     };
     zeigen();

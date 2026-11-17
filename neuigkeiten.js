@@ -5,6 +5,10 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.1.1', datum: '2026-11-17', punkte: [
+    'Beständigkeitslisten: Anordnung der Geräte wählbar – Liste, Symbole, 2×2, 3×3, 4×4 oder Groß (wird auf dem Gerät gemerkt).',
+    'Lange Überschriften passen sich der Breite an und werden nur an sinnvollen Stellen getrennt; am iPhone steht der Handschuh-Knopf nur im Kopf, wenn der Modus an ist (Schalter auf der Startseite und im ⚙-Menü).',
+  ] },
   { version: '2.1.0', datum: '2026-11-17', punkte: [
     'Warntafel eintippen oder fotografieren: Gefahrnummer wird erklärt (z. B. 268 = giftiges Gas, ätzend), dazu Stoffname nach ADR und Absperrabstand – auch ohne Netz.',
     'Wind vom Deutschen Wetterdienst mit Ausbreitungsrichtung und Vorhersage; Wind vor Ort lässt sich eingeben.',
