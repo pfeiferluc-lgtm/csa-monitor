@@ -5,6 +5,12 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.3.0', datum: '2026-11-18', punkte: [
+    'Ausbreitungsolive auf der Karte (Reiter „Absperren“): Keule in Zugrichtung mit dem aktuellen Wind. Knöpfe 5, 10, 15, 30 und 60 min zeigen, wie weit die Wolkenfront dann ist; „seit Austritt“ zeigt sie jetzt und läuft mit; „aus“ blendet sie aus.',
+    'Öffnungswinkel wählbar: 90°, solange Stoff und Menge unbekannt sind, sonst 60° oder 45° nach MET (Stufenmodell der vfdb-Richtlinie 10/05). Bei Windstille ein Kreis von 500 m (bis 1000 m).',
+    'Alles auf der Karte ist beschriftet: Gefahrenbereich, Absperrbereich, ERG-Erstabsperrung, ERG-Zone und die Olive mit Zeit und Länge. Weit herausgezoomt stehen die Kreise gesammelt am Unfallort.',
+    'Winddaten wählbar: DWD (Messung der nächsten Station, frei) oder Windy (Modellvorhersage genau am Standort, z. B. ICON-D2; braucht einen Windy-Schlüssel, der für alle Geräte gilt). Dazu „Windy-Karte öffnen“.',
+  ] },
   { version: '2.2.5', datum: '2026-11-17', punkte: [
     'Fußnoten der Beständigkeitslisten: Die Prüfung beachtet sie jetzt. Fehlt in der Übertragung nur ein Fußnotenzeichen („+“ statt „+⁵“), zählt das nicht mehr als Abweichung – das Zeichen wird ergänzt.',
     'Auf der Geräteseite stehen die Fußnoten der Liste im Wortlaut unter der Tabelle, an jeder betroffenen Zeile steht der Text der Fußnote (z. B. „5 · FKM: FKM in säurebeständiger Ausführung“). In den Beständigkeiten eines Stoffs erscheint er, wenn er eine Spalte des Geräts betrifft.',

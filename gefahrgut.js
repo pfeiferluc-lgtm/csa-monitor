@@ -162,6 +162,71 @@
     return b < 0 ? 12 : b;
   }
 
+  // Wind aus den Komponenten u (von West nach Ost) und v (von Süd nach Nord) in m/s → { richtung: woher in Grad, ms }
+  function windAusUV(u, v) {
+    u = Number(u); v = Number(v);
+    if (!isFinite(u) || !isFinite(v)) return { richtung: NaN, ms: NaN };
+    return { richtung: grad360(270 - Math.atan2(v, u) * 180 / Math.PI), ms: Math.hypot(u, v) };
+  }
+  // Antwort der Windy Point Forecast API (v2) → Wind jetzt (zwischen den Vorhersagezeiten über u/v gemittelt) und die nächsten
+  // Stunden. Mit Testschlüssel liefert Windy absichtlich vertauschte Daten und sagt das in „warning“ → test: true.
+  function windyAuswerten(j, jetzt = Date.now()) {
+    const ts = (j && Array.isArray(j.ts)) ? j.ts.map(Number) : [];
+    const U = (j && j['wind_u-surface']) || [], V = (j && j['wind_v-surface']) || [], G = (j && j['gust-surface']) || [];
+    const wert = (A, k) => (A[k] === null || A[k] === undefined || !isFinite(Number(A[k])) ? null : Number(A[k]));
+    if (!ts.length) throw new Error('Windy liefert keine Daten für diesen Ort.');
+    const b = ts.findIndex(t => t > jetzt);
+    let u, v, g, zeit;
+    if (b <= 0) { const k = b < 0 ? ts.length - 1 : 0; u = wert(U, k); v = wert(V, k); g = wert(G, k); zeit = ts[k]; }
+    else {
+      const a = b - 1, f = (jetzt - ts[a]) / (ts[b] - ts[a]);
+      const mix = A => { const x = wert(A, a), y = wert(A, b); return x === null || y === null ? (x ?? y) : x + (y - x) * f; };
+      u = mix(U); v = mix(V); g = mix(G); zeit = jetzt;
+    }
+    if (u === null || v === null) throw new Error('Windy liefert für diesen Ort keinen Wind.');
+    const w = windAusUV(u, v), r1 = x => Math.round(x * 10) / 10;
+    const vorhersage = ts.map((t, k) => ({ t, k })).filter(x => x.t > jetzt).slice(0, 6)
+      .map(({ t, k }) => { const x = windAusUV(wert(U, k), wert(V, k)); return { zeit: new Date(t).toISOString(), richtung: Math.round(x.richtung), kmh: r1(x.ms * 3.6) }; })
+      .filter(x => isFinite(x.richtung) && isFinite(x.kmh));
+    return { richtung: Math.round(w.richtung), kmh: r1(w.ms * 3.6), boeen: g === null ? null : r1(g * 3.6), zeit: new Date(zeit).toISOString(), vorhersage,
+      test: !!(j && j.warning), warnung: (j && j.warning) || '' };
+  }
+
+  // ------------------------------------------------------------------ Ausbreitung: Keule („Ausbreitungsolive“) in Zugrichtung
+  // Grundlage: Stufenmodell der vfdb-Richtlinie 10/05 (HLFS, Lernunterlage „Schadstoffausbreitung“). Stufe 2 legt eine Keule
+  // in Zugrichtung; solange nicht bekannt ist, welcher Stoff in welcher Menge austritt, mit 90° Öffnungswinkel (nach MET 60°
+  // bzw. 45°). Bei Windstille oder umlaufendem Wind ein Kreis von 500 m bis 1000 m um die Austrittsstelle. Die Wolkenfront
+  // zieht etwa mit der Windgeschwindigkeit: nach t Minuten höchstens v · t weit (Annahme: der Wind bleibt gleich).
+  const AUSBREITUNG = { winkel: [90, 60, 45], minuten: [5, 10, 15, 30, 60], still_kmh: 1, schwach_kmh: 3.6, still_m: 500, still_bis_m: 1000 };
+  function ausbreitung(kmh, minuten) {
+    if (kmh === null || kmh === undefined || kmh === '') return null;
+    const v = Number(kmh), t = Number(minuten);
+    if (!isFinite(v) || v < 0 || !isFinite(t) || t <= 0) return null;
+    return { still: v < AUSBREITUNG.still_kmh, schwach: v < AUSBREITUNG.schwach_kmh, laenge_m: Math.round(v / 3.6 * 60 * t) };
+  }
+  // Umriss der Olive in Polarkoordinaten um die Austrittsstelle: grad = Abweichung von der Zugrichtung, anteil = Anteil der
+  // Länge. Spitz an der Austrittsstelle (dort genau der Öffnungswinkel), vorne gerundet; beginnt und endet an der Austrittsstelle.
+  function olivenForm(winkel = 90, n = 36, rund = 0.22) {
+    const w = Math.min(170, Math.max(10, Number(winkel) || 90)), aus = [];
+    for (let i = 0; i <= n; i++) {
+      const g = -w / 2 + w * i / n, c = Math.cos(g / w * Math.PI);
+      aus.push({ grad: g, anteil: i === 0 || i === n ? 0 : Math.pow(Math.max(0, c), rund) });
+    }
+    return aus;
+  }
+  // Dreht der Wind laut Vorhersage innerhalb der nächsten Minuten um mehr als grenze Grad? → erster solcher Eintrag oder null
+  function windDreht(vorhersage, vonGrad, minuten, jetzt = Date.now(), grenze = 45) {
+    const bis = jetzt + Math.max(60, Number(minuten) || 0) * 60e3;
+    for (const v of vorhersage || []) {
+      const t = Date.parse(v.zeit);
+      if (!(t > jetzt) || t > bis || v.richtung === null || v.richtung === undefined) continue;
+      const d = Math.abs(((Number(v.richtung) - Number(vonGrad)) % 360 + 540) % 360 - 180);
+      if (d > grenze) return { ...v, um: Math.round(d) };
+    }
+    return null;
+  }
+
   return { gefahrnummer, tafelPasst, unEintraege, unSuchen, erg, absperrung, windklasse, istNacht, fwdv500, rlp, regeln, GRUNDLAGEN, warntafelText,
-    himmelsrichtung, ausbreitungsrichtung, beaufort, RICHTUNG_LANG, quellen: D.quellen || {}, hatDaten: () => !!(D.un || D.ergUn) };
+    himmelsrichtung, ausbreitungsrichtung, beaufort, RICHTUNG_LANG, windAusUV, windyAuswerten, AUSBREITUNG, ausbreitung, olivenForm, windDreht,
+    quellen: D.quellen || {}, hatDaten: () => !!(D.un || D.ergUn) };
 });
