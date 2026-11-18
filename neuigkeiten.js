@@ -5,6 +5,13 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.5.0', datum: '2026-11-18', punkte: [
+    'Neues Erscheinungsbild für das ganze Programm nach dem Vorbild verkaufter Einsatzprogramme (EinsatzTablet und EinsatzApp von Feuer Software, fireplan.pad, DIVERA 24/7, Tablet Command): rote Titelleiste auf allen Seiten, ruhige Flächen mit Kopfstreifen, Listen mit farbiger Kante, große Schaltflächen.',
+    'Startseite: Schnellzugriff als Symbolraster (Stoff suchen, Warntafel, Lagekarte, Beständigkeit, Einsatz-Doku, Unterlagen, CSA-Monitor, Anwesenheit).',
+    'Einsatz: Statusfläche wie in der EinsatzApp – „Einsatz läuft“ mit Zeitzeile (Beginn, Dauer, Einträge) und großen Knöpfen; Unterlagen als Liste.',
+    'Tablet und Computer: Einsatzseite und Stoffübersicht zweispaltig (links Suche, Einsatz und Lage, rechts Unterlagen bzw. Kennwerte).',
+    'Stoffseite: Kennwerte als Bezeichnung–Wert-Zeilen, Reiterleiste unten mit roter Markierung; CSA-Monitor und Übungen mit derselben roten Leiste.',
+  ] },
   { version: '2.4.1', datum: '2026-11-18', punkte: [
     'Windy ist wieder ausgebaut: Der Wind kommt nur noch vom DWD (Messung der nächsten Station, frei, ohne Schlüssel).',
   ] },

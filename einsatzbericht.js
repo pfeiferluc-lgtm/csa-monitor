@@ -98,15 +98,19 @@
     const k = document.getElementById('eb-start-karte');
     if (k) k.innerHTML = startKarteInhalt();
   }
+  // Statuskarte wie in den Einsatzprogrammen: Titel, Stichwort, Zeitzeile (Beginn · Dauer · Einträge), große Knöpfe
   function startKarteInhalt() {
     if (aktiv()) {
-      return `<div class="eb-start"><span><b>Einsatz läuft seit ${uhr(ein.beginn)}</b>${ein.stichwort ? ' · ' + esc(ein.stichwort) : ''}</span>
-        <span style="display:flex;gap:.45rem;flex-wrap:wrap"><a class="knopf" href="#doku">${I.blatt}Dokumentation</a></span>
-        <span class="ez-klein">${ein.tagebuch.length} Einträge · ${ein.messungen.length} Messungen · ${ein.stoffe.length} Stoffe</span></div>`;
+      const min = minuten(Date.now() - ein.beginn), h = Math.floor(min / 60);
+      return `<div class="eb-status laeuft"><div class="eb-titel">Einsatz läuft</div>${ein.stichwort ? `<div class="eb-stichwort">${esc(ein.stichwort)}${ein.ort ? ' · ' + esc(ein.ort) : ''}</div>` : ''}
+        <div class="eb-zeiten"><div><small>Einsatzbeginn</small><b>${uhr(ein.beginn)}</b><span>${datum(ein.beginn)}</span></div>
+          <div><small>Dauer</small><b>${h}:${p2(min % 60)}</b><span>Std:Min</span></div>
+          <div><small>Einträge</small><b>${ein.tagebuch.length}</b><span>${ein.messungen.length} Messung${ein.messungen.length === 1 ? '' : 'en'} · ${ein.stoffe.length} Stoff${ein.stoffe.length === 1 ? '' : 'e'}</span></div></div>
+        <div class="eb-knoepfe"><a class="knopf primaer" href="#doku">${I.blatt}Einsatztagebuch</a><a class="knopf" href="#lagekarte">Lagekarte</a></div></div>`;
     }
-    return `<div class="eb-start"><span><b>Einsatz dokumentieren</b></span>
-      <span style="display:flex;gap:.45rem;flex-wrap:wrap"><a class="knopf" href="#doku">${I.plus}Einsatz beginnen</a></span>
-      <span class="ez-klein">Tagebuch mit Uhrzeit, Messwerte, Stoffe und Wind – am Ende als Bericht (PDF) und in der Dropbox.</span></div>`;
+    return `<div class="eb-status"><div class="eb-titel">Kein laufender Einsatz</div>
+      <div class="ez-klein">Einsatz beginnen: Tagebuch mit Uhrzeit, Messwerte, Stoffe und Wind – am Ende als Bericht (PDF) und in der Dropbox.</div>
+      <div class="eb-knoepfe"><a class="knopf primaer" href="#doku">${I.plus}Einsatz beginnen</a></div></div>`;
   }
   // Karte auf der Einsatz-Seite (vor „Lage“), Chip im Kopf
   function einsatzSeiteErgaenzen() {
@@ -123,6 +127,7 @@
     chipZeigen();
   }
   addEventListener('hashchange', () => { if (/^#?einsatz$/.test(location.hash.replace(/^#/, '')) || location.hash === '#einsatz') setTimeout(einsatzSeiteErgaenzen, 0); });
+  setInterval(() => { if (aktiv() && document.getElementById('eb-start-karte') && !document.hidden) chipZeigen(); }, 30000);
 
   // ---------------------------------------------------------------- Ansicht #doku
   const dEl = E.ansichtElement('dokuansicht');

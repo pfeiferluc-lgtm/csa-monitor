@@ -321,6 +321,16 @@
   const ICON_LISTE = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<rect x="9" y="7" width="30" height="36" rx="4" opacity=".25"/><path d="M18 7h12v6H18z"/><path d="m16 25 5 5 11-11"/></svg>';
 
+  // Symbole des Schnellzugriffs (Linien, Farbe aus dem Stil)
+  const MSVG = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const MODUL = {
+    tafel: MSVG('<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 12h18"/>'),
+    karte: MSVG('<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>'),
+    schild: MSVG('<path d="M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/>'),
+    doku: MSVG('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>'),
+    ordner: MSVG('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  };
+
   // ---------------------------------------------------------------- Aufbau
   const start = document.createElement('main');
   start.id = 'startseite';
@@ -352,6 +362,17 @@
         <a class="st-kachel" href="#uebungen" id="st-uebungen" style="--c:var(--akzent)">${ICON_UEBUNGEN}<span class="pfeil">›</span>
           <b>Übungen</b><span>CSA-Monitor (Belastungsübung) und Übungsanwesenheit</span><em id="st-uebungen-info">Personaltabelle wird beim Öffnen geladen</em></a>
       </nav>
+      <section class="st-schnell" aria-label="Schnellzugriff"><h2>Schnellzugriff</h2>
+        <nav class="st-module">
+          <button type="button" class="st-modul" data-st-ziel="suche">${ICON_LUPE}Stoff suchen</button>
+          <button type="button" class="st-modul" data-st-ziel="tafel">${MODUL.tafel}Warntafel</button>
+          <a class="st-modul" href="#lagekarte">${MODUL.karte}Lagekarte</a>
+          <a class="st-modul" href="#ordner/${encodeURIComponent('Beständigkeitslisten')}">${MODUL.schild}Beständig&shy;keit</a>
+          <a class="st-modul" href="#doku">${MODUL.doku}Einsatz-Doku</a>
+          <button type="button" class="st-modul" data-st-ziel="unterlagen">${MODUL.ordner}Unterlagen</button>
+          <a class="st-modul grau" href="#monitor">${ICON_MONITOR}CSA-Monitor</a>
+          <a class="st-modul grau" href="#anwesenheit">${ICON_LISTE}Anwesen&shy;heit</a>
+        </nav></section>
       <section class="st-neu" id="st-neu" hidden aria-live="polite"></section>
       <section class="st-zuletzt" id="st-zuletzt" hidden><h2>Zuletzt geöffnet</h2><div class="st-chips" id="st-chips"></div></section>
       <div class="st-fuss">
@@ -605,6 +626,16 @@
   uhrStellen();
   setInterval(() => { if (ansicht === 'start' && !document.hidden) { uhrStellen(); lageZeichnen(); } }, 10000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && ansicht === 'start') uhrStellen(); });
+  // Schnellzugriff: Stoffsuche bzw. Warntafel auf der Einsatz-Seite öffnen, zu den Unterlagen springen
+  for (const b of start.querySelectorAll('[data-st-ziel]')) b.addEventListener('click', () => {
+    const z = b.dataset.stZiel;
+    zeige('einsatz');
+    setTimeout(() => {
+      if (z === 'suche') { const q = $('ez-q'); if (q) q.focus(); }
+      if (z === 'tafel') { const k = $('ez-tafel-knopf'); if (k && k.getAttribute('aria-pressed') !== 'true') k.click(); }
+      if (z === 'unterlagen') { const o = $('ez-ordner'); if (o) o.scrollIntoView({ block: 'start' }); }
+    }, 60);
+  });
   // Schnellsuche: wie die Suche der Einsatz-Seite (eindeutige UN-/CAS-Nr. öffnet den Stoff direkt)
   $('st-suche').addEventListener('submit', e => {
     e.preventDefault();

@@ -856,24 +856,29 @@
       <div class="ez-import-zeile"><label class="ez-import-knopf"><span class="sym">${I.blatt}</span>
         <span><b>Sicherheitsdatenblatt importieren</b><small>Foto oder PDF – Kennwerte, GHS, UN-Nr., Löschmittel und PSA</small></span><span class="pfeil">›</span>
         <input type="file" id="ez-sdb-datei" accept="image/*,application/pdf,.pdf" multiple aria-label="Sicherheitsdatenblatt importieren (Bild oder PDF)"></label></div>`;
-    eEl.appendChild(held);
+    // zwei Spalten (auf dem Tablet bzw. Computer nebeneinander, auf dem Handy untereinander): links Suche, Einsatz und Lage,
+    // rechts zuletzt geöffnet, eigene Datenblätter und Unterlagen
+    const links = document.createElement('div'), rechts = document.createElement('div');
+    links.className = 'ez-saeule ez-links'; rechts.className = 'ez-saeule ez-rechts';
+    eEl.appendChild(links); eEl.appendChild(rechts);
+    links.appendChild(held);
     // Lage: Wind vom DWD (Warntafel über den Knopf in der Suche)
-    if (window.GSZLage) eEl.insertAdjacentHTML('beforeend', GSZLage.startHtml());
+    if (window.GSZLage) links.insertAdjacentHTML('beforeend', GSZLage.startHtml());
     // zuletzt geöffnet, eigene Datenblätter, Unterlagen, Stand
     const zl = document.createElement('section');
     zl.className = 'ez-bereich'; zl.id = 'ez-letzte-bereich'; zl.hidden = true;
     zl.innerHTML = '<h2>Zuletzt geöffnet <small>auch ohne Netz</small></h2><div class="ez-letzte" id="ez-letzte"></div>';
-    eEl.appendChild(zl);
+    rechts.appendChild(zl);
     const eg = document.createElement('section');
     eg.className = 'ez-bereich'; eg.id = 'ez-eigene';
-    eEl.appendChild(eg);
+    rechts.appendChild(eg);
     const o = document.createElement('section');
     o.className = 'ez-bereich';
     o.innerHTML = '<h2>Unterlagen</h2><nav class="ez-ordner" id="ez-ordner" aria-label="Einsatz-Ordner"></nav>';
-    eEl.appendChild(o);
+    rechts.appendChild(o);
     const st = document.createElement('div');
     st.className = 'ez-status'; st.id = 'ez-status';
-    eEl.appendChild(st);
+    rechts.appendChild(st);
     // Bedienung
     const f = held.querySelector('#ez-form'), q = held.querySelector('#ez-q'), leeren = held.querySelector('#ez-leeren'), zahlen = held.querySelector('#ez-zahlen');
     const imp = held.querySelector('#ez-sdb-datei');
@@ -1596,6 +1601,7 @@
     const unter = teil ? TEILE[teil] : [stoff.formel, stoff.aggregatzustand].filter(Boolean).join(' · ');
     sEl.appendChild(kopf({ titel: nameSchoen(stoff.name) || 'Unbekannter Stoff', unter: esc(unter), eltern: teil ? basis.slice(1) : eltern }));
     const inhaltEl = document.createElement('div');
+    inhaltEl.className = 'ez-stoff-inhalt' + (teil ? '' : ' uebersicht');      // Übersicht: auf Tablet und Computer zweispaltig
     inhaltEl.style.cssText = 'display:flex;flex-direction:column;gap:.8rem';
     if (extra) inhaltEl.insertAdjacentHTML('beforeend', extra);
     if (!teil) inhaltEl.insertAdjacentHTML('beforeend', uebersichtHtml(stoff, basis));
