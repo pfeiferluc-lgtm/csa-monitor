@@ -41,6 +41,8 @@
 }
 * { box-sizing: border-box; }
 html { font-size: 15px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }   /* Größe passt ein Skript an den Bildschirm an */
+/* nicht über den Seitenrand hinaus ziehen (iPhone: kein Nachfedern, das den Hintergrund oberhalb der Kopfleiste zeigt) */
+html, body { overscroll-behavior: none; }
 body {
   margin: 0; min-height: 100vh; background: var(--page); color: var(--ink);
   padding: calc(.9rem + var(--frei-oben)) calc(1.1rem + var(--sicher-rechts)) calc(.45rem + var(--sicher-unten)) calc(1.1rem + var(--sicher-links));
@@ -381,7 +383,7 @@ body:not([data-ansicht]) > * { visibility: hidden; }
 
 <script>
 // let statt const: Das Programm CSA-Monitor setzt die Daten nach dem Einlesen der Excel-Datei neu (start.js)
-let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-18T00:10"};
+let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-18T00:39"};
 
 const KAT = {
   1: { label: 'überfällig', c: 'var(--crit)' },

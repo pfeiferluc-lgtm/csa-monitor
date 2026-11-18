@@ -5,6 +5,14 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.4.0', datum: '2026-11-18', punkte: [
+    'Sachlicheres Aussehen nach dem Vorbild professioneller Einsatzprogramme: schlichte Kopfleiste passend zu Hell und Dunkel (hell mit dem Logo in schwarzer Schrift), keine Warnstreifen und Farbverläufe mehr, ruhige Reiterleiste. Farbe steht nur noch für eine Bedeutung.',
+    'Startseite: Lagezeile mit laufendem Einsatz und aktuellem Wind; Einsatz und Übungen als schlichte Kacheln.',
+    'Neue Lagekarte (Einsatz › Lage › Lagekarte): Unfallort, Wind, Gefahrenbereich und Ausbreitungsolive schon, bevor der Stoff bekannt ist.',
+    'Karte im Vollbild: Zeit und Öffnungswinkel liegen dann unten auf der Karte, „Schließen“ oben rechts.',
+    'Beständigkeitsliste eines Geräts: die Spalten, die für unser Gerät gelten, stehen vorn gleich nach dem Stoff und sind eingerahmt; die Stoffspalte bleibt beim seitlichen Wischen stehen.',
+    'Auf dem iPhone lässt sich die Seite nicht mehr über den Rand hinausziehen.',
+  ] },
   { version: '2.3.0', datum: '2026-11-18', punkte: [
     'Ausbreitungsolive auf der Karte (Reiter „Absperren“): Keule in Zugrichtung mit dem aktuellen Wind. Knöpfe 5, 10, 15, 30 und 60 min zeigen, wie weit die Wolkenfront dann ist; „seit Austritt“ zeigt sie jetzt und läuft mit; „aus“ blendet sie aus.',
     'Öffnungswinkel wählbar: 90°, solange Stoff und Menge unbekannt sind, sonst 60° oder 45° nach MET (Stufenmodell der vfdb-Richtlinie 10/05). Bei Windstille ein Kreis von 500 m (bis 1000 m).',

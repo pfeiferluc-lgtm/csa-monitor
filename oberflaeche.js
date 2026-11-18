@@ -35,9 +35,9 @@
   .st-kacheln { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; width: min(46rem, 100%); }
   .st-kachel { display: flex; flex-direction: column; gap: .45rem; padding: 1.3rem 1.3rem 1.15rem; border-radius: var(--rund);
     background: var(--surface); box-shadow: var(--schatten); color: var(--ink); text-decoration: none; position: relative;
-    border-top: .3rem solid var(--c); transition: transform .12s ease, box-shadow .12s ease; -webkit-tap-highlight-color: transparent; }
-  .st-kachel:hover { transform: translateY(-2px); }
-  .st-kachel:active { transform: translateY(0); }
+    border-top: .3rem solid var(--c); transition: background-color .12s ease; -webkit-tap-highlight-color: transparent; }
+  .st-kachel:hover { background: color-mix(in srgb, var(--c) 5%, var(--surface)); }
+  .st-kachel:active { background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
   .st-kachel:focus-visible { outline: 3px solid var(--akzent); outline-offset: 2px; }
   .st-kachel svg { width: 2.6rem; height: 2.6rem; color: var(--c); }
   .st-kachel > b { font-size: 1.35rem; }
@@ -49,56 +49,48 @@
   .st-kachel em .gut { color: var(--good); font-weight: 600; }
   .st-kachel .pfeil { position: absolute; right: 1.1rem; top: 1.1rem; font-size: 1.4rem; color: var(--muted); }
 
-  /* Hauptmenü: dunkler Kopf wie eine Fahrzeugfront (in Hell und Dunkel gleich, daher das Original-Logo), Uhrzeit, Schnellsuche,
-     rot-weiße Warnmarkierung als Abschluss; darunter Einsatz (rot) und Übungen, zuletzt geöffnete Stoffe */
+  /* Hauptmenü: schlichte Kopfleiste (folgt Hell/Dunkel, hell mit dem Logo in schwarzer Schrift), Uhrzeit und Schnellsuche;
+     darunter Einsatz und Übungen, zuletzt geöffnete Stoffe. Farbe nur mit Bedeutung: rot Einsatz, blau Bedienung. */
   #startseite { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
-  body[data-ansicht="start"] #statusband { background: #0f141b; }
-  .st-held { position: relative; overflow: hidden; color: #fff; isolation: isolate;
-    background: radial-gradient(110% 130% at 100% 0%, rgba(214, 41, 48, .38) 0%, rgba(214, 41, 48, 0) 58%),
-                linear-gradient(165deg, #141a23 0%, #0b0e13 75%);
-    padding: calc(1.5rem + var(--frei-oben)) calc(1.25rem + var(--sicher-rechts)) 1.45rem calc(1.25rem + var(--sicher-links)); }
-  .st-held::before { content: ""; position: absolute; z-index: -1; right: -4.5rem; top: 50%; width: 17rem; height: 17rem; border-radius: 2rem;
-    border: 2.4rem solid rgba(255, 255, 255, .04); transform: translateY(-50%) rotate(45deg); pointer-events: none; }
-  .st-held-innen { width: min(60rem, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+  body[data-ansicht="start"] #statusband { background: var(--kopf); }
+  .st-held { background: var(--kopf); color: var(--ink); border-bottom: 1px solid var(--line);
+    padding: calc(1rem + var(--frei-oben)) calc(1.25rem + var(--sicher-rechts)) 1.1rem calc(1.25rem + var(--sicher-links)); }
+  .st-held-innen { width: min(60rem, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
   .st-kopfzeile { display: flex; align-items: center; gap: 1rem; }
-  .st-marke { display: flex; align-items: center; gap: 1rem; min-width: 0; flex: 1; }
-  .st-logo { width: 4.8rem; height: 4.8rem; flex: none; border-radius: 1.05rem; overflow: hidden;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 10px 26px rgba(0, 0, 0, .5); }
-  .st-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .st-name { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
-  .st-ueber { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: rgba(255, 255, 255, .6); }
-  #startseite h1 { margin: 0; font-size: 2.3rem; line-height: 1.02; font-weight: 800; letter-spacing: -.005em; color: #fff; }
-  .st-te { font-size: 1.05rem; font-weight: 600; color: rgba(255, 255, 255, .84); }
+  .st-marke { display: flex; align-items: center; gap: .85rem; min-width: 0; flex: 1; }
+  .st-logo { height: 3.6rem; flex: none; display: flex; align-items: center; }
+  .st-logo img { height: 100%; width: auto; aspect-ratio: 19 / 25; object-fit: cover; border-radius: .5rem; display: block; }
+  .st-name { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+  .st-ueber { font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+  #startseite h1 { margin: 0; font-size: 1.8rem; line-height: 1.05; font-weight: 800; color: var(--ink); }
+  .st-te { font-size: .95rem; font-weight: 600; color: var(--ink2); }
   .st-uhr { display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; flex: none; }
-  .st-uhr b { font-size: 2rem; font-weight: 800; line-height: 1; letter-spacing: .01em; }
-  .st-uhr span { font-size: .78rem; color: rgba(255, 255, 255, .66); margin-top: .25rem; }
-  .st-suche { display: flex; align-items: center; gap: .55rem; background: #fff; border-radius: .95rem; padding: .35rem .35rem .35rem .9rem;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, .38); }
-  .st-suche:focus-within { box-shadow: 0 0 0 3px rgba(229, 72, 77, .55), 0 12px 32px rgba(0, 0, 0, .38); }
-  .st-suche svg { width: 1.25rem; height: 1.25rem; color: #687482; flex: none; }
-  .st-suche input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 17px; color: #0e1318;
+  .st-uhr b { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+  .st-uhr span { font-size: .76rem; color: var(--muted); margin-top: .25rem; }
+  .st-suche { display: flex; align-items: center; gap: .55rem; background: var(--surface); border: 1px solid var(--rand); border-radius: .75rem;
+    padding: .3rem .3rem .3rem .85rem; }
+  .st-suche:focus-within { border-color: var(--akzent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--akzent) 25%, transparent); }
+  .st-suche svg { width: 1.2rem; height: 1.2rem; color: var(--muted); flex: none; }
+  .st-suche input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 17px; color: var(--ink);
     padding: .62rem 0; margin: 0; -webkit-appearance: none; appearance: none; }
-  .st-suche input::placeholder { color: #7b8794; }
+  .st-suche input::placeholder { color: var(--muted); }
   .st-suche input::-webkit-search-cancel-button { display: none; }
-  .st-suche button { font: inherit; font-size: .95rem; font-weight: 700; color: #fff; background: #d42a30; border: 0; border-radius: .7rem;
-    padding: .72rem 1.05rem; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
-  .st-suche button:active { background: #b31f25; }
-  .st-streifen { height: .55rem; flex: none; background: repeating-linear-gradient(-45deg, #d42a30 0 .85rem, #f2f2f2 .85rem 1.7rem); }
-  .st-inhalt { width: min(60rem, 100%); margin: 0 auto; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; gap: 1.3rem;
-    padding: 1.4rem calc(1.25rem + var(--sicher-rechts)) calc(1.1rem + var(--sicher-unten)) calc(1.25rem + var(--sicher-links)); }
-  #startseite .st-kacheln { width: 100%; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1rem; }
-  #startseite .st-kachel { padding: 1.5rem 1.35rem 1.3rem; min-height: 11.5rem; border-top: 0; border-radius: 1rem; }
-  #startseite .st-kachel svg { width: 3.6rem; height: 3.6rem; }
-  #startseite .st-kachel > b { font-size: 1.65rem; letter-spacing: -.005em; }
-  #startseite .st-kachel:not(.st-haupt) { border-left: .35rem solid var(--c); }
-  .st-kachel.st-haupt { color: #fff; background: linear-gradient(140deg, #b8161e 0%, #df3b41 62%, #ea5a3d 100%);
-    box-shadow: 0 14px 30px rgba(190, 24, 32, .32), inset 0 1px 0 rgba(255, 255, 255, .18); }
-  .st-kachel.st-haupt svg, .st-kachel.st-haupt > b { color: #fff; }
-  .st-kachel.st-haupt > span { color: rgba(255, 255, 255, .9); }
-  .st-kachel.st-haupt .pfeil { color: rgba(255, 255, 255, .85); }
-  .st-kachel.st-haupt em { background: rgba(0, 0, 0, .16); border-color: rgba(255, 255, 255, .28); color: #fff; }
-  .st-kachel.st-haupt em .warn { color: #ffe2a8; }
-  .st-kachel.st-haupt em .gut { color: #d6ffe4; }
+  .st-suche button { font: inherit; font-size: .95rem; font-weight: 700; color: #fff; background: var(--akzent); border: 0; border-radius: .55rem;
+    padding: .68rem 1.05rem; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+  .st-suche button:active { filter: brightness(.9); }
+  /* Lage auf einen Blick: laufender Einsatz, Wind (zuletzt abgerufen), Grundlage der Bereiche */
+  .st-lage { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .st-lage[hidden] { display: none; }
+  .st-lage a, .st-lage span { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; font-weight: 600; color: var(--ink2); text-decoration: none;
+    background: var(--surface2); border: 1px solid var(--line); border-radius: .5rem; padding: .32rem .6rem; }
+  .st-lage .laeuft { background: var(--crit); border-color: var(--crit); color: #fff; }
+  .st-lage svg { width: 1rem; height: 1rem; flex: none; color: var(--akzent); }
+  .st-inhalt { width: min(60rem, 100%); margin: 0 auto; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; gap: 1.2rem;
+    padding: 1.2rem calc(1.25rem + var(--sicher-rechts)) calc(1.1rem + var(--sicher-unten)) calc(1.25rem + var(--sicher-links)); }
+  #startseite .st-kacheln { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; }
+  #startseite .st-kachel { padding: 1.2rem 1.2rem 1.1rem; min-height: 10rem; border-top: 0; border-left: .3rem solid var(--c); border-radius: .75rem; }
+  #startseite .st-kachel svg { width: 2.8rem; height: 2.8rem; }
+  #startseite .st-kachel > b { font-size: 1.45rem; }
   #st-einsatz-info:empty { display: none; }
   /* Was ist neu */
   .st-neu { position: relative; background: var(--surface); box-shadow: var(--schatten); border-radius: 1rem; padding: .85rem 2.6rem .85rem 1rem; border-left: 4px solid var(--akzent); }
@@ -219,14 +211,14 @@
     #startseite .st-kachel > b { font-size: 1.45rem; }
     .ue-kopf h1 { font-size: 1.55rem; }
     #uebungen { justify-content: flex-start; gap: 1.3rem; }
-    .st-held { padding: calc(1.1rem + var(--frei-oben)) calc(1rem + var(--sicher-rechts)) 1.15rem calc(1rem + var(--sicher-links)); }
-    .st-held-innen { gap: 1rem; }
-    .st-kopfzeile { flex-direction: column-reverse; align-items: stretch; gap: .6rem; }
+    .st-held { padding: calc(.85rem + var(--frei-oben)) calc(1rem + var(--sicher-rechts)) 1rem calc(1rem + var(--sicher-links)); }
+    .st-held-innen { gap: .85rem; }
+    .st-kopfzeile { flex-direction: column-reverse; align-items: stretch; gap: .55rem; }
     .st-uhr { flex-direction: row; align-items: baseline; justify-content: flex-end; gap: .45rem; }
     .st-uhr b { font-size: 1.05rem; } .st-uhr span { margin-top: 0; }
-    .st-logo { width: 3.9rem; height: 3.9rem; border-radius: .9rem; }
-    .st-marke { gap: .8rem; }
-    #startseite h1 { font-size: 1.85rem; }
+    .st-logo { height: 3.5rem; }
+    .st-marke { gap: .75rem; }
+    #startseite h1 { font-size: 1.65rem; }
     .st-te { font-size: .95rem; }
     .st-ueber { font-size: .66rem; letter-spacing: .12em; } .st-bks { display: none; }
     .st-inhalt { padding: 1.1rem calc(.9rem + var(--sicher-rechts)) calc(1rem + var(--sicher-unten)) calc(.9rem + var(--sicher-links)); gap: 1.1rem; }
@@ -249,8 +241,8 @@
     .aw-leiste { gap: .1rem .7rem; padding-left: calc(.75rem + var(--sicher-links)); padding-right: calc(.75rem + var(--sicher-rechts)); }
   }
   @media (max-width: 380px) {
-    .st-logo { width: 3.3rem; height: 3.3rem; }
-    #startseite h1 { font-size: 1.6rem; }
+    .st-logo { height: 3.2rem; }
+    #startseite h1 { font-size: 1.5rem; }
     .st-suche { padding-left: .7rem; } .st-suche svg { display: none; }
     .st-suche button { padding: .7rem .75rem; font-size: .9rem; }
   }
@@ -339,7 +331,7 @@
       <div class="st-held-innen">
         <div class="st-kopfzeile">
           <div class="st-marke">
-            ${logoOriginal ? `<div class="st-logo"><img src="${logoOriginal}" alt="Logo Gefahrstoffzug Rhein-Lahn-Kreis"></div>` : ''}
+            ${logoDunkel || logoHell ? `<div class="st-logo" role="img" aria-label="Logo Gefahrstoffzug Rhein-Lahn-Kreis">${logos()}</div>` : ''}
             <div class="st-name"><span class="st-ueber"><span class="st-bks">Brand- und Katastrophenschutz · </span>Rhein-Lahn-Kreis</span>
               <h1>Gefahrstoffzug</h1><div class="st-te">Teileinheit Miehlen</div></div>
           </div>
@@ -350,9 +342,9 @@
             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
           <button type="submit">Suchen</button>
         </form>
+        <div class="st-lage" id="st-lage" hidden></div>
       </div>
     </header>
-    <div class="st-streifen" aria-hidden="true"></div>
     <div class="st-inhalt">
       <nav class="st-kacheln gross" aria-label="Hauptmenü">
         <a class="st-kachel st-haupt" href="#einsatz" id="st-einsatz" style="--c:var(--crit)">${ICON_EINSATZ}<span class="pfeil">›</span>
@@ -563,8 +555,31 @@
   $('st-alle-neu').addEventListener('click', ev => { ev.preventDefault(); alleNeuigkeiten(); });
   setTimeout(() => grossKnopf($('st-handschuh')), 0);
 
+  // Lagezeile: laufender Einsatz (Einsatz-Dokumentation), Wind (zuletzt abgerufen, ≤ 1 h) bzw. vor Ort bestimmt (≤ 6 h)
+  function lageZeichnen() {
+    const el = $('st-lage');
+    if (!el) return;
+    const lies = k => { try { return JSON.parse(SP.get(k) || 'null'); } catch { return null; } };
+    const GG = window.GSZGefahrgut, teile = [];
+    const ein = lies('gsz-einsatz-aktiv');
+    if (ein && ein.beginn && !ein.ende) {
+      const d = new Date(ein.beginn), min = Math.max(0, Math.round((Date.now() - ein.beginn) / 60000));
+      teile.push(`<a class="laeuft" href="#doku">Einsatz läuft seit ${p2(d.getHours())}:${p2(d.getMinutes())} (${min} min)${ein.stichwort ? ' · ' + esc(ein.stichwort) : ''}</a>`);
+    }
+    const man = lies('gsz-wind-manuell'), w = lies('gsz-wind');
+    const von = man && Date.now() - man.zeit < 6 * 3600e3 ? man.richtung : w && Date.now() - (w.abgerufen || 0) < 3600e3 ? w.richtung : null;
+    if (von !== null && von !== undefined && GG) {
+      const r = GG.himmelsrichtung(von), zug = GG.himmelsrichtung(GG.ausbreitungsrichtung(von));
+      const pfeil = `<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(${Math.round(GG.ausbreitungsrichtung(von))} 12 12)"><path d="M12 20V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`;
+      const kmh = !(man && Date.now() - man.zeit < 6 * 3600e3) && w && w.kmh !== null && w.kmh !== undefined ? ` · ${Math.round(w.kmh)} km/h` : '';
+      teile.push(`<a href="#lagekarte">${pfeil}Wind aus ${esc(GG.RICHTUNG_LANG[r] || r)}${kmh} → ${esc(zug)}</a>`);
+    }
+    el.innerHTML = teile.join('');
+    el.hidden = !teile.length;
+  }
   function hauptmenueZeichnen() {
     uhrStellen();
+    lageZeichnen();
     zuletztZeichnen();
     neuZeichnen();
     const w = SP.get('gsz-start') || '';
@@ -588,7 +603,7 @@
     $('st-datum').textContent = `${innerWidth <= 640 ? TAGE[d.getDay()] : WOCHENTAG[d.getDay()]}, ${p2(d.getDate())}.${p2(d.getMonth() + 1)}.${d.getFullYear()}`;
   }
   uhrStellen();
-  setInterval(() => { if (ansicht === 'start' && !document.hidden) uhrStellen(); }, 10000);
+  setInterval(() => { if (ansicht === 'start' && !document.hidden) { uhrStellen(); lageZeichnen(); } }, 10000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && ansicht === 'start') uhrStellen(); });
   // Schnellsuche: wie die Suche der Einsatz-Seite (eindeutige UN-/CAS-Nr. öffnet den Stoff direkt)
   $('st-suche').addEventListener('submit', e => {

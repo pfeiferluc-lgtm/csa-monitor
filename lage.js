@@ -92,6 +92,23 @@
   .lg-karte-rahmen { position: relative; z-index: 0; isolation: isolate; margin: .2rem 0 .5rem; }
   .lg-karte { height: min(62vh, 26rem); border-radius: .8rem; overflow: hidden; background: #dfe3e8; border: 1px solid var(--rand); }
   .lg-karte-rahmen.gross .lg-karte { height: calc(100vh - 9rem); }
+  /* Vollbild: Karte über den ganzen Bildschirm, Zeit- und Winkelwahl unten auf der Karte, Schließen oben links */
+  .lg-karte-rahmen.voll { position: fixed; inset: 0; z-index: 3000; margin: 0; background: var(--page); }
+  .lg-karte-rahmen.voll .lg-karte { height: 100%; border-radius: 0; border: 0; }
+  body.lg-voll { overflow: hidden; } body.lg-voll .ez-leiste { display: none; }
+  .lg-voll-auf, .lg-voll-zu { position: absolute; z-index: 600; font: inherit; font-size: .82rem; font-weight: 700; border: 0; border-radius: .55rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: .35rem; padding: .5rem .7rem; min-height: 2.4rem; background: rgba(10, 12, 15, .82); color: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+  .lg-voll-auf svg, .lg-voll-zu svg { width: 1.05rem; height: 1.05rem; }
+  .lg-voll-auf { right: .5rem; bottom: 1.9rem; }
+  .lg-voll-zu { display: none; right: calc(.6rem + var(--sicher-rechts)); top: calc(.6rem + var(--sicher-oben)); }
+  .lg-karte-rahmen.voll .lg-voll-zu { display: inline-flex; } .lg-karte-rahmen.voll .lg-voll-auf { display: none; }
+  .lg-karte-rahmen.voll .lg-karte-wind { top: calc(3.6rem + var(--sicher-oben)); right: calc(.6rem + var(--sicher-rechts)); }
+  .lg-karte-rahmen.voll .leaflet-top.leaflet-left { top: var(--sicher-oben); left: var(--sicher-links); }
+  .lg-karte-rahmen.voll .lg-ausb { position: absolute; z-index: 600; margin: 0; left: calc(.5rem + var(--sicher-links)); right: calc(.5rem + var(--sicher-rechts));
+    bottom: calc(1.9rem + var(--sicher-unten)); padding: .55rem .65rem; border-radius: .8rem; background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, .35); max-height: 45vh; overflow: auto; }
+  .lg-karte-rahmen.voll .lg-ausb [data-lg-ausb-info] { display: none; }
+  .ez-bereich > h2 .lg-zur-karte { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: .85rem; color: var(--ink); }
   .lg-karte-wind { position: absolute; top: .5rem; right: .5rem; z-index: 500; pointer-events: none; background: rgba(10, 12, 15, .78); color: #fff; border-radius: .6rem;
     padding: .3rem .55rem; font-size: .75rem; font-weight: 700; display: flex; align-items: center; gap: .35rem; max-width: 70%; }
   .lg-karte-wind svg { width: 1.1rem; height: 1.1rem; color: #ffd27a; flex: none; }
@@ -176,6 +193,9 @@
     kamera: SVGA('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
     tafel: SVGA('<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 12h18"/>'),
     pfeil: SVGA('<path d="M12 21V4M5 11l7-7 7 7"/>'),
+    karte: SVGA('<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>'),
+    voll: SVGA('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>'),
+    zu: SVGA('<path d="M6 6l12 12M18 6 6 18"/>'),
   };
   // Pfeil in Zugrichtung (0° = nach Norden/oben)
   const zugPfeil = grad => `<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(${Math.round(grad)} 12 12)"><path d="M12 20V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`;
@@ -552,11 +572,14 @@
     return `<section class="kachel ez-karte"><h2>Wind</h2><div data-lg-wind></div></section>
       <section class="kachel ez-karte"><h2>Absperren${un ? ' · UN ' + esc(un) : ''}</h2>
         <div class="lg-karte-rahmen" data-lg-karte-rahmen><div class="lg-karte" data-lg-karte data-abs="${ab.gefahr_m || ''}" data-absperr="${ab.absperr_m || ''}" data-erg="${ab.erg_m || ''}" data-schutz="${ab.schutz_km || ''}" data-zone="${ab.zone_m || ''}"></div>
-          <div class="lg-karte-wind" data-lg-karte-wind hidden></div></div>
+          <div class="lg-karte-wind" data-lg-karte-wind hidden></div>
+          <button type="button" class="lg-voll-auf" data-lg-k="voll" aria-label="Karte im Vollbild">${ICON.voll}Vollbild</button>
+          <button type="button" class="lg-voll-zu" data-lg-k="voll" aria-label="Vollbild beenden">${ICON.zu}Schließen</button></div>
         ${ausbHtml()}
         <div class="lg-legende"><span><i style="--c:#8e4ec6"></i>Ausbreitung (Keule)</span><span><i style="--c:#e5484d"></i>Gefahrenbereich</span>${ab.absperr_m ? '<span><i style="--c:#26a95b"></i>Absperrbereich</span>' : ''}${ab.erg_m && ab.erg_m > (ab.gefahr_m || 0) ? '<span><i style="--c:#f0794a"></i>ERG: sofort absperren</span>' : ''}${ab.schutz_km || ab.zone_m ? '<span><i style="--c:#f2b01e"></i>ERG: Zone in Windrichtung</span>' : ''}<span><i style="--c:#4c8df0"></i>mein Standort</span></div>
         <div class="lg-karte-knoepfe"><button type="button" class="knopf" data-lg-k="mitte">Unfallort = Kartenmitte</button><button type="button" class="knopf" data-lg-k="ich">Unfallort = mein Standort</button>
-          <button type="button" class="knopf" data-lg-k="ganz">Alles zeigen</button><button type="button" class="knopf" data-lg-k="gross">Karte groß</button></div>
+          <button type="button" class="knopf" data-lg-k="ganz">Alles zeigen</button><button type="button" class="knopf" data-lg-k="gross">Karte groß</button>
+          <button type="button" class="knopf" data-lg-k="voll">${ICON.voll}Vollbild</button></div>
         <div class="lg-klein" data-lg-k-info></div>
         <div data-lg-skizze hidden data-abs="${ab.gefahr_m || ''}" data-absperr="${ab.absperr_m || ''}" data-schutz="${ab.schutz_km || ''}" data-zone="${ab.zone_m || ''}"></div>${ab.html}</section>`;
   }
@@ -638,9 +661,22 @@
       if (w === 'ganz') k.zentrieren();
       if (w === 'gross') { rahmen.classList.toggle('gross'); b.textContent = rahmen.classList.contains('gross') ? 'Karte klein' : 'Karte groß';
         setTimeout(() => { k.groesse(); k.zentrieren(); }, 60); }
+      if (w === 'voll') vollbild(el, k, !rahmen.classList.contains('voll'));
     });
     return k;
   }
+  // Vollbild an/aus: Karte über den ganzen Bildschirm; die Zeit- und Winkelwahl wandert auf die Karte (und zurück)
+  function vollbild(el, k, an) {
+    const rahmen = el.querySelector('[data-lg-karte-rahmen]'), ausb = el.querySelector('[data-lg-ausb]');
+    if (!rahmen) return;
+    rahmen.classList.toggle('voll', an);
+    document.body.classList.toggle('lg-voll', an);
+    if (ausb) { if (an) rahmen.appendChild(ausb); else rahmen.after(ausb); }
+    vollbild.aktiv = an ? () => vollbild(el, k, false) : null;
+    setTimeout(() => { if (k) { k.groesse(); k.zentrieren(); } }, 60);
+  }
+  addEventListener('keydown', e => { if (e.key === 'Escape' && vollbild.aktiv) vollbild.aktiv(); });
+  addEventListener('hashchange', () => { if (vollbild.aktiv) { document.body.classList.remove('lg-voll'); vollbild.aktiv = null; } });
 
   // Ereignisse einer Seite anbinden (Wind laden, Skizze bzw. Karte nach Windrichtung zeichnen)
   function beleben(el) {
@@ -697,7 +733,7 @@
 
   // ---------------------------------------------------------------- Einsatz-Start: Wind und Warntafel
   function startHtml() {
-    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind ${windQuelle() === 'windy' ? 'von Windy' : 'vom DWD'}, Warntafel</small></h2>
+    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind ${windQuelle() === 'windy' ? 'von Windy' : 'vom DWD'}</small><a class="knopf lg-zur-karte" href="#lagekarte">${ICON.karte}Lagekarte</a></h2>
       <div class="kachel ez-karte"><div data-lg-wind></div></div></section>`;
   }
 

@@ -28,50 +28,22 @@
     padding: calc(.7rem + var(--frei-oben)) var(--rand-r) calc(1.4rem + var(--sicher-unten)) var(--rand-l); }
   /* Inhalt höchstens 62rem breit und mittig; der dunkle Kopf (auf der Einsatz-Seite samt Suche) läuft über die volle Breite */
   .ez > :not(.ez-kopf):not(.ez-leiste) { width: 100%; max-width: 62rem; margin-left: auto; margin-right: auto; box-sizing: border-box; }
-  body:not([data-ansicht="uebungen"]):not([data-ansicht="anwesenheit"]):not([data-ansicht="monitor"]) #statusband { background: #10151c; }
+  body:not([data-ansicht="uebungen"]):not([data-ansicht="anwesenheit"]):not([data-ansicht="monitor"]) #statusband { background: var(--kopf); }
   .ez.mit-leiste { padding-bottom: calc(var(--leiste-h, calc(5.6rem + var(--sicher-unten))) + 1.2rem); }
   .ez .knopf { font-size: .95rem; padding: .45rem .75rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: .35rem; }
   .ez .knopf svg { width: 1.1em; height: 1.1em; flex: none; }
   .ez h2 { margin: 0 0 .55rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink2); }
   .ez-kopf { display: flex; align-items: center; gap: .7rem; padding: .3rem .7rem .3rem .45rem; }
-  /* Kopf aller Einsatz-Seiten wie das Hauptmenü: dunkel (in Hell und Dunkel gleich, daher das Original-Logo), über die volle Breite,
-     unten die rot-weiße Warnmarkierung */
-  .ez > .ez-kopf { position: relative; isolation: isolate; overflow: hidden; color: #fff; border-radius: 0 !important; box-shadow: none; gap: .75rem;
-    margin: calc(-.7rem - var(--frei-oben)) calc(-1 * var(--rand-r)) .15rem calc(-1 * var(--rand-l));
-    padding: calc(.85rem + var(--frei-oben)) max(var(--rand-r), calc((100% - 62rem) / 2 + var(--rand-r))) 1.3rem max(var(--rand-l), calc((100% - 62rem) / 2 + var(--rand-l)));
-    background: radial-gradient(90% 190% at 100% 0%, rgba(214, 41, 48, .34) 0%, rgba(214, 41, 48, 0) 60%), linear-gradient(165deg, #141a23 0%, #0b0e13 82%); }
-  .ez > .ez-kopf::before { content: ""; position: absolute; z-index: -1; right: -2.6rem; top: 50%; width: 9.5rem; height: 9.5rem; border-radius: 1.3rem;
-    border: 1.5rem solid rgba(255, 255, 255, .04); transform: translateY(-50%) rotate(45deg); pointer-events: none; }
-  .ez > .ez-kopf::after, #einsatz > .ez-held::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: .45rem;
-    background: repeating-linear-gradient(-45deg, #d42a30 0 .85rem, #f2f2f2 .85rem 1.7rem); }
-  .ez > .ez-kopf .ez-titel h1 { color: #fff; font-size: 1.45rem; font-weight: 800; letter-spacing: -.005em; }
-  .ez > .ez-kopf .ez-titel div { color: rgba(255, 255, 255, .7); }
-  .ez > .ez-kopf .knopf { background: rgba(255, 255, 255, .08) !important; border: 1px solid rgba(255, 255, 255, .2) !important; color: #fff !important; box-shadow: none !important; }
-  .ez > .ez-kopf .knopf:hover { background: rgba(255, 255, 255, .15) !important; }
-  .ez > .ez-kopf img.ez-logo { height: 3.3rem; width: 3.3rem; aspect-ratio: 1; object-fit: cover; border-radius: .8rem; flex: none;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, .15), 0 6px 18px rgba(0, 0, 0, .45); }
-  /* Einsatz-Seite: Stoffsuche im dunklen Kopf (wie die Schnellsuche im Hauptmenü), Warnmarkierung erst darunter */
-  #einsatz > .ez-kopf.mit-suche { padding-bottom: .4rem; }
-  #einsatz > .ez-kopf.mit-suche::after { display: none; }
-  #einsatz > .ez-held { position: relative; isolation: isolate; width: auto; max-width: none; color: #fff; border-radius: 0; box-shadow: none; background: #0b0e13;
-    margin: -.85rem calc(-1 * var(--rand-r)) .15rem calc(-1 * var(--rand-l));      /* leicht überlappend: keine Haarlinie zum Kopf */
-    padding: .6rem max(var(--rand-r), calc((100% - 62rem) / 2 + var(--rand-r))) 1.5rem max(var(--rand-l), calc((100% - 62rem) / 2 + var(--rand-l))); }
-  #einsatz > .ez-held .ez-held-kopf b { color: #fff; }
-  #einsatz > .ez-held .ez-held-kopf small { color: #fff; border-color: rgba(255, 255, 255, .35); }
-  #einsatz > .ez-held .ez-suchfeld { background: #fff; border: 0; box-shadow: 0 12px 32px rgba(0, 0, 0, .38); }
-  #einsatz > .ez-held .ez-suchfeld:focus-within { box-shadow: 0 0 0 3px rgba(229, 72, 77, .55), 0 12px 32px rgba(0, 0, 0, .38); }
-  #einsatz > .ez-held .ez-suchfeld input { color: #0e1318; }
-  #einsatz > .ez-held .ez-suchfeld input::placeholder { color: #7b8794; }
-  #einsatz > .ez-held .ez-suchfeld .lupe { color: #687482; }
-  #einsatz > .ez-held .ez-leeren { background: rgba(14, 19, 24, .1); color: #3c4753; }
-  #einsatz > .ez-held .ez-los { background: #d42a30; }
-  #einsatz > .ez-held .ez-un { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .22); color: #fff; }
-  #einsatz > .ez-held .ez-un[aria-pressed="true"] { background: #d42a30; border-color: #d42a30; }
-  #einsatz > .ez-held .ez-art { color: rgba(255, 255, 255, .7); }
-  #einsatz > .ez-held .ez-art b { color: #7ee2a8; }
-  #einsatz > .ez-held .ez-leer { color: rgba(255, 255, 255, .72); }
-  #einsatz > .ez-held .ez-import-zeile { border-top-color: rgba(255, 255, 255, .16); }
-  .ez-kopf img { height: 3.4rem; width: auto; aspect-ratio: 19 / 25; object-fit: cover; border-radius: .45rem; flex: none; }
+  /* Kopfleiste aller Einsatz-Seiten: schlicht, folgt Hell/Dunkel (hell mit dem Logo in schwarzer Schrift), über die volle Breite */
+  .ez > .ez-kopf { position: relative; color: var(--ink); border-radius: 0 !important; box-shadow: none; gap: .7rem; background: var(--kopf);
+    border-bottom: 1px solid var(--line);
+    margin: calc(-.7rem - var(--frei-oben)) calc(-1 * var(--rand-r)) .1rem calc(-1 * var(--rand-l));
+    padding: calc(.6rem + var(--frei-oben)) max(var(--rand-r), calc((100% - 62rem) / 2 + var(--rand-r))) .6rem max(var(--rand-l), calc((100% - 62rem) / 2 + var(--rand-l))); }
+  .ez > .ez-kopf .ez-titel h1 { font-size: 1.4rem; font-weight: 800; }
+  .ez > .ez-kopf .ez-titel div { color: var(--muted); }
+  /* Einsatz-Seite: Stoffsuche als erste Karte */
+  #einsatz > .ez-held { margin-top: .2rem; }
+  .ez-kopf img { height: 3.1rem; width: auto; aspect-ratio: 19 / 25; object-fit: cover; border-radius: .45rem; flex: none; }
   .ez-kopf .zur { flex: none; padding: .45rem .6rem; }
   .ez-titel { flex: 1; min-width: 0; }
   .ez-titel h1 { margin: 0; font-size: 1.35rem; line-height: 1.15; overflow: hidden; overflow-wrap: normal; -webkit-hyphens: manual; hyphens: manual; }
@@ -85,14 +57,13 @@
   .ez-warn.blau { border-left-color: var(--akzent); background: color-mix(in srgb, var(--akzent) 12%, var(--surface)); }
   .ez-warn .knopf { margin-top: .5rem; margin-right: .4rem; }
   /* Einsatz-Seite: Suche */
-  .ez-held { border-radius: 1.1rem; padding: 1rem 1rem 1.05rem; box-shadow: var(--schatten);
-    background: radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--akzent) 20%, transparent) 0%, transparent 62%), var(--surface); }
+  .ez-held { border-radius: var(--rund); padding: .9rem .95rem 1rem; box-shadow: var(--schatten); background: var(--surface); }
   .ez-held-kopf { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin: 0 .1rem .75rem; }
   .ez-held-kopf b { font-size: 1.2rem; letter-spacing: .01em; }
   .ez-held-kopf small { font-size: .68rem; font-weight: 800; letter-spacing: .08em; color: var(--akzent); border: 1px solid color-mix(in srgb, var(--akzent) 55%, transparent);
     border-radius: 1rem; padding: .15rem .55rem; }
-  .ez-suchfeld { display: flex; align-items: center; gap: .3rem; min-height: 3.7rem; padding: .3rem .3rem .3rem .85rem; border-radius: .95rem;
-    border: 2px solid var(--eingabe-rand); background: var(--eingabe); transition: border-color .15s, box-shadow .15s; }
+  .ez-suchfeld { display: flex; align-items: center; gap: .3rem; min-height: 3.5rem; padding: .3rem .3rem .3rem .85rem; border-radius: .75rem;
+    border: 1px solid var(--rand); background: var(--surface2); transition: border-color .15s, box-shadow .15s; }
   .ez-suchfeld:focus-within { border-color: var(--akzent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--akzent) 25%, transparent); }
   .ez-suchfeld .lupe { color: var(--muted); display: flex; flex: none; } .ez-suchfeld .lupe svg { width: 1.35rem; height: 1.35rem; }
   .ez-suchfeld input { flex: 1; min-width: 0; font: inherit; font-size: 20px; font-weight: 600; border: 0; background: transparent; color: var(--ink);
@@ -270,18 +241,18 @@
   .ez-unwahl button { font: inherit; font-size: .8rem; padding: .3rem .6rem; border-radius: 1rem; border: 1px solid var(--rand); background: var(--surface2);
     color: var(--ink2); cursor: pointer; }
   .ez-unwahl button.an { background: var(--akzent); border-color: var(--akzent); color: #fff; font-weight: 600; }
-  .ez-leiste { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); box-shadow: 0 -4px 16px rgba(0,0,0,.25);
-    border-top: 1px solid var(--rand); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .45rem;
+  .ez-leiste { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--kopf); box-shadow: 0 -1px 8px rgba(0,0,0,.12);
+    border-top: 1px solid var(--line); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .3rem;
     padding: .55rem max(calc(.7rem + var(--sicher-rechts)), calc((100vw - 62rem) / 2 + .7rem)) calc(.55rem + var(--sicher-unten))
       max(calc(.7rem + var(--sicher-links)), calc((100vw - 62rem) / 2 + .7rem)); }
   .ez-leiste a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; padding: .45rem .3rem; border-radius: .6rem; text-decoration: none;
-    color: var(--ink); background: var(--surface2); border: 1px solid var(--rand); font-weight: 700; font-size: .88rem; text-align: center; line-height: 1.15; min-width: 0; }
+    color: var(--ink2); background: transparent; border: 1px solid transparent; font-weight: 700; font-size: .88rem; text-align: center; line-height: 1.15; min-width: 0; }
   .ez-leiste a span { max-width: 100%; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
     font-size: clamp(.62rem, 2.75vw, .84rem); line-height: 1.12; overflow-wrap: normal; word-break: normal; -webkit-hyphens: manual; hyphens: manual; }
-  .ez-leiste a svg { width: 1.55rem; height: 1.55rem; color: var(--akzent); stroke-width: 1.9; flex: none; }
+  .ez-leiste a svg { width: 1.55rem; height: 1.55rem; color: var(--muted); stroke-width: 1.9; flex: none; }
   :root.gross .ez-leiste a span { font-size: clamp(.72rem, 3.2vw, .98rem); }
-  .ez-leiste a.an { background: var(--akzent); border-color: var(--akzent); color: #fff; }
-  .ez-leiste a.an svg { color: #fff; }
+  .ez-leiste a.an { background: color-mix(in srgb, var(--akzent) 13%, transparent); border-color: color-mix(in srgb, var(--akzent) 35%, transparent); color: var(--akzent); }
+  .ez-leiste a.an svg { color: var(--akzent); }
   .ez-quelle { font-size: .75rem; color: var(--muted); line-height: 1.4; }
   /* Erste Hilfe und Dekontamination */
   .ez-eh + .ez-eh { margin-top: .85rem; padding-top: .75rem; border-top: 1px solid var(--line); }
@@ -387,6 +358,16 @@
   .ez-tabelle td.nicht { background: var(--crit-t); color: var(--crit); }
   :root.hell .ez-tabelle td.bedingt { color: #8a6100; }
   .ez-tabelle td.w.rel { outline: 2px solid var(--akzent); outline-offset: -2px; }
+  .ez-tabelle th.rel { color: var(--akzent); background: color-mix(in srgb, var(--akzent) 14%, var(--kopf)); }
+  /* Gerätetabelle: die Spalten unseres Geräts stehen vorn und sind als Gruppe eingerahmt (statt jede Zelle einzeln) */
+  .ez-liste-tab td.w.rel { outline: none; }
+  .ez-liste-tab td.rel:not(.gut):not(.bedingt):not(.nicht) { background: color-mix(in srgb, var(--akzent) 6%, transparent); }
+  .ez-liste-tab .rel-a { border-left: 2px solid var(--akzent); } .ez-liste-tab .rel-e { border-right: 2px solid var(--akzent); }
+  .ez-liste-tab td.stoff .ez-fn-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .ez-liste-tab th.stoff, .ez-liste-tab td.stoff { position: sticky; left: 0; z-index: 1; background: var(--surface); min-width: 8.5rem; max-width: 13rem;
+    box-shadow: 1px 0 0 var(--line); }
+  .ez-liste-tab th.stoff { z-index: 3; background: var(--kopf); }
+  .ez-liste-tab tr.wid > td.stoff { box-shadow: inset 4px 0 0 var(--warn), 1px 0 0 var(--line); }
   .ez-tabelle tr.wid > td:first-child { box-shadow: inset 4px 0 0 var(--warn); }
   .ez-gefahrnr { font-size: .86rem; line-height: 1.35; color: var(--ink2); } .ez-gefahrnr b { color: var(--ink); margin-right: .25rem; }
   .ez-gefahrnr .x { display: block; color: var(--crit); font-weight: 700; }
@@ -415,7 +396,7 @@
   @keyframes ez-drehen { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .ez-fortschritt .titel svg.dreht { animation: none; } }
   .ez-fortschritt .balken { height: .75rem; border-radius: .5rem; background: var(--surface2); border: 1px solid var(--line); overflow: hidden; position: relative; }
-  .ez-fortschritt .balken i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, var(--akzent), color-mix(in srgb, var(--akzent) 65%, #fff)); transition: width .8s ease; }
+  .ez-fortschritt .balken i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--akzent); transition: width .8s ease; }
   .ez-fortschritt .balken.unbestimmt i { width: 32%; animation: ez-laufen 1.5s ease-in-out infinite; }
   @keyframes ez-laufen { 0% { left: -32%; } 100% { left: 100%; } }
   @media (prefers-reduced-motion: reduce) { .ez-fortschritt .balken.unbestimmt i { animation: none; left: 0; width: 100%; opacity: .45; } }
@@ -662,7 +643,7 @@
     const h = document.createElement('header');
     h.className = 'kachel ez-kopf';
     h.innerHTML = (eltern ? `<button class="knopf zur" data-zurueck="${esc(eltern)}" title="Zurück" aria-label="Zurück">${I.zurueck}</button>` : '') +
-      (logo ? (GSZ.logoOriginal ? `<img class="ez-logo" src="${GSZ.logoOriginal}" alt="">` : GSZ.logos()) : '') +
+      (logo ? GSZ.logos('ez-logo') : '') +
       `<div class="ez-titel"><h1 lang="de">${trennstellen(esc(titel))}</h1>${unter ? `<div>${unter}</div>` : ''}</div>` +
       `<a class="knopf" href="${haus}" title="Hauptmenü" aria-label="Hauptmenü">${I.haus}<span class="lang">Menü</span></a>` +
       `<button class="knopf gross-knopf" type="button" aria-pressed="false" title="Handschuh-Modus: große Schrift und Knöpfe – an/aus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 21v-4.5L5 13V8.5a1.5 1.5 0 0 1 3 0V11V5.5a1.5 1.5 0 0 1 3 0V10V4.5a1.5 1.5 0 0 1 3 0V10V6a1.5 1.5 0 0 1 3 0v8.5l-2 2.2V21z"/><path d="M7.5 18.5h8"/></svg><span class="lang" data-gross-text>Handschuh</span></button>` +
@@ -1114,6 +1095,20 @@
       if (adapter.einsatz && adapter.einsatz.abruf) G.setzeAbruf(adapter.einsatz.abruf);
       if (adapter.einsatz && adapter.einsatz.beiAenderung) adapter.einsatz.beiAenderung(() => listeHolen(false));
       setTimeout(() => listeHolen(false), 300);
+    },
+  });
+
+  // ---------------------------------------------------------------- Lagekarte ohne Stoff: Unfallort, Wind, Gefahrenbereich und Ausbreitung
+  // (Stufe 1 und 2 des Stufenmodells, bevor der Stoff bekannt ist; mit Stoff gibt es dieselbe Karte im Reiter „Absperren“)
+  const lkEl = ansichtElement('lagekarteansicht');
+  GSZ.ansicht('lagekarte', {
+    element: lkEl, titel: () => 'Lagekarte',
+    anzeigen() {
+      lkEl.innerHTML = '';
+      lkEl.appendChild(kopf({ titel: 'Lagekarte', unter: 'Unfallort, Wind, Bereiche und Ausbreitung', eltern: 'einsatz' }));
+      if (!window.GSZLage) { lkEl.insertAdjacentHTML('beforeend', '<div class="ez-leer">Nicht verfügbar.</div>'); return; }
+      lkEl.insertAdjacentHTML('beforeend', GSZLage.stoffTeilHtml(null));
+      GSZLage.beleben(lkEl);
     },
   });
 
@@ -1921,18 +1916,21 @@
     const FN_HINWEIS = /^(Fußnote\s*(\d+|\*)\s*[:.)–-]|\(?[¹²³⁴⁵⁶⁷⁸⁹⁰]+\)?\s)|\(Fußnote\s*\d+\)\.?$/i;
     const hinweiseOhneFn = fnListe.length ? L.hinweise.filter(h => !FN_HINWEIS.test(String(h).trim())) : L.hinweise;
     const alleIds = sp.map(s => s.id);
+    // Spalten, die für unser Gerät gelten, stehen vorn (gleich nach dem Stoff), die übrigen hinten
+    const spRel = sp.filter(s => L.relevant.includes(s.id)), spRest = sp.filter(s => !L.relevant.includes(s.id));
     t.innerHTML = `<h2>Geordnete Beständigkeitsliste (${d.eintraege.length} Einträge)</h2>${widHtml}
       <input type="search" class="ez-db-suche" placeholder="Stoff oder CAS-Nr. suchen" aria-label="In der Liste suchen">
       <div class="ez-legende">${L.legende.map(l => `<span>${stufeBadge(l.stufe, l.zeichen || '–')} ${esc(l.text)}</span>`).join('')}
         ${L.art === 'permeation' ? '<span>Durchbruchzeiten in Minuten: Jede eingetragene Zeit gilt als beständig, ob kurz oder lang – die Zeit steht dabei.</span>' : ''}
-        ${L.relevant.length ? `<span>Für das Gerät gelten: <b>${esc(L.relevant.join(', '))}</b> (umrandet)</span>` : ''}
+        ${L.relevant.length ? `<span>Für das Gerät gelten: <b>${esc(L.relevant.join(', '))}</b> (vorn, umrandet)</span>` : ''}
         ${fnListe.length ? '<span>Hochgestellte Zahl (z. B. „+⁵“) = Fußnote der Liste: Text an der Zeile und unter der Tabelle</span>' : ''}</div>
-      <div class="ez-tabelle-rahmen"><table class="ez-tabelle"><thead><tr><th>Stoff</th><th>CAS</th><th>Konz./Temp.</th>${sp.map(s => `<th title="${esc(s.name)}">${esc(s.id)}</th>`).join('')}<th>Gerät</th><th>S.</th></tr></thead>
+      <div class="ez-tabelle-rahmen"><table class="ez-tabelle ez-liste-tab"><thead><tr><th class="stoff">Stoff</th>${spRel.map((s, i) => `<th class="rel${i === 0 ? ' rel-a' : ''}${i === spRel.length - 1 ? ' rel-e' : ''}" title="${esc(s.name)} – gilt für unser Gerät">${esc(s.id)}</th>`).join('')}<th>CAS</th><th>Konz./Temp.</th>${spRest.map(s => `<th title="${esc(s.name)}">${esc(s.id)}</th>`).join('')}<th>Gerät</th><th>S.</th></tr></thead>
       <tbody></tbody></table></div><div class="ez-klein" id="ez-mehr" style="margin-top:.5rem"></div>
       ${fnListe.length ? `<div class="ez-fussnoten" id="ez-fussnoten"><b>Fußnoten der Liste</b><ul>${fnListe.map(([z, x]) => `<li>${fnNr(z)}${esc(x)}</li>`).join('')}</ul></div>` : ''}
       ${hinweiseOhneFn.length ? `<details style="margin-top:.6rem"><summary class="ez-klein" style="cursor:pointer">Hinweise der Liste</summary><ul class="ez-zeilen" style="margin-top:.4rem">${hinweiseOhneFn.map(h => `<li data-z="•">${esc(h)}</li>`).join('')}</ul></details>` : ''}`;
     gEl.appendChild(t);
     const tb = t.querySelector('tbody'), feld = t.querySelector('.ez-db-suche'), mehr = t.querySelector('#ez-mehr');
+    // (spRel/spRest stehen oben bei der Tabelle)
     let grenze = 150, nurWid = false;
     const widKnopf = t.querySelector('#ez-wid-filter');
     if (widKnopf) widKnopf.addEventListener('click', () => { nurWid = !nurWid; widKnopf.setAttribute('aria-pressed', String(nurWid));
@@ -1946,10 +1944,13 @@
       const treffer = (nurStoff ? d.eintraege.filter(e => sfTreffer.has(e)) : d.eintraege.filter(e => !q || B.grund(e.stoff).includes(q) || (e.cas && e.cas.includes(roh))))
         .filter(e => !nurWid || widSet.has(e));
       tb.innerHTML = treffer.slice(0, grenze).map(e => { const ges = B.gesamtStufe(e, L), fns = fnListe.length ? zeilenFussnoten(L, e, alleIds) : [];
-        return `<tr${widSet.has(e) ? ' class="wid" title="steht mehrfach mit unterschiedlicher Bewertung in der Liste"' : ''}><td>${widSet.has(e) ? '<span class="ez-wid-zeichen" aria-label="widersprüchlich">⚠</span> ' : ''}${esc(stoffText(e.stoff))}${fnTextHtml(fns)}${e.hinweis ? `<br><span class="ez-klein">${esc(e.hinweis)}</span>` : ''}</td><td>${esc(e.cas)}</td><td>${esc([e.konz, e.temp].filter(Boolean).map(x => S.wertSchoen(x)).join(' · '))}</td>
-        ${sp.map(s => { const w = e.werte[s.id] || { roh: '', stufe: 'unbekannt' };
+        const zelle = (s, i, liste) => { const w = e.werte[s.id] || { roh: '', stufe: 'unbekannt' };
+          const rand = liste === spRel ? `${i === 0 ? ' rel-a' : ''}${i === spRel.length - 1 ? ' rel-e' : ''}` : '';
           const titel = w.roh ? [legendeText(L, w.roh), ...fussnotenZu(L, w.roh).map(f => `Fußnote ${fnZeichen(f.z)}: ${f.text || 'im Original nachsehen'}`)].filter(Boolean).join(' – ') : '';
-          return `<td class="w ${w.roh ? esc(w.stufe) : ''}${L.relevant.includes(s.id) ? ' rel' : ''}"${titel ? ` title="${esc(s.id + ': ' + titel)}"` : ''}>${esc(w.roh)}</td>`; }).join('')}
+          return `<td class="w ${w.roh ? esc(w.stufe) : ''}${L.relevant.includes(s.id) ? ' rel' : ''}${rand}"${titel ? ` title="${esc(s.id + ': ' + titel)}"` : ''}>${esc(w.roh)}</td>`; };
+        return `<tr${widSet.has(e) ? ' class="wid" title="steht mehrfach mit unterschiedlicher Bewertung in der Liste"' : ''}><td class="stoff">${widSet.has(e) ? '<span class="ez-wid-zeichen" aria-label="widersprüchlich">⚠</span> ' : ''}${esc(stoffText(e.stoff))}${fnTextHtml(fns)}${e.hinweis ? `<br><span class="ez-klein">${esc(e.hinweis)}</span>` : ''}</td>
+        ${spRel.map((x, i) => zelle(x, i, spRel)).join('')}<td>${esc(e.cas)}</td><td>${esc([e.konz, e.temp].filter(Boolean).map(x => S.wertSchoen(x)).join(' · '))}</td>
+        ${spRest.map((x, i) => zelle(x, i, spRest)).join('')}
         <td class="w ${esc(ges)}">${esc(ges === 'unbekannt' ? '–' : ges === 'gut' ? '✓' : ges === 'nicht' ? '✕' : ges === 'bedingt' ? '△' : '±')}</td><td>${esc(e.seite)}</td></tr>`; }).join('');
       mehr.innerHTML = nurStoff ? `${treffer.length === 1 ? '1 Eintrag passt' : treffer.length + ' Einträge passen'} zu „${esc(sf.anzeige)}“ (über CAS-Nr. bzw. Namen) · <a href="#" id="ez-ganz">ganze Liste zeigen</a>`
         : sf && !sfTreffer.size && roh === sf.anzeige ? `„${esc(sf.anzeige)}“ steht nicht in dieser Liste · <a href="#" id="ez-ganz">ganze Liste zeigen</a>`
