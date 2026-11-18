@@ -1,4 +1,4 @@
-// Lage im Einsatz: Wind (Deutscher Wetterdienst über Bright Sky oder Windy – wählbar), Standort, Bereiche nach dem
+// Lage im Einsatz: Wind (Deutscher Wetterdienst über Bright Sky), Standort, Bereiche nach dem
 // Gefahrstoffkonzept RLP (Grundlage) bzw. der FwDV 500 (nur nach Freigabe, zentral umschaltbar mit Freigabe-PIN), ergänzt um
 // Anhaltswerte des ERG 2024, Karte mit Ausbreitungsolive (Keule in Zugrichtung, Zeit wählbar) bzw. Skizze; dazu die Warntafel
 // (eintippen oder fotografieren). Läuft im Browser; Wissen und Daten aus gefahrgut.js.
@@ -133,10 +133,7 @@
   .lg-seg button { font: inherit; font-size: .8rem; font-weight: 700; padding: .42rem .6rem; min-height: 2.2rem; border-radius: .55rem; border: 1px solid var(--rand);
     background: var(--surface2); color: var(--ink); cursor: pointer; }
   .lg-seg button[aria-checked="true"] { background: #8e4ec6; border-color: #8e4ec6; color: #fff; }
-  .lg-seg.quelle button[aria-checked="true"] { background: var(--akzent); border-color: var(--akzent); }
-  .lg-quelle-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .7rem; margin-top: .55rem; font-size: .78rem; }
-  .lg-quelle-zeile a { color: var(--akzent); }
-  .lg-wind-hinweis { margin-top: .45rem; font-size: .8rem; }
+
   .lg-legende i { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; margin-right: .3rem; vertical-align: -.1rem; border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 25%, transparent); }
   .gk-unfall span { display: block; width: 30px; height: 30px; border-radius: 50%; background: #e5484d; border: 3px solid #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, .55); box-sizing: border-box; }
   .gk-unfall span::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #fff; }
@@ -241,7 +238,7 @@
   }
   const ortText = o => !o || o.standard ? 'Miehlen (Standard – Standort nicht verfügbar)' : `${o.name || 'wird ermittelt …'}${o.gps ? ` (GPS${o.genau ? ' ±' + o.genau + ' m' : ''})` : ''}`;
 
-  // ---------------------------------------------------------------- Wind: DWD (Bright Sky – frei, ohne Schlüssel) oder Windy
+  // ---------------------------------------------------------------- Wind: DWD (Bright Sky – frei, ohne Schlüssel)
   async function json(url) {
     let r;
     try { r = await fetch(url, { headers: { Accept: 'application/json' } }); }
@@ -277,91 +274,16 @@
         .map(x => ({ zeit: x.timestamp, richtung: x.wind_direction, kmh: x.wind_speed })) : [],
     };
   }
-  // Windy (Point Forecast API, api.windy.com): Modellvorhersage genau am Standort – nur mit Schlüssel. Kostenlos gibt es nur
-  // einen Testschlüssel, dessen Daten Windy absichtlich vertauscht (Antwort mit „warning“); dann gilt weiter der DWD.
-  // Modelle für Deutschland: ICON-D2 (DWD, 2 km), sonst ICON-EU, sonst GFS.
-  const WINDY_URL = 'https://api.windy.com/api/point-forecast/v2';
-  const WINDY_MODELLE = [['iconD2', 'ICON-D2 (DWD)'], ['iconEu', 'ICON-EU (DWD)'], ['gfs', 'GFS (NOAA)']];
-  function antwortLesen(status, text) {
-    if (status === 204) return null;                                     // Modell hat für den Ort keine Daten
-    let j = null; try { j = JSON.parse(text || 'null'); } catch { j = null; }
-    if (status >= 200 && status < 300) return j;
-    const m = String((j && (j.message || j.error)) || 'Antwort ' + status);
-    const e = new Error(/key/i.test(m) ? 'Windy-Schlüssel ungültig' : 'Windy: ' + m);
-    if (/key/i.test(m)) e.schluessel = true;
-    throw e;
-  }
-  async function jsonPost(url, daten) {
-    const body = JSON.stringify(daten);
-    let r;
-    try { r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body }); }
-    catch (e) {
-      // Programm (Electron): notfalls über den Hauptprozess
-      if (window.csa && window.csa.wetter) { const x = await window.csa.wetter(url, { method: 'POST', body }); return antwortLesen(x.status, x.text); }
-      throw e;
-    }
-    return antwortLesen(r.status, await r.text());
-  }
-  async function windyAbrufen(ort, schluessel) {
-    let letzter = null;
-    for (const [model, name] of WINDY_MODELLE) {
-      try {
-        const j = await jsonPost(WINDY_URL, { lat: ort.lat, lon: ort.lon, model, parameters: ['wind', 'windGust'], levels: ['surface'], key: schluessel });
-        if (!j) continue;
-        const w = GG.windyAuswerten(j, Date.now());
-        return { ...w, art: 'windy', modell: model, modellName: name, quelle: 'Windy, Modell ' + name, abgerufen: Date.now(), ort, station: null, temperatur: null };
-      } catch (e) { letzter = e; if (e.schluessel) throw e; }
-    }
-    throw letzter || new Error('Windy liefert für diesen Ort keine Daten.');
-  }
-  // Quelle je Gerät wählbar; der Windy-Schlüssel gilt für alle Geräte (Einsatz/_App/Wetter/wetter.json = { windy, geaendert })
-  const WETTER_PFAD = '_App/Wetter/wetter.json';
-  const windQuelle = () => (LS.get('gsz-wind-quelle') === 'windy' ? 'windy' : 'dwd');
-  const windySchluessel = () => { const w = LS.get('gsz-wetter'); return w && w.windy ? String(w.windy) : ''; };
-  async function wetterEinstLaden() {
-    const E = einsatz(), a = E && E.ad && E.ad();
-    if (!a || !a.verbunden || !a.verbunden() || !a.datei) return;
-    if (!(E.dateien || []).some(d => !d.ordner && String(d.pfad).normalize('NFC') === WETTER_PFAD)) { if ((E.dateien || []).length && !(LS.get('gsz-wetter') || {}).lokal) LS.set('gsz-wetter', null); return; }
-    // es gilt der neuere Stand – eben hier geändert, kennt die Liste der Dropbox evtl. noch die alte Datei
-    try { const j = JSON.parse(await (await a.datei(WETTER_PFAD)).text()), l = LS.get('gsz-wetter') || {};
-      if (j && typeof j === 'object' && (!l.geaendert || !j.geaendert || String(j.geaendert) >= String(l.geaendert))) LS.set('gsz-wetter', j); } catch { /* gemerkter Stand */ }
-  }
-  async function windyEinrichten() {
-    const alt = windySchluessel();
-    if (!alt && !confirm('Windy gibt seine Wetterdaten nur mit einem Schlüssel der „Point Forecast API“ heraus (api.windy.com).\n\n' +
-      'Kostenlos gibt es nur einen Testschlüssel – damit liefert Windy absichtlich vertauschte Werte, für den Einsatz ungeeignet (die App bleibt dann beim DWD). ' +
-      'Echte Daten gibt es mit „Windy Professional“ (laut Windy 990 € im Jahr).\n\nSchlüssel jetzt eingeben? Er gilt für alle Geräte.')) return false;
-    const k = prompt(alt ? 'Windy-Schlüssel ändern (leer = entfernen):' : 'Schlüssel der Windy Point Forecast API:', alt);
-    if (k === null) return false;
-    const E = einsatz(), a = E && E.ad && E.ad();
-    if (!a || !a.ablegen || !a.verbunden()) { melde('Dafür braucht die App die Verbindung zum Dropbox-App-Ordner.', 6000); return false; }
-    const neu = { windy: k.trim(), geaendert: new Date().toISOString(), lokal: true };
-    try { await a.ablegen('_App', 'Wetter', [{ name: 'wetter.json', blob: new Blob([JSON.stringify({ windy: neu.windy, geaendert: neu.geaendert }, null, 1)], { type: 'application/json' }) }]); }
-    catch (e) { melde('Nicht gespeichert: ' + e.message, 7000); return false; }
-    LS.set('gsz-wetter', neu);
-    melde(neu.windy ? 'Windy-Schlüssel gespeichert – gilt für alle Geräte.' : 'Windy-Schlüssel entfernt – Wind vom DWD.', 6000);
-    return true;
-  }
-  // Wind der gewählten Quelle; scheitert Windy (kein oder ungültiger Schlüssel, Testschlüssel, kein Netz), gilt der DWD mit Hinweis
-  async function windAbrufen(ort) {
-    if (windQuelle() !== 'windy') return { ...(await dwdAbrufen(ort)), art: 'dwd', gewaehlt: 'dwd' };
-    const k = windySchluessel();
-    const dwd = async hinweis => ({ ...(await dwdAbrufen(ort)), art: 'dwd', gewaehlt: 'windy', hinweis });
-    if (!k) return dwd('Windy ist noch nicht eingerichtet (Schlüssel fehlt) – Wind vom DWD.');
-    try {
-      const w = await windyAbrufen(ort, k);
-      if (w.test) return { ...(await dwd('Windy-Testschlüssel: Windy liefert damit absichtlich vertauschte Werte – es gilt weiter der DWD.')), windyTest: true };
-      return { ...w, gewaehlt: 'windy' };
-    } catch (e) {
-      try { return await dwd(`Windy nicht abrufbar (${e.message}) – Wind vom DWD.`); } catch { throw e; }
-    }
-  }
-  // Wind: gemerkter Wert (≤ 20 min, gleiche Quelle und Ort), sonst neu; manuell bestimmter Wind (≤ 6 h) hat Vorrang
+  // Windy als zweite Quelle war in 2.3.0 und 2.4.0 eingebaut und ist auf Lucas’ Wunsch wieder entfernt (2.4.1) – Reste auf dem
+  // Gerät (gewählte Quelle, Schlüssel, ein gemerkter Windy-Wert) werden einmal gelöscht bzw. nicht mehr benutzt
+  LS.set('gsz-wind-quelle', null); LS.set('gsz-wetter', null);
+  async function windAbrufen(ort) { return { ...(await dwdAbrufen(ort)), art: 'dwd' }; }
+  // Wind: gemerkter Wert (≤ 20 min, gleicher Ort), sonst neu; manuell bestimmter Wind (≤ 6 h) hat Vorrang
   async function wind({ frisch = false, gps = false } = {}) {
-    const alt = LS.get('gsz-wind');
+    const gemerkt = LS.get('gsz-wind'), alt = gemerkt && gemerkt.art !== 'windy' ? gemerkt : null;
     const ort = await standortHolen({ gps });
     const gleicherOrt = alt && alt.ort && Math.abs(alt.ort.lat - ort.lat) < 0.02 && Math.abs(alt.ort.lon - ort.lon) < 0.02;
-    if (!frisch && !gps && alt && gleicherOrt && (alt.gewaehlt || 'dwd') === windQuelle() && Date.now() - alt.abgerufen < WIND_GUELTIG_MS) return alt;
+    if (!frisch && !gps && alt && gleicherOrt && Date.now() - alt.abgerufen < WIND_GUELTIG_MS) return alt;
     try { const w = await windAbrufen(ort); LS.set('gsz-wind', w); return w; }
     catch (e) { if (alt) return { ...alt, alt: true, fehler: e.message }; throw e; }
   }
@@ -375,8 +297,7 @@
     const r = GG.himmelsrichtung(von), zug = GG.himmelsrichtung(GG.ausbreitungsrichtung(von));
     const kmh = !m && w && w.kmh !== null ? w.kmh : null;
     const staerke = kmh !== null ? `${Math.round(kmh)} km/h${w.boeen ? `, Böen ${Math.round(w.boeen)}` : ''} · ${GG.beaufort(kmh)} Bft` : '';
-    const quelle = m ? `vor Ort bestimmt um ${uhrzeit(m.zeit)}${w && w.kmh !== null && w.kmh !== undefined ? ` · Windgeschwindigkeit ${w.art === 'windy' ? 'Windy' : 'DWD'} ${Math.round(w.kmh)} km/h` : ''}` :
-      w.art === 'windy' ? `Windy, Modell ${esc(w.modellName || w.modell || '')} – Vorhersage genau am Standort für ${uhrzeit(w.zeit)}${w.alt ? ' · <b>Stand ohne Netz</b>' : ''}` :
+    const quelle = m ? `vor Ort bestimmt um ${uhrzeit(m.zeit)}${w && w.kmh !== null && w.kmh !== undefined ? ` · Windgeschwindigkeit DWD ${Math.round(w.kmh)} km/h` : ''}` :
       `DWD ${w.station ? esc(w.station.name) + (w.station.km ? ` (${zahlText(w.station.km)} km entfernt)` : '') : ''}, Messung ${uhrzeit(w.zeit)}${w.alt ? ' · <b>Stand ohne Netz</b>' : ''}`;
     const stand = LS.get('gsz-ort') || (w && w.ort);
     const vorh = !m && w && w.vorhersage && w.vorhersage.length ? `<div class="lg-vorh" aria-label="Vorhersage">${w.vorhersage.map(v =>
@@ -385,7 +306,6 @@
       <b class="gross">Wind aus ${esc(GG.RICHTUNG_LANG[r] || r)} (${Math.round(von)}°)</b>
       <span>Ausbreitung nach <span class="zug">${esc(GG.RICHTUNG_LANG[zug] || zug)}</span>${staerke ? ' · ' + staerke : ''}</span>
       <small>${quelle}</small><small class="lg-standort">📍 Standort: ${esc(ortText(stand))}</small></div>${vorh}
-      ${!m && w && w.hinweis ? `<div class="ez-warn${w.windyTest ? ' rot' : ''} lg-wind-hinweis">${esc(w.hinweis)}</div>` : ''}
       <div class="lg-klein" style="margin-top:.45rem">Anfahrt und Aufstellung möglichst mit dem Wind im Rücken – also aus Richtung <b>${esc(GG.RICHTUNG_LANG[r] || r)}</b>.</div>`;
   }
   const kompassHtml = () => { const m = manuell(), r = m ? GG.himmelsrichtung(m.richtung) : '';
@@ -397,28 +317,14 @@
     const ziel = el.querySelector('[data-lg-wind]');
     if (!ziel) return;
     let w = LS.get('gsz-wind'), fehler = '';
+    if (w && w.art === 'windy') w = null;                // Wert aus der Zeit mit Windy (2.3.0/2.4.0) nicht mehr zeigen
     const zeichnen = () => {
-      const q = windQuelle(), o = LS.get('gsz-ort') || (w && w.ort) || MIEHLEN;
-      ziel.innerHTML = windHtml(w, fehler) + `<div class="lg-quelle-zeile"><span class="lg-ausb-titel" style="min-width:0">Winddaten von</span>
-        <div class="lg-seg quelle" role="radiogroup" aria-label="Winddaten von">
-          <button type="button" role="radio" aria-checked="${q === 'dwd'}" data-lg-quelle="dwd">DWD</button>
-          <button type="button" role="radio" aria-checked="${q === 'windy'}" data-lg-quelle="windy">Windy</button></div>
-        <a href="https://www.windy.com/?${Number(o.lat).toFixed(3)},${Number(o.lon).toFixed(3)},11" target="_blank" rel="noopener">Windy-Karte öffnen ↗</a>
-        ${q === 'windy' ? `<a href="#" data-lg-windy>${windySchluessel() ? 'Windy-Schlüssel ändern' : 'Windy einrichten'}</a>` : ''}</div>
+      ziel.innerHTML = windHtml(w, fehler) + `
         <div class="lg-knoepfe">
         <button type="button" class="knopf" data-lg="neu">${ICON.neu}Neu abrufen</button>
         <button type="button" class="knopf" data-lg="gps">${ICON.ort}Standort neu bestimmen</button>
-        ${manuell() ? `<button type="button" class="knopf" data-lg="dwd">${q === 'windy' ? 'Windy-Wert verwenden' : 'DWD-Wert verwenden'}</button>` : '<button type="button" class="knopf" data-lg="manuell">Wind vor Ort eingeben</button>'}</div>
+        ${manuell() ? '<button type="button" class="knopf" data-lg="dwd">DWD-Wert verwenden</button>' : '<button type="button" class="knopf" data-lg="manuell">Wind vor Ort eingeben</button>'}</div>
         <div data-lg-kompass hidden>${kompassHtml()}</div>`;
-      for (const b of ziel.querySelectorAll('[data-lg-quelle]')) b.addEventListener('click', async () => {
-        const neu = b.dataset.lgQuelle;
-        if (neu === windQuelle()) return;
-        if (neu === 'windy') { await wetterEinstLaden().catch(() => {}); if (!windySchluessel() && !(await windyEinrichten())) return; }
-        LS.set('gsz-wind-quelle', neu);
-        laden({ frisch: true });
-      });
-      const wy = ziel.querySelector('[data-lg-windy]');
-      if (wy) wy.addEventListener('click', async e => { e.preventDefault(); if (await windyEinrichten()) laden({ frisch: true }); });
       ziel.querySelector('[data-lg="neu"]').addEventListener('click', () => laden({ frisch: true }));
       ziel.querySelector('[data-lg="gps"]').addEventListener('click', () => laden({ gps: true }));
       const dwd = ziel.querySelector('[data-lg="dwd"]'); if (dwd) dwd.addEventListener('click', () => { LS.set('gsz-wind-manuell', null); zeichnen(); });
@@ -429,7 +335,6 @@
     async function laden(opt = {}) {
       fehler = '';
       if (!w) zeichnen();
-      if (windQuelle() === 'windy') await wetterEinstLaden().catch(() => {});
       try { w = await wind(opt); } catch (e) { fehler = e.message; }
       if (ziel.isConnected) zeichnen();
       const o = LS.get('gsz-ort');
@@ -533,7 +438,7 @@
     let min = st.min, seit = null;
     if (st.min === 'austritt') { seit = austritt(); min = seit ? Math.max(1, Math.ceil((Date.now() - seit) / 60e3)) : 10; }
     const a = GG.ausbreitung(kmh, min);
-    const wText = `${Math.round(kmh)} km/h${m ? ', Richtung vor Ort bestimmt' : ''} · ${w.art === 'windy' ? 'Windy' : 'DWD'}`;
+    const wText = `${Math.round(kmh)} km/h${m ? ', Richtung vor Ort bestimmt' : ''} · DWD`;
     const grund = 'Stufenmodell der vfdb-Richtlinie 10/05, Stufe 2';
     if (a.still) return { olive: null, still: { m: GG.AUSBREITUNG.still_m, text: 'Windstille: Kreis 500 m um die Austrittsstelle (500 bis 1000 m)', kurz: 'Windstille: 500 m (bis 1 km)' },
       info: `<b>Windstille</b> (${esc(wText)}): Kreis von 500 bis 1000 m um die Austrittsstelle statt einer Keule (${grund}).` };
@@ -614,7 +519,7 @@
     if (!z) return;
     if (von === null || von === undefined) { z.hidden = true; return; }
     const r = GG.himmelsrichtung(von), zug = GG.himmelsrichtung(GG.ausbreitungsrichtung(von));
-    const v = w && w.kmh !== null && w.kmh !== undefined && isFinite(w.kmh) ? ` · ${Math.round(w.kmh)} km/h (${w.art === 'windy' ? 'Windy' : 'DWD'})` : '';
+    const v = w && w.kmh !== null && w.kmh !== undefined && isFinite(w.kmh) ? ` · ${Math.round(w.kmh)} km/h (DWD)` : '';
     z.innerHTML = `${zugPfeil(GG.ausbreitungsrichtung(von))}<span>Wind aus ${esc(GG.RICHTUNG_LANG[r] || r)} · Ausbreitung nach ${esc(GG.RICHTUNG_LANG[zug] || zug)}${v}</span>`;
     z.hidden = false;
   }
@@ -733,7 +638,7 @@
 
   // ---------------------------------------------------------------- Einsatz-Start: Wind und Warntafel
   function startHtml() {
-    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind ${windQuelle() === 'windy' ? 'von Windy' : 'vom DWD'}</small><a class="knopf lg-zur-karte" href="#lagekarte">${ICON.karte}Lagekarte</a></h2>
+    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind vom DWD</small><a class="knopf lg-zur-karte" href="#lagekarte">${ICON.karte}Lagekarte</a></h2>
       <div class="kachel ez-karte"><div data-lg-wind></div></div></section>`;
   }
 
@@ -785,5 +690,5 @@
   }
 
   window.GSZLage = { wind, standortHolen, ortName, startHtml, beleben, stoffKarteHtml, stoffTeilHtml, warntafelOeffnen, skizzeSvg, windHtml, abstaendeHtml,
-    grundlage, regelwerkLaden, umschalten, googleSchluessel, windQuelle, windySchluessel, ausbreitungPlanen };
+    grundlage, regelwerkLaden, umschalten, googleSchluessel, ausbreitungPlanen };
 })();

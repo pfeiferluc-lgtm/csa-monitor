@@ -566,7 +566,7 @@
       const d = new Date(ein.beginn), min = Math.max(0, Math.round((Date.now() - ein.beginn) / 60000));
       teile.push(`<a class="laeuft" href="#doku">Einsatz läuft seit ${p2(d.getHours())}:${p2(d.getMinutes())} (${min} min)${ein.stichwort ? ' · ' + esc(ein.stichwort) : ''}</a>`);
     }
-    const man = lies('gsz-wind-manuell'), w = lies('gsz-wind');
+    const man = lies('gsz-wind-manuell'), w0 = lies('gsz-wind'), w = w0 && w0.art !== 'windy' ? w0 : null;
     const von = man && Date.now() - man.zeit < 6 * 3600e3 ? man.richtung : w && Date.now() - (w.abgerufen || 0) < 3600e3 ? w.richtung : null;
     if (von !== null && von !== undefined && GG) {
       const r = GG.himmelsrichtung(von), zug = GG.himmelsrichtung(GG.ausbreitungsrichtung(von));

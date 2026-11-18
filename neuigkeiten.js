@@ -5,6 +5,9 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.4.1', datum: '2026-11-18', punkte: [
+    'Windy ist wieder ausgebaut: Der Wind kommt nur noch vom DWD (Messung der nächsten Station, frei, ohne Schlüssel).',
+  ] },
   { version: '2.4.0', datum: '2026-11-18', punkte: [
     'Sachlicheres Aussehen nach dem Vorbild professioneller Einsatzprogramme: schlichte Kopfleiste passend zu Hell und Dunkel (hell mit dem Logo in schwarzer Schrift), keine Warnstreifen und Farbverläufe mehr, ruhige Reiterleiste. Farbe steht nur noch für eine Bedeutung.',
     'Startseite: Lagezeile mit laufendem Einsatz und aktuellem Wind; Einsatz und Übungen als schlichte Kacheln.',
