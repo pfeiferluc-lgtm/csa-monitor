@@ -421,14 +421,24 @@
   .ez-geraete-aktionen .knopf[aria-pressed] svg, .ez-ordnen-leiste .knopf svg { width: 1.1rem; height: 1.1rem; }
   /* Anordnen */
   .ez-ordnen-leiste { position: sticky; top: max(.4rem, env(safe-area-inset-top)); z-index: 6; display: flex; flex-wrap: wrap; gap: .6rem .9rem; align-items: center;
-    justify-content: space-between; padding: .7rem .8rem; margin: 0 0 .8rem; border-radius: .7rem; background: var(--surface2); border: 1px solid var(--line); box-shadow: var(--schatten); }
-  .ez-ordnen-leiste > div:first-child { display: flex; flex-direction: column; gap: .2rem; flex: 1 1 16rem; min-width: 0; }
-  .ez-ordnen-leiste .ez-klein svg { width: 1.05em; height: 1.05em; vertical-align: -.18em; }
+    justify-content: space-between; padding: .5rem .6rem .5rem .9rem; margin: 0 0 .8rem; border-radius: .7rem; background: var(--surface2); border: 1px solid var(--line); box-shadow: var(--schatten); }
+  .ez-ordnen-leiste > b { font-size: 1.05rem; }
+  .ez-ordnen-hilfe { margin: -.2rem .2rem .8rem; line-height: 1.45; }
+  .ez-ordnen-hilfe svg { width: 1.05em; height: 1.05em; vertical-align: -.18em; }
   .ez-ordnen-leiste .knoepfe { display: flex; gap: .5rem; flex-wrap: wrap; }
   .ez-ordnen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
   .ez-ordnen li, .ez-geist { display: flex; align-items: center; gap: .7rem; min-height: 3.4rem; padding: .3rem .3rem .3rem .45rem; border-radius: .65rem; list-style: none;
     background: var(--surface); border: 1px solid var(--line); box-shadow: var(--schatten); color: var(--ink); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; position: relative; }
-  .ez-ordnen li { cursor: grab; }
+  .ez-ordnen li { cursor: grab; flex-wrap: wrap; }
+  .kachel.ez-ordnen-karte { overflow: visible; }
+  .ez-ordnen li.offen { outline: 2px solid var(--akzent); outline-offset: -2px; }
+  .ez-ordnen li.offen .ez-griff { background: color-mix(in srgb, var(--akzent) 16%, transparent); color: var(--ink); }
+  .ez-ordnen-aktionen { flex: 1 0 100%; box-sizing: border-box; min-width: 0; max-width: 100%; display: flex; flex-wrap: wrap; gap: .4rem; padding: .45rem .15rem .2rem; margin-top: .1rem; border-top: 1px solid var(--line); cursor: auto; }
+  .ez-ordnen-aktionen .knopf { font-size: .85rem; display: inline-flex; align-items: center; justify-content: center; gap: .3rem; flex: 1 1 8.5rem; min-width: 0; padding-left: .5rem; padding-right: .5rem; }
+  .ez-ordnen-aktionen .knopf svg { width: 1rem; height: 1rem; }
+  .ez-ordnen-aktionen .knopf:disabled { opacity: .45; }
+  .ez-ordnen-aktionen .eltern { flex: 1 1 100%; min-width: 0; display: flex; align-items: center; gap: .45rem; font-size: .85rem; color: var(--ink2); }
+  .ez-ordnen-aktionen select { flex: 1 1 auto; width: 100%; min-width: 0; max-width: 100%; min-height: 44px; font: inherit; color: var(--ink); background: var(--surface2); border: 1px solid var(--line); border-radius: .5rem; padding: 0 .5rem; }
   .ez-ordnen li.ez-kind { margin-left: calc(var(--tiefe, 1) * 1.6rem); }
   .ez-ordnen .ez-bildmini, .ez-geist .ez-bildmini { width: 2.6rem; height: 2.6rem; flex: none; border-radius: .45rem; overflow: hidden; background: var(--bild-bg, #fff); display: block; }
   .ez-ordnen .ez-bildmini img, .ez-geist .ez-bildmini img { width: 100%; height: 100%; object-fit: contain; display: block; }
@@ -1828,7 +1838,7 @@
   }
   // Beständigkeitslisten: Geräte als Bilder
   // Anordnen (Reihenfolge, Untergeräte) nur in einem eigenen Modus – im Einsatz verrutscht so nichts aus Versehen
-  let ordnenAn = false, ordnenAb = null, ordnenZieht = false;
+  let ordnenAn = false, ordnenAb = null, ordnenZieht = false, ordnenOffen = '';
   const ordnenVerlauf = [];
   const ordnenBeenden = () => { if (ordnenAb) ordnenAb(); };
   const titelVon = g => (g.nr ? g.nr + ' · ' : '') + g.name;
@@ -1856,6 +1866,7 @@
     let anordnung = (() => { try { return localStorage.getItem('gsz-geraete-anordnung'); } catch { return null; } })();
     if (!ANORDNUNG.some(a => a[0] === anordnung)) anordnung = innerWidth <= 640 ? '2' : '4';
     const zeigen = () => {
+      k.classList.toggle('ez-ordnen-karte', ordnenAn);              // Karte ohne Abschneiden, damit die Anordnen-Leiste oben haften bleibt
       if (ordnenAn) { ordnenZeigen(k, G_, neuKnopf, zeigen); return; }
       // Familien (Gerät mit seinen Untergeräten) stehen zusammen; in der Liste eingerückt, in den Rastern in einem gemeinsamen Rahmen
       const baum = B.gliederungFiltern(B.gliedern(G_, gliederung), g => f === 'Alle' || kategorie(g) === f);
@@ -1876,7 +1887,7 @@
       for (const b of k.querySelectorAll('[data-ansicht-wahl]')) b.addEventListener('click', () => {
         anordnung = b.dataset.ansichtWahl; try { localStorage.setItem('gsz-geraete-anordnung', anordnung); } catch { /* privat */ } zeigen(); });
       const o = k.querySelector('#ez-ordnen');
-      if (o) o.addEventListener('click', () => { ordnenAn = true; ordnenVerlauf.length = 0; zeigen(); k.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+      if (o) o.addEventListener('click', () => { ordnenAn = true; ordnenOffen = ''; ordnenVerlauf.length = 0; zeigen(); k.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
       fotoEinsetzen(k);
     };
     zeigen();
@@ -1886,24 +1897,39 @@
   // unteren Rand = davor bzw. dahinter. Tastatur am Griff: ↑ ↓ Reihenfolge, → Untergerät des vorigen, ← herausnehmen.
   function ordnenZeigen(k, G_, neuKnopf, zurueck) {
     const baum = B.gliedern(G_, gliederung), nachO = new Map(baum.map(x => [x.ordner, x]));
-    const zeile = x => { const g = x.geraet, b = bildVon(g), el = x.eltern && nachO.get(x.eltern);
-      return `<li data-ordner="${esc(x.ordner)}" class="${x.tiefe ? 'ez-kind' : ''}" style="--tiefe:${Math.min(x.tiefe, 4)}">
+    if (ordnenOffen && !nachO.has(ordnenOffen)) ordnenOffen = '';
+    const unterVon = (o, ueber) => { for (let e = (nachO.get(o) || {}).eltern; e; e = (nachO.get(e) || {}).eltern) if (e === ueber) return true; return false; };
+    const geschw = x => baum.filter(y => y.eltern === x.eltern);
+    // Griff antippen: Knöpfe statt Ziehen (WCAG 2.2 · 2.5.7) – nach oben/unten, einrücken/ausrücken, Untergerät von …
+    const aktionen = (x, n) => { const gs = geschw(x), i = gs.findIndex(y => y.ordner === x.ordner), vor = gs[i - 1], nach = gs[i + 1];
+      const wahl = baum.filter(y => y.ordner !== x.ordner && !unterVon(y.ordner, x.ordner));
+      return `<div class="ez-ordnen-aktionen" id="ez-akt-${n}" role="group" aria-label="${esc(titelVon(x.geraet))} verschieben">
+        <button type="button" class="knopf" data-akt="hoch"${vor ? '' : ' disabled'}>${I.hoch}Nach oben</button>
+        <button type="button" class="knopf" data-akt="runter"${nach ? '' : ' disabled'}>${I.runter}Nach unten</button>
+        <button type="button" class="knopf" data-akt="ein"${vor ? ` title="Untergerät von ${esc(titelVon(vor.geraet))}"` : ' disabled'}>→ Einrücken</button>
+        <button type="button" class="knopf" data-akt="aus"${x.eltern ? '' : ' disabled'}>← Ausrücken</button>
+        <label class="eltern">Untergerät von<select data-akt="eltern"><option value="">– eigenständig –</option>${wahl.map(y =>
+          `<option value="${esc(y.ordner)}"${y.ordner === x.eltern ? ' selected' : ''}>${'\u2003'.repeat(Math.min(y.tiefe, 4))}${esc(titelVon(y.geraet))}</option>`).join('')}</select></label></div>`; };
+    const zeile = (x, n) => { const g = x.geraet, b = bildVon(g), el = x.eltern && nachO.get(x.eltern), offen = x.ordner === ordnenOffen;
+      return `<li data-ordner="${esc(x.ordner)}" class="${x.tiefe ? 'ez-kind' : ''}${offen ? ' offen' : ''}" style="--tiefe:${Math.min(x.tiefe, 4)}">
         <span class="ez-bild ez-bildmini${bildFuellen(b)}" style="${bildStil(b, false)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="" draggable="false">` : ''}</span>
         <span class="name"><b>${esc(titelVon(g))}</b><small>${esc(kategorie(g))}${el ? ' · Untergerät' : ''}${x.kinder ? ` · ${x.kinder} Untergerät${x.kinder === 1 ? '' : 'e'}` : ''}</small></span>
-        <button type="button" class="ez-griff" data-griff aria-label="${esc(titelVon(g))} verschieben" aria-describedby="ez-ordnen-hilfe">${I.griff}</button></li>`; };
-    k.innerHTML = `<div class="ez-ordnen-leiste" role="region" aria-label="Anordnen">
-        <div><b>Anordnen</b><span class="ez-klein" id="ez-ordnen-hilfe">Gerät am Griff ${I.griff} ziehen: auf die Mitte eines anderen Geräts = dessen Untergerät (z. B. Schläuche unter die Schlauchpumpe),
-          an den oberen oder unteren Rand = davor bzw. dahinter. Mit der Tastatur am Griff: ↑ ↓ verschieben, → Untergerät des vorigen, ← herausnehmen.</span></div>
+        <button type="button" class="ez-griff" data-griff aria-label="${esc(titelVon(g))} verschieben" aria-describedby="ez-ordnen-hilfe" aria-expanded="${offen}"${offen ? ` aria-controls="ez-akt-${n}"` : ''}>${I.griff}</button>
+        ${offen ? aktionen(x, n) : ''}</li>`; };
+    k.innerHTML = `<div class="ez-ordnen-leiste" role="region" aria-label="Anordnen"><b>Anordnen</b>
         <div class="knoepfe"><button type="button" class="knopf" id="ez-ordnen-zurueck"${ordnenVerlauf.length ? '' : ' disabled'}>${I.rueckgaengig}Rückgängig</button>
           <button type="button" class="knopf los" id="ez-ordnen-fertig">Fertig</button></div></div>
-      <ul class="ez-ordnen" aria-label="Geräte in ihrer Reihenfolge">${baum.map(zeile).join('')}</ul>
+      <p class="ez-klein ez-ordnen-hilfe" id="ez-ordnen-hilfe">Gerät am Griff ${I.griff} ziehen: auf die Mitte eines anderen Geräts = dessen Untergerät (z. B. Schläuche unter die Schlauchpumpe),
+          an den oberen oder unteren Rand = davor bzw. dahinter. Oder den Griff antippen: Knöpfe zum Verschieben und „Untergerät von“.
+          Mit der Tastatur am Griff: ↑ ↓ verschieben, → Untergerät des vorigen, ← herausnehmen.</p>
+      <ul class="ez-ordnen" aria-label="Geräte in ihrer Reihenfolge">${baum.map((x, n) => zeile(x, n)).join('')}</ul>
       <div class="ez-ordnen-ende" data-ende hidden>Hierher ziehen: ans Ende (eigenständiges Gerät)</div>
       <div class="ez-klein" style="margin-top:.6rem">Gilt für alle Geräte (zentral im Dropbox-App-Ordner). Die Ordner der Geräte bleiben unverändert.</div>
       <div class="ez-sr" aria-live="polite" id="ez-ordnen-ansage"></div>`;
     fotoEinsetzen(k);
     const liste = k.querySelector('.ez-ordnen'), ende = k.querySelector('[data-ende]'), ansage = k.querySelector('#ez-ordnen-ansage');
     const name = o => { const x = nachO.get(o); return x ? '„' + titelVon(x.geraet) + '“' : ''; };
-    const anwenden = (x, ziel, art, { fokus = false, gezogen = false } = {}) => {
+    const anwenden = (x, ziel, art, { fokus = false, gezogen = false, knopf = '' } = {}) => {
       // gezogen an den unteren Rand eines Geräts mit Untergeräten = vor dessen erstes Untergerät (dort erscheint die Linie)
       const erstesKind = gezogen && ziel && art === 'nach' && baum.find(y => y.eltern === ziel);
       if (erstesKind && erstesKind.ordner === x) return true;
@@ -1918,9 +1944,40 @@
       ordnenZeigen(k, G_, neuKnopf, zurueck);
       const a2 = k.querySelector('#ez-ordnen-ansage'); if (a2) a2.textContent = text;
       const li = [...k.querySelectorAll('.ez-ordnen li')].find(l => l.dataset.ordner === x);
-      if (li) { li.classList.add('neu'); if (fokus) li.querySelector('[data-griff]').focus(); }
+      if (li) { li.classList.add('neu');
+        const kn = knopf && li.querySelector(`[data-akt="${knopf}"]:not(:disabled)`);
+        if (kn) kn.focus(); else if (fokus || knopf) li.querySelector('[data-griff]').focus(); }
       return true;
     };
+    const griffFokus = o => { const li = [...k.querySelectorAll('.ez-ordnen li')].find(l => l.dataset.ordner === o); if (li) li.querySelector('[data-griff]').focus(); };
+    let gezogenAm = 0;
+    liste.addEventListener('click', e => {
+      const griff = e.target.closest('[data-griff]');
+      if (griff) {
+        if (Date.now() - gezogenAm < 300) return;                       // Ende eines Ziehens, kein Antippen
+        const o = griff.closest('li').dataset.ordner;
+        ordnenOffen = ordnenOffen === o ? '' : o;
+        ordnenZeigen(k, G_, neuKnopf, zurueck); griffFokus(o);
+        return;
+      }
+      const b = e.target.closest('button[data-akt]'); if (!b || b.disabled) return;
+      const x = b.closest('li').dataset.ordner, me = nachO.get(x), gs = geschw(me), i = gs.findIndex(y => y.ordner === x), akt = b.dataset.akt;
+      let ok = null;
+      if (akt === 'hoch' && i > 0) ok = anwenden(x, gs[i - 1].ordner, 'vor', { knopf: akt });
+      else if (akt === 'runter' && i < gs.length - 1) ok = anwenden(x, gs[i + 1].ordner, 'nach', { knopf: akt });
+      else if (akt === 'ein' && i > 0) ok = anwenden(x, gs[i - 1].ordner, 'in', { knopf: akt });
+      else if (akt === 'aus' && me.eltern) ok = anwenden(x, me.eltern, 'nach', { knopf: akt });
+      if (ok === false && ansage) ansage.textContent = 'Hier nicht möglich.';
+    });
+    liste.addEventListener('change', e => {
+      const sel = e.target.closest('select[data-akt="eltern"]'); if (!sel) return;
+      const x = sel.closest('li').dataset.ordner, me = nachO.get(x);
+      let ok;
+      if (sel.value) ok = anwenden(x, sel.value, 'in', { knopf: 'eltern' });
+      else { let w = me.eltern; while (w && nachO.get(w).eltern) w = nachO.get(w).eltern;      // eigenständig: hinter seine oberste Familie
+        ok = w ? anwenden(x, w, 'nach', { knopf: 'eltern' }) : true; }
+      if (ok === false && ansage) ansage.textContent = 'Hier nicht möglich.';
+    });
     k.querySelector('#ez-ordnen-fertig').addEventListener('click', async () => { ordnenAn = false; ordnenBeenden(); if (glOffen()) await gliederungAblegen(); zurueck(); });
     k.querySelector('#ez-ordnen-zurueck').addEventListener('click', () => {
       if (!ordnenVerlauf.length) return;
@@ -1932,6 +1989,7 @@
     liste.addEventListener('keydown', e => {
       const griff = e.target.closest('[data-griff]'); if (!griff) return;
       const x = griff.closest('li').dataset.ordner, me = nachO.get(x);
+      if (e.key === 'Escape' && ordnenOffen === x) { e.preventDefault(); ordnenOffen = ''; ordnenZeigen(k, G_, neuKnopf, zurueck); griffFokus(x); return; }
       const geschw = baum.filter(y => y.eltern === me.eltern), i = geschw.findIndex(y => y.ordner === x);
       let ok = null;
       if (e.key === 'ArrowUp' && i > 0) ok = anwenden(x, geschw[i - 1].ordner, 'vor', { fokus: true });
@@ -1990,7 +2048,7 @@
     const beenden = abbruch => {
       if (!z) return;
       const { o, ziel } = z, geist = z.geist;
-      z = null; rollen = 0; ordnenZieht = false;
+      z = null; rollen = 0; ordnenZieht = false; gezogenAm = Date.now();
       geist.remove(); k.classList.remove('ez-zieht'); markieren(null, '');
       for (const l of liste.querySelectorAll('.zieht')) l.classList.remove('zieht');
       ende.hidden = true;
@@ -2002,8 +2060,10 @@
       if (z || e.button > 0) return;
       const griff = e.target.closest('[data-griff]'), li = e.target.closest('li');
       if (!li) return;
-      if (griff) { e.preventDefault(); try { griff.setPointerCapture(e.pointerId); } catch { /* egal */ } starten(li, e.clientX, e.clientY); z.id = e.pointerId; z.quelle = griff; return; }
-      if (e.pointerType === 'mouse') warten = { li, x: e.clientX, y: e.clientY, id: e.pointerId };   // Maus: Zeile ab 5 px Bewegung ziehen
+      if (e.target.closest('.ez-ordnen-aktionen')) return;
+      // Griff: ab 5 px Bewegung ziehen, sonst ist es Antippen (Knöpfe); Maus auch an der ganzen Zeile
+      if (griff) { e.preventDefault(); try { griff.setPointerCapture(e.pointerId); } catch { /* egal */ } warten = { li, x: e.clientX, y: e.clientY, id: e.pointerId }; return; }
+      if (e.pointerType === 'mouse') warten = { li, x: e.clientX, y: e.clientY, id: e.pointerId };
     });
     const bewegt = e => {
       if (warten && !z && e.pointerId === warten.id && Math.hypot(e.clientX - warten.x, e.clientY - warten.y) > 5) {

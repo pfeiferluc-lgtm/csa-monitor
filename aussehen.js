@@ -243,6 +243,25 @@
   :root .kopfleiste img.logo-hell:not(.x):not(.y) { display: none !important; }
   :root .kopfleiste img.logo-dunkel:not(.x):not(.y) { display: block !important; }
   `;
+  // WCAG 2.2 · 2.4.11 (Fokus nicht verdeckt): Ein Element, das den Tastaturfokus bekommt, wird unter feststehenden Leisten
+  // hervorgeholt – Reiterleiste der Stoffseite unten, Leiste der Anwesenheit unten, Anordnen-Leiste oben
+  document.addEventListener('focusin', e => {
+    const el = e.target;
+    if (!(el instanceof Element) || el === document.body) return;
+    requestAnimationFrame(() => {
+      const r = el.getBoundingClientRect();
+      if (!r.height) return;
+      let oben = 0, unten = innerHeight;
+      for (const l of document.querySelectorAll('.ez-leiste, .aw-leiste, .ez-ordnen-leiste')) {
+        if (l.contains(el)) continue;
+        const s = getComputedStyle(l), b = l.getBoundingClientRect();
+        if (s.display === 'none' || s.visibility === 'hidden' || !b.height || !b.width || !/fixed|sticky/.test(s.position)) continue;
+        if (b.top > innerHeight / 2) unten = Math.min(unten, b.top); else if (b.top <= 1 + parseFloat(s.top || 0) + 8) oben = Math.max(oben, b.bottom);
+      }
+      if (r.bottom > unten - 4) window.scrollBy(0, r.bottom - unten + 12);
+      else if (r.top < oben + 4) window.scrollBy(0, r.top - oben - 12);
+    });
+  });
   const st = document.createElement('style');
   st.id = 'gsz-aussehen';
   st.textContent = css;
