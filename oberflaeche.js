@@ -91,7 +91,7 @@
   #startseite .st-kachel { padding: 1.2rem 1.2rem 1.1rem; min-height: 10rem; border-top: 0; border-left: .3rem solid var(--c); border-radius: .75rem; }
   #startseite .st-kachel svg { width: 2.8rem; height: 2.8rem; }
   #startseite .st-kachel > b { font-size: 1.45rem; }
-  #st-einsatz-info:empty { display: none; }
+  #st-einsatz-info:empty, #st-uebungen-info:empty { display: none; }
   /* Was ist neu */
   .st-neu { position: relative; background: var(--surface); box-shadow: var(--schatten); border-radius: 1rem; padding: .85rem 2.6rem .85rem 1rem; border-left: 4px solid var(--akzent); }
   .st-neu h2 { margin: 0 0 .4rem; font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--akzent); }
@@ -360,7 +360,7 @@
         <a class="st-kachel st-haupt" href="#einsatz" id="st-einsatz" style="--c:var(--crit)">${ICON_EINSATZ}<span class="pfeil">›</span>
           <b>Einsatz</b><span>Stoffsuche (GESTIS), Beständigkeitslisten und Unterlagen für A-, B- und C-Lagen</span><em id="st-einsatz-info"></em></a>
         <a class="st-kachel" href="#uebungen" id="st-uebungen" style="--c:var(--akzent)">${ICON_UEBUNGEN}<span class="pfeil">›</span>
-          <b>Übungen</b><span>CSA-Monitor (Belastungsübung) und Übungsanwesenheit</span><em id="st-uebungen-info">Personaltabelle wird beim Öffnen geladen</em></a>
+          <b>Übungen</b><span>CSA-Monitor (Belastungsübung) und Übungsanwesenheit</span><em id="st-uebungen-info"></em></a>
       </nav>
       <section class="st-schnell" aria-label="Schnellzugriff"><h2>Schnellzugriff</h2>
         <nav class="st-module">

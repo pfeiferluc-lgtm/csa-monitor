@@ -5,6 +5,14 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.6.0', datum: '2026-11-23', punkte: [
+    'Untergeräte: Zubehör lässt sich einem Gerät unterordnen – z. B. die Schläuche unter die Schlauchpumpe. Es steht dann eingerückt darunter: in der Übersicht der Beständigkeitslisten, im Reiter „Beständigkeit“ eines Stoffs (Pumpe und Schläuche direkt untereinander) und auf der Geräteseite („Teil von“ bzw. „Untergeräte“).',
+    'Beständigkeitslisten › „Anordnen“: Geräte am Griff frei in die gewünschte Reihenfolge ziehen (Finger oder Maus). Auf die Mitte eines anderen Geräts gezogen, wird es dessen Untergerät; an den oberen oder unteren Rand gezogen, steht es davor bzw. dahinter. Mit „Rückgängig“ zurücknehmen; auch per Tastatur (Pfeiltasten am Griff).',
+    'Reihenfolge und Untergeräte gelten für alle Geräte (zentral im Dropbox-App-Ordner); die Ordner der Geräte bleiben unverändert. Untergerät lässt sich auch beim Bearbeiten eines Geräts wählen („Untergerät von“).',
+    'Besser lesbar nach einer Barrierefreiheitsprüfung (WCAG 2.1 AA): Alle Texte haben genug Kontrast zum Grund – Statusschilder (beständig, bedingt, nicht beständig), „GEFAHR“, AEGL-Schilder und ausgewählte Knöpfe in kräftigeren Farben, graue Hinweise etwas dunkler.',
+    'Alle Knöpfe, Filter und Eingabefelder sind mindestens 44 Bildpunkte groß – gut mit Handschuhen zu treffen.',
+    'Die aktuelle Tag/Nacht-Angabe der ERG-Abstände ist mit „· jetzt“ markiert statt unterstrichen (sah aus wie ein Link); „Kein laufender Einsatz“ ist zurückhaltender, der rote Knopf ist die Aufforderung.',
+  ] },
   { version: '2.5.0', datum: '2026-11-18', punkte: [
     'Neues Erscheinungsbild für das ganze Programm nach dem Vorbild verkaufter Einsatzprogramme (EinsatzTablet und EinsatzApp von Feuer Software, fireplan.pad, DIVERA 24/7, Tablet Command): rote Titelleiste auf allen Seiten, ruhige Flächen mit Kopfstreifen, Listen mit farbiger Kante, große Schaltflächen.',
     'Startseite: Schnellzugriff als Symbolraster (Stoff suchen, Warntafel, Lagekarte, Beständigkeit, Einsatz-Doku, Unterlagen, CSA-Monitor, Anwesenheit).',

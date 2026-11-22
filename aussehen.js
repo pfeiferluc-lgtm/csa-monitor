@@ -15,13 +15,67 @@
     --ink: #14171a; --ink2: #3b424a; --muted: #67707a; --schatten: 0 0 0 1px var(--line), 0 1px 2px rgba(16, 24, 40, .05); --leiste-bg: #ffffff; }
   :root body:not([data-ansicht="monitor"]) #statusband { background: var(--bar) !important; }
 
+  /* ------------------------------------------------------------ Barrierefreiheit (WCAG 2.1 AA, Prüfung 2.5.1)
+     Schriftfarben: im Dunkeln helle, im Hellen dunkle Töne – jeweils mindestens 4,5:1 zum Grund.
+     Füllfarben unter weißer Schrift: immer die dunklen Töne (--…-voll, ≥ 5:1), Gelb mit dunkler Schrift. */
+  :root { --crit: #f05252; --good: #26a95b; --ser: #f0794a; --akzent: #4c8df0;
+    --crit-voll: #c62828; --good-voll: #1d7a43; --ser-voll: #c2410c; --akzent-voll: #2563c9; --bedingt-voll: #8a6100; --grau-voll: #5f6873; }
+  :root.hell { --crit: #c62828; --good: #1b7f42; --ser: #c2410c; --akzent: #1f62c4; --muted: #5f6873; --akzent-voll: #1f62c4; }
+  :root .ez-stufe.gut { --c: var(--good-voll); } :root .ez-stufe.bedingt { --c: var(--bedingt-voll); } :root .ez-stufe.nicht { --c: var(--crit-voll); }
+  :root .ez-stufe.gemischt { --c: var(--ser-voll); } :root .ez-stufe.unbekannt, :root .ez-stufe.keine, :root .ez-stufe.offen { --c: var(--grau-voll); }
+  :root .ez-signal { background: var(--crit-voll); } :root .ez-signal.achtung { background: var(--ser-voll); }
+  :root .ez-aegl tr.a1 td:first-child b { background: var(--bedingt-voll); } :root .ez-aegl tr.a2 td:first-child b { background: var(--ser-voll); }
+  :root .ez-aegl tr.a3 td:first-child b { background: var(--crit-voll); }
+  :root .ez-dateien .typ { background: color-mix(in srgb, var(--c, var(--muted)) 80%, #000); }
+  :root .ez .knopf[style*="var(--crit)"] { background: var(--rot) !important; border-color: var(--rot) !important; color: #fff !important; }
+  :root .ez-filter button.an, :root .ez-anordnung button[aria-checked="true"], :root .ez-unwahl button.an, :root .lg-kompass button.an,
+  :root #st-handschuh[aria-pressed="true"], :root .aw-chip.gewaehlt, :root .aw-filter button.an, :root .aw-bue[aria-pressed="true"] {
+    background: var(--akzent-voll) !important; border-color: var(--akzent-voll) !important; color: #fff !important; }
+  :root .aw-speichern:not(.x) { background: var(--akzent-voll) !important; border-color: var(--akzent-voll) !important; }
+  :root .aw-p.bue .aw-haken { background: var(--akzent-voll); border-color: var(--akzent-voll); }
+  :root .lg-regel::before { background: var(--akzent-voll); }
+  :root [data-lg-k-info] a, :root .lg-klein a, :root .ez-klein a { color: var(--akzent); }
+  :root.hell .ez-gepr, :root.hell small .gut, :root.hell .ez-status .gut, :root.hell .ez-verf.an { color: var(--good); }
+  :root.hell .ez-tabelle td.gut { color: #176b38; }
+  /* grauer Kleintext auf getönten Kästen (Ausbreitung, Spaltenwahl): etwas dunkler */
+  :root.hell .ez-ausbr .lvz, :root.hell .ez-ausbr .ueber, :root.hell .ez-spalte small { color: #4b535c; }
+  /* farbiges Band an den Geräten und Schilder mit Farbe im Stil-Attribut (PSA): dunkle Füllung unter weißer Schrift */
+  :root .ez-band.gut { background: var(--good-voll); } :root .ez-band.nicht { background: var(--crit-voll); }
+  :root .ez-band.bedingt { background: var(--bedingt-voll); } :root .ez-band.gemischt { background: var(--ser-voll); }
+  :root .ez-stufe[style*="var(--crit)"] { --c: var(--crit-voll) !important; } :root .ez-stufe[style*="var(--ser)"] { --c: var(--ser-voll) !important; }
+  :root .ez-stufe[style*="var(--akzent)"] { --c: var(--akzent-voll) !important; } :root .ez-stufe[style*="var(--good)"] { --c: var(--good-voll) !important; }
+  :root.hell .ez-aegl .legende span[style*="#b88a00"] { --c: #8a6100 !important; }
+
+  /* Tippflächen: mindestens 44 px (Bedienung mit Handschuhen); Filter und Segmente einheitlich eckig */
+  :root .ez .knopf, :root .gsz-ansicht .knopf { min-height: 44px; min-width: 44px; }
+  :root .lg-regel button { min-height: 44px; }
+
+  /* Feinschliff nach der Design-Kritik (2.5.1) */
+  /* „jetzt“ (Tag/Nacht nach Sonnenstand, Wind der ERG-Tabelle) nicht unterstreichen – sah aus wie ein Link */
+  :root .lg-abstand b.jetzt, :root .lg-abstand b:not(.jetzt) + b.jetzt { text-decoration: none; }
+  :root .lg-abstand b.jetzt::after { content: " · jetzt"; font-size: .62em; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+  :root .ez-tabelle td.jetzt, :root .lg-t3 span.jetzt { text-decoration: none; background: color-mix(in srgb, var(--akzent) 14%, transparent); border-radius: .25rem; padding: 0 .2rem; }
+  /* ohne laufenden Einsatz: Titel zurückhaltend, der rote Knopf ist die Aufforderung */
+  :root .eb-status:not(.laeuft) .eb-titel { font-size: .95rem; color: var(--muted); letter-spacing: .06em; }
+  /* Schalter RLP ⟷ FwDV 500 wie die übrigen Knöpfe eckig */
+  :root .lg-regel { border-radius: .55rem; } :root .lg-regel::before, :root .lg-regel button { border-radius: .4rem; }
+  /* Trennlinie vor „Sicherheitsdatenblatt importieren“ durchgezogen */
+  :root .ez-import-zeile { border-top-style: solid; border-top-color: var(--line); }
+  :root .ez-un, :root .lg-voll-auf, :root .lg-voll-zu { min-height: 44px; }
+  :root .ez-filter button, :root .ez-anordnung button, :root .lg-seg button, :root .lg-kompass button { min-height: 44px; min-width: 44px; border-radius: .45rem; }
+  :root .st-suche input, :root .ez-suchfeld input, :root .st-suche button { min-height: 44px; }
+  :root .ez-anordnung button { min-width: 44px; }
+  :root .ez-db-suche, :root .eb-feld input, :root .eb-feld select, :root .aw-werkzeuge input, :root .st-fuss select { min-height: 44px; }
+  :root .st-neu .zu { width: 44px; height: 44px; }
+  :root .ez details > summary, :root .gsz-ansicht details > summary { min-height: 44px; display: flex; align-items: center; gap: .35rem; }
+
   /* ------------------------------------------------------------ Titelleiste (alle Ansichten) */
   :root .ez > .ez-kopf { background: var(--bar); color: var(--bar-ink); border-bottom: 0; box-shadow: 0 1px 0 rgba(0, 0, 0, .3); gap: .45rem;
     padding-top: calc(.45rem + var(--frei-oben)); padding-bottom: .45rem; min-height: calc(3.6rem + var(--frei-oben)); }
   :root .ez > .ez-kopf .ez-titel h1 { color: #fff; font-size: 1.22rem; font-weight: 700; letter-spacing: 0; }
   :root .ez > .ez-kopf .ez-titel div { color: rgba(255, 255, 255, .8); font-size: .78rem; }
   :root .ez > .ez-kopf .knopf, :root .ue-kopf .knopf { background: transparent !important; border: 0 !important; color: #fff !important;
-    box-shadow: none !important; min-width: 2.75rem; min-height: 2.75rem; border-radius: .5rem; padding: .4rem .55rem; }
+    box-shadow: none !important; min-width: 44px; min-height: 44px; border-radius: .5rem; padding: .4rem .55rem; }
   /* Anwesenheit: Knöpfe so groß wie bisher (der Titel braucht die Breite), nur hell auf Rot */
   :root .aw-kopf .knopf { background: rgba(255, 255, 255, .1) !important; border: 1px solid rgba(255, 255, 255, .35) !important; color: #fff !important; box-shadow: none !important; }
   :root .ez > .ez-kopf .knopf:hover, :root .aw-kopf .knopf:hover, :root .ue-kopf .knopf:hover { background: rgba(255, 255, 255, .14) !important; }
@@ -43,7 +97,7 @@
     border-radius: var(--rund) var(--rund) 0 0; color: var(--ink2); }
   :root .ez-bereich > h2 { margin: .35rem .15rem .45rem; color: var(--muted); }
   :root .ez .knopf, :root .gsz-ansicht .knopf { border-radius: .45rem; background: var(--surface2); border: 1px solid var(--rand); color: var(--ink);
-    font-weight: 600; min-height: 2.6rem; box-shadow: none; }
+    font-weight: 600; min-height: 44px; box-shadow: none; }
   :root .ez .knopf:hover, :root .gsz-ansicht .knopf:hover { border-color: var(--muted); }
   :root .ez .knopf.los, :root .knopf.primaer { background: var(--rot) !important; border-color: var(--rot) !important; color: #fff !important; }
   :root .ez-warn { border-radius: .45rem; }
@@ -158,6 +212,22 @@
   :root .ue-kopf h1 { color: #fff; font-size: 1.35rem; }
   :root .aw-kopf { background: var(--bar); color: #fff; box-shadow: none; }
   :root .aw-titel h1 { color: #fff; } :root .aw-titel div { color: rgba(255, 255, 255, .8); }
+  /* Knöpfe der Leiste 44 px (Handschuh): dafür enger gesetzt, damit der Titel wie bisher passt und das Logo die Höhe füllt */
+  @media (max-width: 640px) {
+    :root .aw-kopf { gap: .3rem; }
+    :root .aw-titel { margin-left: .2rem; }
+    :root .aw-titel h1 { font-size: 1.08rem; }
+  }
+  @media (max-width: 400px) {
+    :root .aw-kopf { gap: .25rem; }
+    :root .aw-titel h1 { font-size: 1rem; }
+  }
+  @media (max-width: 374px) {
+    :root .aw-kopf { gap: .25rem; }
+    :root .gsz-ansicht .aw-kopf .knopf { min-width: 40px; padding-left: .3rem; padding-right: .3rem; }
+    :root .aw-titel h1 { font-size: 1rem; }
+    :root .aw-titel div { font-size: .68rem; }
+  }
 
   /* ------------------------------------------------------------ CSA-Monitor: rote Leiste, Kennzahlen als weiße Schilder (Farbe der Zahl bleibt) */
   :root .kopfleiste { background: var(--bar); color: #fff; box-shadow: 0 1px 0 rgba(0, 0, 0, .3); }

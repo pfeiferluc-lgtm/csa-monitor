@@ -403,6 +403,56 @@
   .ez-fortschritt .zeile { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .2rem .8rem; font-size: .8rem; color: var(--ink2); }
   .ez-fortschritt .gross { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--akzent); }
   .ez-raster .auswertung { font-size: .7rem; font-weight: 700; color: var(--akzent); }
+  /* Gliederung: Untergeräte (z. B. Schläuche unter der Schlauchpumpe) – Raster: gemeinsamer Rahmen der Familie, Liste: eingerückt mit Verbindungslinie */
+  .ez-raster > .ez-familie { grid-column: 1 / -1; display: grid; grid-template-columns: inherit; gap: inherit; padding: .45rem; border-radius: .9rem;
+    background: color-mix(in srgb, var(--akzent) 6%, transparent); border: 1px solid color-mix(in srgb, var(--akzent) 26%, var(--line)); }
+  .ez-raster.an-liste > .ez-familie { padding: 0; background: none; border: 0; border-radius: 0; }
+  .ez-raster a.ez-kind b::before { content: '↳ '; color: var(--muted); font-weight: 400; }
+  .ez-raster.an-liste a.ez-kind { margin-left: calc(var(--tiefe, 1) * 1.5rem); position: relative; overflow: visible; }
+  .ez-raster.an-liste a.ez-kind .foto { border-radius: .7rem 0 0 .7rem; }
+  .ez-raster.an-liste a.ez-kind b::before { content: none; }
+  .ez-raster.an-liste a.ez-kind::before, .ez-geraete > li.ez-kind::before, .ez-ordnen li.ez-kind::before { content: ''; position: absolute; left: -1.05rem; top: -.5rem; width: .8rem;
+    height: calc(50% + .5rem); border-left: 2px solid var(--line); border-bottom: 2px solid var(--line); border-bottom-left-radius: .5rem; pointer-events: none; }
+  .ez-geraete > li.ez-kind { margin-left: calc(var(--tiefe, 1) * 1.4rem); position: relative; }
+  .ez-geraete > li.ez-kind::before { height: 2.6rem; top: -.6rem; }
+  .ez-familie-zeile { display: flex; flex-wrap: wrap; gap: .35rem .4rem; align-items: center; }
+  .ez-familie-zeile > span { font-size: .78rem; color: var(--muted); margin-right: .15rem; }
+  .ez-familie-zeile a.ez-chip { text-decoration: none; color: var(--ink); min-height: 44px; display: inline-flex; align-items: center; }
+  .ez-geraete-aktionen .knopf[aria-pressed] svg, .ez-ordnen-leiste .knopf svg { width: 1.1rem; height: 1.1rem; }
+  /* Anordnen */
+  .ez-ordnen-leiste { position: sticky; top: max(.4rem, env(safe-area-inset-top)); z-index: 6; display: flex; flex-wrap: wrap; gap: .6rem .9rem; align-items: center;
+    justify-content: space-between; padding: .7rem .8rem; margin: 0 0 .8rem; border-radius: .7rem; background: var(--surface2); border: 1px solid var(--line); box-shadow: var(--schatten); }
+  .ez-ordnen-leiste > div:first-child { display: flex; flex-direction: column; gap: .2rem; flex: 1 1 16rem; min-width: 0; }
+  .ez-ordnen-leiste .ez-klein svg { width: 1.05em; height: 1.05em; vertical-align: -.18em; }
+  .ez-ordnen-leiste .knoepfe { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .ez-ordnen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+  .ez-ordnen li, .ez-geist { display: flex; align-items: center; gap: .7rem; min-height: 3.4rem; padding: .3rem .3rem .3rem .45rem; border-radius: .65rem; list-style: none;
+    background: var(--surface); border: 1px solid var(--line); box-shadow: var(--schatten); color: var(--ink); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; position: relative; }
+  .ez-ordnen li { cursor: grab; }
+  .ez-ordnen li.ez-kind { margin-left: calc(var(--tiefe, 1) * 1.6rem); }
+  .ez-ordnen .ez-bildmini, .ez-geist .ez-bildmini { width: 2.6rem; height: 2.6rem; flex: none; border-radius: .45rem; overflow: hidden; background: var(--bild-bg, #fff); display: block; }
+  .ez-ordnen .ez-bildmini img, .ez-geist .ez-bildmini img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .ez-ordnen .name, .ez-geist .name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
+  .ez-ordnen .name b, .ez-geist .name b { font-weight: 600; font-size: .92rem; overflow-wrap: anywhere; }
+  .ez-ordnen .name small, .ez-geist .name small { font-size: .74rem; color: var(--muted); }
+  .ez-griff { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: .55rem; background: transparent; color: var(--ink2); cursor: grab; touch-action: none; padding: 0; }
+  .ez-griff svg { width: 1.4rem; height: 1.4rem; }
+  .ez-griff:hover { background: var(--surface2); }
+  .ez-griff:focus-visible { outline: 3px solid var(--akzent); outline-offset: 1px; }
+  .ez-zieht, .ez-zieht * { cursor: grabbing !important; }
+  .ez-ordnen li.zieht { opacity: .35; }
+  .ez-geist { position: fixed; z-index: 9999; pointer-events: none; opacity: .97; box-shadow: 0 14px 34px rgba(0, 0, 0, .38); margin: 0; }
+  .ez-ordnen li.ziel-vor::after, .ez-ordnen li.ziel-nach::after { content: ''; position: absolute; left: 0; right: 0; height: 4px; border-radius: 2px; background: var(--akzent); pointer-events: none; }
+  .ez-ordnen li.ziel-vor::after { top: -.28rem; } .ez-ordnen li.ziel-nach::after { bottom: -.28rem; }
+  .ez-ordnen li.ziel-in { outline: 3px solid var(--akzent); outline-offset: -3px; background: color-mix(in srgb, var(--akzent) 13%, var(--surface)); }
+  .ez-ordnen li.ziel-in::after { content: 'als Untergerät'; position: absolute; right: 3.3rem; top: 50%; transform: translateY(-50%); font-size: .72rem; font-weight: 700;
+    color: #fff; background: var(--akzent-voll, #2563c9); padding: .2rem .55rem; border-radius: 999px; pointer-events: none; }
+  .ez-ordnen-ende { margin-top: .5rem; padding: .9rem; border: 2px dashed var(--line); border-radius: .65rem; text-align: center; color: var(--muted); font-size: .85rem; }
+  .ez-ordnen-ende.an { border-color: var(--akzent); color: var(--ink); background: color-mix(in srgb, var(--akzent) 10%, transparent); }
+  @keyframes ez-neu { from { background: color-mix(in srgb, var(--akzent) 24%, var(--surface)); } }
+  .ez-ordnen li.neu { animation: ez-neu 1.3s ease-out; }
+  @media (prefers-reduced-motion: reduce) { .ez-ordnen li.neu { animation: none; } }
+  .ez-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   /* Spaltenwahl: welcher Werkstoff bzw. welche Ausführung gilt für unser Gerät */
   .ez-spalten { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .65rem; }
   .ez-spalte { font: inherit; display: flex; flex-direction: column; align-items: flex-start; gap: .05rem; padding: .45rem .75rem; min-height: 2.75rem; box-sizing: border-box;
@@ -595,6 +645,9 @@
     frage: SVG('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><circle cx="12" cy="17.2" r=".7" fill="currentColor"/>'),
     muell: SVG('<path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>'),
     plus: SVG('<path d="M12 5v14M5 12h14"/>'),
+    ordnen: SVG('<path d="M7 4v16M3.5 7.5 7 4l3.5 3.5"/><path d="M14 7h7M14 12h7M17 17h4"/>'),
+    griff: SVG('<circle cx="9" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.3" fill="currentColor" stroke="none"/>'),
+    rueckgaengig: SVG('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>'),
     wind: SVG('<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>'),
     tafel: SVG('<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 12h18"/>'),
     bild: SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/>'),
@@ -751,6 +804,52 @@
     geraeteCache = liste;
     return liste;
   }
+  // Gliederung (eigene Reihenfolge, Untergeräte): Einsatz/_App/Geraete/gliederung.json – gilt für alle Geräte; die Ordner bleiben, wo sie sind.
+  // Auf dem Gerät gemerkt (ohne Netz); konnte nicht abgelegt werden, holt das nächste Öffnen es nach. Neuere Fassung gewinnt.
+  const GL_PFAD = '_App/Geraete/' + B.GLIEDERUNG, GL_LS = 'gsz-geraete-gliederung';
+  let gliederung = (() => { try { return B.gliederungPruefen(JSON.parse(localStorage.getItem(GL_LS) || 'null')); } catch { return B.gliederungPruefen(null); } })();
+  let glStand = null, glTimer = null;
+  const glOffen = () => { try { return localStorage.getItem(GL_LS + '-offen') === '1'; } catch { return false; } };
+  const glMerken = (offen = glOffen()) => { try { localStorage.setItem(GL_LS, JSON.stringify(gliederung)); localStorage.setItem(GL_LS + '-offen', offen ? '1' : ''); } catch { /* privat */ } };
+  async function gliederungLaden() {
+    const a = ad();
+    if (!a || !a.verbunden || !a.verbunden() || !a.datei) return gliederung;
+    if (glOffen()) { await gliederungAblegen(true); return gliederung; }
+    const info = dateien.find(d => !d.ordner && d.pfad.normalize('NFC') === GL_PFAD);
+    if (!info) return gliederung;
+    const stand = `${info.rev || ''}|${info.geaendert || ''}|${info.groesse || ''}`;
+    if (stand === glStand) return gliederung;
+    try {
+      const j = B.gliederungPruefen(JSON.parse(await (await a.datei(info.pfad)).text()));
+      if (!gliederung.geaendert || !j.geaendert || j.geaendert >= gliederung.geaendert) { gliederung = j; glMerken(false); }
+      glStand = stand;
+    } catch { /* gemerkter Stand */ }
+    return gliederung;
+  }
+  function gliederungSetzen(neu, sofort = false) {
+    gliederung = B.gliederungPruefen({ ...neu, geaendert: new Date().toISOString() });
+    glMerken(true);
+    clearTimeout(glTimer);
+    glTimer = setTimeout(() => gliederungAblegen(), sofort ? 0 : 700);
+  }
+  async function gliederungAblegen(leise = false) {
+    clearTimeout(glTimer);
+    const a = ad();
+    if (!a || !a.ablegen || !a.verbunden()) { if (!leise) meldung('Nicht mit der Dropbox verbunden – die Anordnung gilt vorerst nur auf diesem Gerät.', 6000); return false; }
+    try {
+      await a.ablegen('_App', 'Geraete', [{ name: B.GLIEDERUNG, blob: new Blob([JSON.stringify(gliederung, null, 1) + '\n'], { type: 'application/json' }) }]);
+      glMerken(false); glStand = null; return true;
+    } catch (e) { if (!leise) meldung('Anordnung nicht gespeichert (wird beim nächsten Öffnen nachgeholt): ' + e.message, 7000); return false; }
+  }
+  // gelöschtes Gerät: seine Untergeräte rücken an seine Stelle
+  function gliederungOhne(ordner) {
+    const o = String(ordner).normalize('NFC'), gl = B.gliederungPruefen(gliederung), p = gl.eltern[o];
+    if (!gl.reihenfolge.includes(o) && !(o in gl.eltern) && !Object.values(gl.eltern).includes(o)) return;
+    for (const [k, v] of Object.entries(gl.eltern)) if (v === o) { if (p) gl.eltern[k] = p; else delete gl.eltern[k]; }
+    delete gl.eltern[o];
+    gl.reihenfolge = gl.reihenfolge.filter(x => x !== o);
+    gliederungSetzen(gl, true);
+  }
   // „Spalten:“ aus info.txt (unsere Werkstoffe bzw. Ausführung) geht vor dem Vorschlag der Auswertung
   function spaltenAnwenden(g) {
     const L = g.daten && g.daten.liste;
@@ -829,7 +928,7 @@
   // ---------------------------------------------------------------- Ansicht: Einsatz (Start)
   const eEl = ansichtElement('einsatz');
   let suchErgebnis = null, suchText = '';
-  const ART_HINWEIS = 'Name, UN-Nr., CAS-Nr. oder Formel – z. B. 1005, 7664-41-7, NH3';
+  const ART_HINWEIS = 'z. B. 1005 · 7664-41-7 · NH3 · Ammoniak';
   const platzhalter = zahl => zahl ? (innerWidth <= 360 ? 'UN-Nummer' : 'UN-Nummer, z. B. 1005') : (innerWidth <= 360 ? 'Stoff oder Nummer' : 'Name, UN- oder CAS-Nr.');
   function einsatzAufbauen() {
     eEl.innerHTML = '';
@@ -1490,6 +1589,7 @@
     if (!ad() || !ad().verbunden()) { ziel.innerHTML = '<div class="ez-leer">Die Beständigkeitslisten liegen im Dropbox-App-Ordner – dazu einmal mit Dropbox verbinden.</div>'; return; }
     if (!dateien.length) await listeHolen(false);
     const G_ = await geraete();
+    await gliederungLaden();
     if (!G_.length) { ziel.innerHTML = `<div class="ez-leer">Noch keine Beständigkeitslisten hinterlegt (Ordner Einsatz › ${BL} im Dropbox-App-Ordner).</div>`; return; }
     const stoffInfo = stoffInfoVon(stoff);
     const kontext = kontextVon(stoff);
@@ -1498,9 +1598,10 @@
     if (nurKategorie) erg = erg.filter(e => kategorie(e.geraet) === nurKategorie);
     const kats = ['Alle', ...new Set(erg.map(e => kategorie(e.geraet)))];
     const zeigen = () => {
-      const sicht = erg.filter(e => nurKategorie || bestFilter === 'Alle' || kategorie(e.geraet) === bestFilter);
+      // Untergeräte (z. B. Schläuche der Schlauchpumpe) direkt unter ihrem Gerät, eingerückt
+      const sicht = B.stoffGegliedert(erg, gliederung, g => nurKategorie || bestFilter === 'Alle' || kategorie(g) === bestFilter);
       ziel.innerHTML = (nurKategorie || kats.length <= 2 ? '' : `<div class="ez-filter">${kats.map(k => `<button class="${k === bestFilter ? 'an' : ''}" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>`) +
-        (sicht.length ? `<ul class="ez-geraete">${sicht.map(e => geraetZeile(e, kontext)).join('')}</ul>` : '<div class="ez-leer">Keine Ausrüstung in dieser Gruppe.</div>') +
+        (sicht.length ? `<ul class="ez-geraete">${sicht.map(x => geraetZeile(x.e, kontext, x)).join('')}</ul>` : '<div class="ez-leer">Keine Ausrüstung in dieser Gruppe.</div>') +
         '<div class="ez-klein" style="margin-top:.6rem">Bewertung nach den Herstellerlisten. Maßgeblich ist die Originalliste – Tippen öffnet das Gerät mit Original. ' +
         'Bei mehreren Zeilen (Konzentration, Temperatur) zählt in der Übersicht die ungünstigste.</div>';
       for (const b of ziel.querySelectorAll('.ez-filter button')) b.addEventListener('click', () => { bestFilter = b.dataset.k; zeigen(); });
@@ -1566,8 +1667,8 @@
     const fn = fussnotenZu(L, w.roh).map(f => `Fußnote ${fnZeichen(f.z)}: ${f.text || 'im Original nachsehen'}`).join(' · ');
     return band(w.roh, unter, w.roh.length > 5 ? ' lang' : '', def, fn);
   }
-  function geraetZeile(e, kontext = '') {
-    const g = e.geraet;
+  function geraetZeile(e, kontext = '', glied = null) {
+    const g = e.geraet, tiefe = glied ? Math.min(glied.tiefe, 4) : 0;
     const titel = (g.nr ? g.nr + ' · ' : '') + g.name;
     const eintraege = e.treffer.slice(0, 6).map(t => {
       const L = g.daten.liste;
@@ -1586,7 +1687,7 @@
         `${fns.length ? `<i class="ez-fn">${fnTextHtml(fns, ids.length > 1)}</i>` : ''}${t.eintrag.hinweis ? `<i>${esc(t.eintrag.hinweis)}</i>` : ''}</div>`;
     }).join('');
     const rest = e.treffer.length > 6 ? `<div class="eintrag"><i>… und ${e.treffer.length - 6} weitere Zeilen</i></div>` : '';
-    return `<li><a href="#geraet/${kodiere(g.ordner)}${kontext ? '/' + kodiere(kontext) : ''}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}"><div class="ez-zeile-inhalt">
+    return `<li${tiefe ? ` class="ez-kind" style="--tiefe:${tiefe}"` : ''}><a href="#geraet/${kodiere(g.ordner)}${kontext ? '/' + kodiere(kontext) : ''}" style="--c:${STUFE_FARBE[e.stufe] || 'var(--rand)'}"><div class="ez-zeile-inhalt">
       ${g.foto ? `<span class="ez-bild ez-bildmini${bildFuellen(bildVon(g))}" style="${bildStil(bildVon(g), false)}"><img data-foto="${esc(g.foto)}" alt=""></span>` : '<span class="ez-bild">kein Bild</span>'}
       <b>${esc(titel)}</b>
       <div class="zeile">${stufeBadge(e.stufe)}${e.nurAehnlich ? '<span class="ez-ungeprueft">nur ähnlicher Name</span>' : ''}${e.widerspruch ? '<span class="ez-wid-badge" title="Der Stoff steht mehrfach mit unterschiedlicher Bewertung in der Liste – im Original nachsehen; bis dahin gilt die ungünstigere Angabe">⚠ widersprüchlich</span>' : ''}${pruefBadge(g)}</div>
@@ -1726,10 +1827,19 @@
     el.addEventListener('click', e => { const b = e.target.closest('[data-alle]'); if (b) verfSetzen(alle.map(d => d.pfad), b.dataset.alle); });
   }
   // Beständigkeitslisten: Geräte als Bilder
+  // Anordnen (Reihenfolge, Untergeräte) nur in einem eigenen Modus – im Einsatz verrutscht so nichts aus Versehen
+  let ordnenAn = false, ordnenAb = null, ordnenZieht = false;
+  const ordnenVerlauf = [];
+  const ordnenBeenden = () => { if (ordnenAb) ordnenAb(); };
+  const titelVon = g => (g.nr ? g.nr + ' · ' : '') + g.name;
   async function geraeteSeite(k) {
-    k.innerHTML = '<div class="ez-leer">wird geladen …</div>';
+    if (!k.querySelector('.ez-raster, .ez-ordnen')) k.innerHTML = '<div class="ez-leer">wird geladen …</div>';
     const G_ = await geraete();
-    const neuKnopf = ad() && ad().geraetDateien ? `<div class="ez-aktionen" style="margin:0 0 .8rem"><a class="knopf" href="#geraet-neu" style="font-weight:700">${I.plus}Gerät oder PSA anlegen</a></div>` : '';
+    await gliederungLaden();
+    const kannOrdnen = !!(ad() && ad().ablegen && ad().verbunden() && G_.length > 1);
+    if (!kannOrdnen) ordnenAn = false;
+    const neuKnopf = ad() && ad().geraetDateien ? `<div class="ez-aktionen ez-geraete-aktionen" style="margin:0 0 .8rem"><a class="knopf" href="#geraet-neu" style="font-weight:700">${I.plus}Gerät oder PSA anlegen</a>` +
+      (kannOrdnen ? `<button type="button" class="knopf" id="ez-ordnen" aria-pressed="false" title="Reihenfolge ändern und Untergeräte zuordnen (z. B. Schläuche unter die Schlauchpumpe)">${I.ordnen}Anordnen</button>` : '') + '</div>' : '';
     if (!G_.length) {
       k.innerHTML = neuKnopf + `<div class="ez-leer">Noch keine Geräte. ${neuKnopf ? '„Gerät oder PSA anlegen“ antippen: Name, Gruppe, Foto und die Original-Beständigkeitsliste (PDF oder Fotos) wählen – fertig.' :
         'Je Gerät einen Ordner anlegen (z. B. „27 ELRO Schlauchpumpe“) mit Foto (Dateiname beginnt mit „Foto“) und Original-Beständigkeitsliste (PDF oder Fotos).'}` +
@@ -1737,7 +1847,7 @@
       return;
     }
     const kats = ['Alle', ...B.KATEGORIEN.filter(c => G_.some(g => kategorie(g) === c))];
-    let f = 'Alle';
+    let f = k.dataset.filter && kats.includes(k.dataset.filter) ? k.dataset.filter : 'Alle';
     // Anordnung: gemerkte Wahl, sonst 2×2 auf dem Handy und 4×4 auf großen Bildschirmen
     const ANORDNUNG = [['liste', 'Liste', SVG('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/>')],
       ['symbole', 'Symbole', SVG('<rect x="3.5" y="3.5" width="4" height="4" rx="1"/><rect x="10" y="3.5" width="4" height="4" rx="1"/><rect x="16.5" y="3.5" width="4" height="4" rx="1"/><rect x="3.5" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><rect x="16.5" y="10" width="4" height="4" rx="1"/><rect x="3.5" y="16.5" width="4" height="4" rx="1"/><rect x="10" y="16.5" width="4" height="4" rx="1"/>')],
@@ -1746,20 +1856,170 @@
     let anordnung = (() => { try { return localStorage.getItem('gsz-geraete-anordnung'); } catch { return null; } })();
     if (!ANORDNUNG.some(a => a[0] === anordnung)) anordnung = innerWidth <= 640 ? '2' : '4';
     const zeigen = () => {
-      const sicht = G_.filter(g => f === 'Alle' || kategorie(g) === f).sort((a, b) => (Number(a.nr) || 999) - (Number(b.nr) || 999) || a.name.localeCompare(b.name, 'de'));
+      if (ordnenAn) { ordnenZeigen(k, G_, neuKnopf, zeigen); return; }
+      // Familien (Gerät mit seinen Untergeräten) stehen zusammen; in der Liste eingerückt, in den Rastern in einem gemeinsamen Rahmen
+      const baum = B.gliederungFiltern(B.gliedern(G_, gliederung), g => f === 'Alle' || kategorie(g) === f);
+      const nachO = new Map(baum.map(x => [x.ordner, x]));
+      const kachel = x => { const g = x.geraet, b = bildVon(g), el = x.eltern && nachO.get(x.eltern);
+        return `<a href="#geraet/${kodiere(g.ordner)}" class="bild-${esc(b.groesse)}${bildFuellen(b)}${x.tiefe ? ' ez-kind' : ''}${x.kinder ? ' ez-hat-kinder' : ''}" style="--tiefe:${Math.min(x.tiefe, 4)}" draggable="false"
+          title="${esc(titelVon(g) + (el ? ' – Untergerät von ' + titelVon(el.geraet) : ''))}"><div class="foto" style="${bildStil(b)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="" draggable="false">` : 'kein Bild'}</div>
+          <div class="unter"><b>${esc(titelVon(g))}</b><small>${esc(kategorie(g))} · ${g.daten ? `${g.daten.eintraege.length} Einträge` : g.quellen.length ? `<span data-auswertung="${esc(nfc(g.ordner))}">noch nicht ausgewertet</span>` : 'keine Liste'}${x.kinder ? ` · ${x.kinder} Untergerät${x.kinder === 1 ? '' : 'e'}` : ''}</small>
+          <span>${pruefBadge(g)}</span></div></a>`; };
+      let raster = '';
+      for (let i = 0; i < baum.length;) { let j = i + 1; while (j < baum.length && baum[j].wurzel === baum[i].ordner) j++;
+        raster += j - i > 1 ? `<div class="ez-familie" role="group" aria-label="${esc(titelVon(baum[i].geraet))} mit Untergeräten">${baum.slice(i, j).map(kachel).join('')}</div>` : kachel(baum[i]); i = j; }
       k.innerHTML = neuKnopf + `<div class="ez-raster-kopf"><div class="ez-filter">${kats.map(c => `<button class="${c === f ? 'an' : ''}" data-k="${esc(c)}">${esc(c)}</button>`).join('')}</div>
         <div class="ez-anordnung" role="radiogroup" aria-label="Anordnung der Geräte">${ANORDNUNG.map(([id, name, sym]) =>
           `<button type="button" role="radio" aria-checked="${id === anordnung}" data-ansicht-wahl="${id}" title="Anordnung: ${esc(name)}" aria-label="${esc(name)}">${sym}</button>`).join('')}</div></div>
-        <div class="ez-raster an-${esc(anordnung)}">${sicht.map(g => { const b = bildVon(g); return `<a href="#geraet/${kodiere(g.ordner)}" class="bild-${esc(b.groesse)}${bildFuellen(b)}" title="${esc((g.nr ? g.nr + ' · ' : '') + g.name)}"><div class="foto" style="${bildStil(b)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="">` : 'kein Bild'}</div>
-          <div class="unter"><b>${esc((g.nr ? g.nr + ' · ' : '') + g.name)}</b><small>${esc(kategorie(g))} · ${g.daten ? `${g.daten.eintraege.length} Einträge` : g.quellen.length ? `<span data-auswertung="${esc(nfc(g.ordner))}">noch nicht ausgewertet</span>` : 'keine Liste'}</small>
-          <span>${pruefBadge(g)}</span></div></a>`; }).join('')}</div>`;
-      for (const b of k.querySelectorAll('.ez-filter button')) b.addEventListener('click', () => { f = b.dataset.k; zeigen(); });
+        <div class="ez-raster an-${esc(anordnung)}">${raster}</div>`;
+      for (const b of k.querySelectorAll('.ez-filter button')) b.addEventListener('click', () => { f = b.dataset.k; k.dataset.filter = f; zeigen(); });
       for (const b of k.querySelectorAll('[data-ansicht-wahl]')) b.addEventListener('click', () => {
         anordnung = b.dataset.ansichtWahl; try { localStorage.setItem('gsz-geraete-anordnung', anordnung); } catch { /* privat */ } zeigen(); });
+      const o = k.querySelector('#ez-ordnen');
+      if (o) o.addEventListener('click', () => { ordnenAn = true; ordnenVerlauf.length = 0; zeigen(); k.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
       fotoEinsetzen(k);
     };
     zeigen();
     if (G_.some(g => !g.daten && g.quellen.length)) rasterBeobachten(k);
+  }
+  // Anordnen: kompakte Liste mit Griff. Griff ziehen (Finger oder Maus) – auf die Mitte eines Geräts = Untergerät, an den oberen bzw.
+  // unteren Rand = davor bzw. dahinter. Tastatur am Griff: ↑ ↓ Reihenfolge, → Untergerät des vorigen, ← herausnehmen.
+  function ordnenZeigen(k, G_, neuKnopf, zurueck) {
+    const baum = B.gliedern(G_, gliederung), nachO = new Map(baum.map(x => [x.ordner, x]));
+    const zeile = x => { const g = x.geraet, b = bildVon(g), el = x.eltern && nachO.get(x.eltern);
+      return `<li data-ordner="${esc(x.ordner)}" class="${x.tiefe ? 'ez-kind' : ''}" style="--tiefe:${Math.min(x.tiefe, 4)}">
+        <span class="ez-bild ez-bildmini${bildFuellen(b)}" style="${bildStil(b, false)}">${g.foto ? `<img data-foto="${esc(g.foto)}" alt="" draggable="false">` : ''}</span>
+        <span class="name"><b>${esc(titelVon(g))}</b><small>${esc(kategorie(g))}${el ? ' · Untergerät' : ''}${x.kinder ? ` · ${x.kinder} Untergerät${x.kinder === 1 ? '' : 'e'}` : ''}</small></span>
+        <button type="button" class="ez-griff" data-griff aria-label="${esc(titelVon(g))} verschieben" aria-describedby="ez-ordnen-hilfe">${I.griff}</button></li>`; };
+    k.innerHTML = `<div class="ez-ordnen-leiste" role="region" aria-label="Anordnen">
+        <div><b>Anordnen</b><span class="ez-klein" id="ez-ordnen-hilfe">Gerät am Griff ${I.griff} ziehen: auf die Mitte eines anderen Geräts = dessen Untergerät (z. B. Schläuche unter die Schlauchpumpe),
+          an den oberen oder unteren Rand = davor bzw. dahinter. Mit der Tastatur am Griff: ↑ ↓ verschieben, → Untergerät des vorigen, ← herausnehmen.</span></div>
+        <div class="knoepfe"><button type="button" class="knopf" id="ez-ordnen-zurueck"${ordnenVerlauf.length ? '' : ' disabled'}>${I.rueckgaengig}Rückgängig</button>
+          <button type="button" class="knopf los" id="ez-ordnen-fertig">Fertig</button></div></div>
+      <ul class="ez-ordnen" aria-label="Geräte in ihrer Reihenfolge">${baum.map(zeile).join('')}</ul>
+      <div class="ez-ordnen-ende" data-ende hidden>Hierher ziehen: ans Ende (eigenständiges Gerät)</div>
+      <div class="ez-klein" style="margin-top:.6rem">Gilt für alle Geräte (zentral im Dropbox-App-Ordner). Die Ordner der Geräte bleiben unverändert.</div>
+      <div class="ez-sr" aria-live="polite" id="ez-ordnen-ansage"></div>`;
+    fotoEinsetzen(k);
+    const liste = k.querySelector('.ez-ordnen'), ende = k.querySelector('[data-ende]'), ansage = k.querySelector('#ez-ordnen-ansage');
+    const name = o => { const x = nachO.get(o); return x ? '„' + titelVon(x.geraet) + '“' : ''; };
+    const anwenden = (x, ziel, art, { fokus = false, gezogen = false } = {}) => {
+      // gezogen an den unteren Rand eines Geräts mit Untergeräten = vor dessen erstes Untergerät (dort erscheint die Linie)
+      const erstesKind = gezogen && ziel && art === 'nach' && baum.find(y => y.eltern === ziel);
+      if (erstesKind && erstesKind.ordner === x) return true;
+      if (erstesKind) { ziel = erstesKind.ordner; art = 'vor'; }
+      const neu = ziel === null ? (() => { const letzte = baum.filter(y => !y.eltern && y.ordner !== x).pop(); return letzte ? B.verschieben(G_, gliederung, x, letzte.ordner, 'nach') : null; })()
+        : B.verschieben(G_, gliederung, x, ziel, art);
+      if (!neu) return false;
+      ordnenVerlauf.push(gliederung);
+      gliederungSetzen(neu);
+      const n = B.gliedern(G_, neu).find(y => y.ordner === x);
+      const text = n && n.eltern ? `${name(x)} ist jetzt Untergerät von ${name(n.eltern)}.` : `${name(x)} steht jetzt ${ziel ? (art === 'vor' ? 'vor ' : 'hinter ') + name(ziel) : 'am Ende'}.`;
+      ordnenZeigen(k, G_, neuKnopf, zurueck);
+      const a2 = k.querySelector('#ez-ordnen-ansage'); if (a2) a2.textContent = text;
+      const li = [...k.querySelectorAll('.ez-ordnen li')].find(l => l.dataset.ordner === x);
+      if (li) { li.classList.add('neu'); if (fokus) li.querySelector('[data-griff]').focus(); }
+      return true;
+    };
+    k.querySelector('#ez-ordnen-fertig').addEventListener('click', async () => { ordnenAn = false; ordnenBeenden(); if (glOffen()) await gliederungAblegen(); zurueck(); });
+    k.querySelector('#ez-ordnen-zurueck').addEventListener('click', () => {
+      if (!ordnenVerlauf.length) return;
+      gliederungSetzen(ordnenVerlauf.pop());
+      ordnenZeigen(k, G_, neuKnopf, zurueck);
+      const a2 = k.querySelector('#ez-ordnen-ansage'); if (a2) a2.textContent = 'Letzte Änderung zurückgenommen.';
+    });
+    // Tastatur
+    liste.addEventListener('keydown', e => {
+      const griff = e.target.closest('[data-griff]'); if (!griff) return;
+      const x = griff.closest('li').dataset.ordner, me = nachO.get(x);
+      const geschw = baum.filter(y => y.eltern === me.eltern), i = geschw.findIndex(y => y.ordner === x);
+      let ok = null;
+      if (e.key === 'ArrowUp' && i > 0) ok = anwenden(x, geschw[i - 1].ordner, 'vor', { fokus: true });
+      else if (e.key === 'ArrowDown' && i < geschw.length - 1) ok = anwenden(x, geschw[i + 1].ordner, 'nach', { fokus: true });
+      else if (e.key === 'ArrowRight' && i > 0) ok = anwenden(x, geschw[i - 1].ordner, 'in', { fokus: true });
+      else if (e.key === 'ArrowLeft' && me.eltern) ok = anwenden(x, me.eltern, 'nach', { fokus: true });
+      else return;
+      e.preventDefault();
+      if (!ok && ansage) ansage.textContent = 'Hier nicht möglich.';
+    });
+    // Ziehen: Pointer-Ereignisse am Griff (touch-action: none – der Finger scrollt nicht), mit der Maus auch an der ganzen Zeile
+    let z = null, rollen = 0;
+    const scroller = (() => { for (let e = liste.parentElement; e; e = e.parentElement) { const s = getComputedStyle(e);
+      if (/(auto|scroll)/.test(s.overflowY) && e.scrollHeight > e.clientHeight + 4) return e; } return document.scrollingElement || document.documentElement; })();
+    const markieren = (li, art) => {
+      for (const m of liste.querySelectorAll('.ziel-vor, .ziel-nach, .ziel-in')) m.classList.remove('ziel-vor', 'ziel-nach', 'ziel-in');
+      ende.classList.toggle('an', art === 'ende');
+      if (li) li.classList.add('ziel-' + art);
+    };
+    const zielSuchen = (x, y) => {
+      const el = document.elementFromPoint(x, y);
+      if (el && el.closest('[data-ende]')) return { li: null, art: 'ende' };
+      const li = el && el.closest('.ez-ordnen li');
+      if (!li || !liste.contains(li) || li.classList.contains('zieht')) return { li: null, art: '' };
+      const o = li.dataset.ordner;
+      for (let e = (nachO.get(o) || {}).eltern; e; e = (nachO.get(e) || {}).eltern) if (e === z.o) return { li: null, art: '' };   // in sein eigenes Untergerät: nicht möglich
+      const r = li.getBoundingClientRect(), a = (y - r.top) / r.height;
+      return { li, art: a < 0.27 ? 'vor' : a > 0.73 ? 'nach' : 'in' };
+    };
+    const bewegen = (x, y) => {
+      z.x = x; z.y = y;
+      z.geist.style.transform = `translate(${Math.round(x - z.dx)}px, ${Math.round(y - z.dy)}px)`;
+      const t = zielSuchen(x, y); z.ziel = t; markieren(t.li, t.art);
+      const r = scroller === document.scrollingElement || scroller === document.documentElement ? { top: 0, bottom: innerHeight } : scroller.getBoundingClientRect();
+      rollen = y < r.top + 70 ? -Math.ceil((r.top + 70 - y) / 6) : y > r.bottom - 70 ? Math.ceil((y - (r.bottom - 70)) / 6) : 0;
+    };
+    const schleife = () => { if (!z) return; if (rollen) { scroller.scrollBy(0, rollen); const t = zielSuchen(z.x, z.y); z.ziel = t; markieren(t.li, t.art); } requestAnimationFrame(schleife); };
+    const starten = (li, x, y) => {
+      const r = li.getBoundingClientRect();
+      const geist = li.cloneNode(true);
+      geist.className = 'ez-geist' + (li.classList.contains('ez-kind') ? ' ez-kind' : '');
+      geist.removeAttribute('data-ordner');
+      geist.style.cssText = `width:${r.width}px;left:0;top:0;transform:translate(${Math.round(r.left)}px,${Math.round(r.top)}px)`;
+      document.body.appendChild(geist);
+      li.classList.add('zieht');
+      // die eigenen Untergeräte gehen mit
+      for (const l of liste.querySelectorAll('li')) for (let e = (nachO.get(l.dataset.ordner) || {}).eltern; e; e = (nachO.get(e) || {}).eltern) if (e === li.dataset.ordner) l.classList.add('zieht');
+      ende.hidden = false;
+      k.classList.add('ez-zieht');
+      z = { o: li.dataset.ordner, li, geist, dx: x - r.left, dy: y - r.top, x, y, ziel: { li: null, art: '' } };
+      ordnenZieht = true;
+      if (navigator.vibrate) try { navigator.vibrate(12); } catch { /* egal */ }
+      bewegen(x, y);
+      requestAnimationFrame(schleife);
+    };
+    const beenden = abbruch => {
+      if (!z) return;
+      const { o, ziel } = z, geist = z.geist;
+      z = null; rollen = 0; ordnenZieht = false;
+      geist.remove(); k.classList.remove('ez-zieht'); markieren(null, '');
+      for (const l of liste.querySelectorAll('.zieht')) l.classList.remove('zieht');
+      ende.hidden = true;
+      if (abbruch || !ziel.art) return;
+      if (!anwenden(o, ziel.art === 'ende' ? null : ziel.li.dataset.ordner, ziel.art === 'ende' ? 'nach' : ziel.art, { gezogen: true })) { const a2 = k.querySelector('#ez-ordnen-ansage'); if (a2) a2.textContent = 'Hier nicht möglich.'; }
+    };
+    let warten = null;
+    liste.addEventListener('pointerdown', e => {
+      if (z || e.button > 0) return;
+      const griff = e.target.closest('[data-griff]'), li = e.target.closest('li');
+      if (!li) return;
+      if (griff) { e.preventDefault(); try { griff.setPointerCapture(e.pointerId); } catch { /* egal */ } starten(li, e.clientX, e.clientY); z.id = e.pointerId; z.quelle = griff; return; }
+      if (e.pointerType === 'mouse') warten = { li, x: e.clientX, y: e.clientY, id: e.pointerId };   // Maus: Zeile ab 5 px Bewegung ziehen
+    });
+    const bewegt = e => {
+      if (warten && !z && e.pointerId === warten.id && Math.hypot(e.clientX - warten.x, e.clientY - warten.y) > 5) {
+        const w = warten; warten = null; starten(w.li, w.x, w.y); z.id = e.pointerId; }
+      if (z && e.pointerId === z.id) { e.preventDefault(); bewegen(e.clientX, e.clientY); }
+    };
+    const los = e => { warten = null; if (z && e.pointerId === z.id) beenden(e.type === 'pointercancel'); };
+    // an document, damit der Griff auch außerhalb der Liste weiterzieht; beim nächsten Zeichnen abgemeldet
+    ordnenBeenden();
+    document.addEventListener('pointermove', bewegt, { passive: false });
+    document.addEventListener('pointerup', los);
+    document.addEventListener('pointercancel', los);
+    const esc_ = e => { if (e.key === 'Escape' && z) beenden(true); };
+    document.addEventListener('keydown', esc_);
+    ordnenAb = () => { document.removeEventListener('pointermove', bewegt); document.removeEventListener('pointerup', los); document.removeEventListener('pointercancel', los);
+      document.removeEventListener('keydown', esc_); if (z) beenden(true); ordnenAb = null; };
   }
   // Beständigkeitslisten-Übersicht: „wird ausgewertet · 40 %“ auf den Kacheln noch nicht ausgewerteter Geräte
   let rasterTimer = null;
@@ -1783,7 +2043,7 @@
     runde();
   }
   GSZ.ansicht('ordner', {
-    element: oEl, titel: p => dekodiere(p).split('/').pop(), verlassen() { clearInterval(rasterTimer); },
+    element: oEl, titel: p => dekodiere(p).split('/').pop(), verlassen() { clearInterval(rasterTimer); ordnenAn = false; ordnenBeenden(); },
     async anzeigen(param) { const pfad = dekodiere(param); if (!dateien.length && ad() && ad().verbunden()) await listeHolen(false); ordnerSeite(pfad); },
   });
 
@@ -1803,6 +2063,13 @@
     gEl.appendChild(kopf({ titel: g ? (g.nr ? g.nr + ' · ' : '') + g.name : ordner, unter: BL, eltern: 'ordner/' + kodiere(BL) }));
     if (!g) { gEl.insertAdjacentHTML('beforeend', '<div class="ez-leer">Gerät nicht gefunden.</div>'); return; }
     const d = g.daten, L = d && d.liste;
+    // Gliederung: übergeordnetes Gerät und Untergeräte als Verweise
+    await gliederungLaden();
+    const fam = B.gliedern(await geraete(), gliederung), ich = fam.find(x => x.ordner === nfc(g.ordner));
+    const elternG = ich && ich.eltern ? (fam.find(x => x.ordner === ich.eltern) || {}).geraet : null;
+    const kinderG = ich ? fam.filter(x => x.eltern === ich.ordner).map(x => x.geraet) : [];
+    const famHtml = (elternG ? `<div class="ez-familie-zeile"><span>Teil von</span><a class="ez-chip" href="#geraet/${kodiere(elternG.ordner)}${kontext ? '/' + kodiere(kontext) : ''}">${esc(titelVon(elternG))}</a></div>` : '') +
+      (kinderG.length ? `<div class="ez-familie-zeile"><span>Untergeräte</span>${kinderG.map(c => `<a class="ez-chip" href="#geraet/${kodiere(c.ordner)}${kontext ? '/' + kodiere(kontext) : ''}">${esc(titelVon(c))}</a>`).join('')}</div>` : '');
     const kopfK = document.createElement('section');
     kopfK.className = 'kachel ez-karte';
     const bild = bildVon(g), bearbeitbar = !!(ad() && ad().geraetDateien);
@@ -1855,6 +2122,7 @@
         ${bearbeitbar ? `<a class="knopf" href="#geraet-neu/${kodiere(g.ordner)}" data-sprung="gn-bild">${I.bild}Bild anpassen</a>` : ''}</div>
       <div style="flex:1;min-width:13rem;display:flex;flex-direction:column;gap:.35rem">
         <div class="zeile" style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">${d || g.kategorieInfo ? `<span class="ez-chip">${esc(kategorie(g))}</span>` : ''}${pruefBadge(g)}</div>
+        ${famHtml}
         ${d && d.geraet.hersteller ? `<div class="ez-hinweis">Hersteller: ${esc(d.geraet.hersteller)}</div>` : ''}
         ${d && d.geraet.werkstoffe.length ? `<div class="ez-hinweis">Werkstoffe: ${esc(d.geraet.werkstoffe.join(', '))}</div>` : ''}
         ${infoTxt && !infoLang ? `<div class="ez-hinweis">${esc(infoTxt)}</div>` : ''}
@@ -2229,6 +2497,20 @@
     const vorschlag = String(nummern.length ? Math.max(...nummern) + 1 : 1);
     const katJetzt = g ? kategorie(g) : '';
     const bild = bildVon(g), bildVorher = JSON.stringify(bild);
+    // „Untergerät von“: alle Geräte außer dem eigenen und seinen Untergeräten
+    await gliederungLaden();
+    const famAlle = B.gliedern(alle, gliederung), ichO = g ? nfc(g.ordner) : '';
+    const unterMir = o => { for (let e = (famAlle.find(x => x.ordner === o) || {}).eltern; e; e = (famAlle.find(x => x.ordner === e) || {}).eltern) if (e === ichO) return true; return false; };
+    const elternWahl = (ad() && ad().ablegen) ? famAlle.filter(x => x.ordner !== ichO && !unterMir(x.ordner)) : [];
+    const elternJetzt = g ? ((famAlle.find(x => x.ordner === ichO) || {}).eltern || '') : '';
+    // neue Zuordnung in die Gliederung (beim Anlegen ist das neue Gerät noch nicht in der Liste)
+    const elternSetzen = (ziel, neuG) => {
+      const sel = k.querySelector('#gn-eltern'); if (!sel || sel.value === elternJetzt) return false;
+      const liste = neuG ? [...alle, neuG] : alle, x = nfc(ziel);
+      const neu = sel.value ? B.verschieben(liste, gliederung, x, sel.value, 'in') : B.verschieben(liste, gliederung, x, elternJetzt, 'nach');
+      if (neu) gliederungSetzen(neu, true);
+      return !!neu;
+    };
     const knoepfe = (schl, farben = false) => Object.entries(B.BILD_WAHL[schl]).map(([w, t]) => farben
       ? `<button type="button" data-w="${esc(w)}" class="${w === 'auto' ? 'auto' : ''}${bild[schl] === w ? ' an' : ''}" style="--f:${BILD_FARBE[w] || '#ffffff'}" title="${esc(t)}" aria-label="Hintergrund ${esc(t)}" aria-pressed="${bild[schl] === w}"></button>`
       : `<button type="button" data-w="${esc(w)}"${bild[schl] === w ? ' class="an"' : ''} aria-pressed="${bild[schl] === w}">${esc(t)}</button>`).join('');
@@ -2237,6 +2519,9 @@
         <label class="feld">Bezeichnung<input type="text" id="gn-name" maxlength="80" placeholder="z. B. Tychem TK Gasschutzanzug" autocomplete="off"></label></div>`}
       <label class="feld">Gruppe<select id="gn-kat">${B.KATEGORIEN.map(c => `<option${c === (katJetzt || 'Schutzkleidung') ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>
         <span class="ez-klein" style="font-weight:400">„Schutzkleidung“ erscheint im Einsatzbildschirm auch unter PSA.</span></label>
+      ${elternWahl.length ? `<label class="feld">Untergerät von<select id="gn-eltern"><option value="">– eigenständiges Gerät –</option>${elternWahl.map(x =>
+        `<option value="${esc(x.ordner)}"${x.ordner === elternJetzt ? ' selected' : ''}>${'\u2003'.repeat(Math.min(x.tiefe, 4))}${esc(titelVon(x.geraet))}</option>`).join('')}</select>
+        <span class="ez-klein" style="font-weight:400">z. B. die Schläuche unter der Schlauchpumpe: Sie stehen dann eingerückt darunter. Reihenfolge und Untergeräte lassen sich in der Übersicht auch mit „Anordnen“ ziehen.</span></label>` : ''}
       <div class="feld" style="display:flex;flex-direction:column;gap:.35rem"><span class="ez-klein" style="font-weight:600;color:var(--ink2)">Foto</span>
         <div class="ez-wahl"><label class="knopf ez-import">${I.kamera}<span>${g && g.foto ? 'Foto ersetzen' : 'Foto aufnehmen oder wählen'}</span><input type="file" id="gn-foto" accept="image/*"></label>
           <div class="namen" id="gn-foto-name"></div></div></div>
@@ -2323,6 +2608,7 @@
           if (!confirm(`Gerät „${titel}“ wirklich löschen – mit Foto, ${n === 1 ? 'Liste' : n + ' Listen'} und Auswertung?`)) return;
           try { await a.geraetLoeschen(g.ordner); }
           catch (f) { meldung('Löschen nicht möglich: ' + f.message, 7000); return; }
+          gliederungOhne(g.ordner);
           geraeteCache = null; urlCache.clear();
           await listeHolen(true);
           GSZ.zeige('ordner/' + kodiere(BL), true);
@@ -2436,11 +2722,14 @@
       const bildNeu = JSON.stringify(bild) !== bildVorher;
       if (!g || kat !== katJetzt || info !== (g.infoText || '') || bildNeu) hoch.push({ name: g && g.info ? g.info.split('/').pop() : 'info.txt',
         blob: new Blob([B.infoText({ kategorie: kat, spalten: g ? g.spaltenWahl || [] : [], bild, text: info })], { type: 'text/plain' }) });
-      if (g && !hoch.length) { meldung(schonDa.length ? `„${schonDa.join('“, „')}“ ist schon vorhanden – nichts geändert.` : 'Nichts geändert.', 6000); return; }
+      if (g && !hoch.length) {
+        if (elternSetzen(ziel)) { meldung('Gespeichert.', 4000); GSZ.zeige('geraet/' + kodiere(ziel), true); return; }
+        meldung(schonDa.length ? `„${schonDa.join('“, „')}“ ist schon vorhanden – nichts geändert.` : 'Nichts geändert.', 6000); return; }
       los.disabled = true; status.textContent = 'Wird gespeichert …';
       try {
         await a.geraetDateien(ziel, hoch, { loeschen: weg }, (n, von) => { status.textContent = `Wird hochgeladen … ${n} von ${von}`; });
       } catch (f) { los.disabled = false; status.textContent = ''; meldung('Speichern nicht möglich: ' + f.message, 8000); return; }
+      elternSetzen(ziel, g ? null : { ordner: ziel, nr, name });
       geraeteCache = null; urlCache.clear();
       await listeHolen(true);
       GSZ.zeige('geraet/' + kodiere(ziel), true);
@@ -2594,7 +2883,8 @@
   function neuZeichnen() {
     const a = GSZ.aktuell;
     if (a.ansicht === 'einsatz') { ordnerZeigen(); statusZeigen(); eigeneZeigen(); }
-    else if (a.ansicht === 'ordner') ordnerSeite(dekodiere(a.param));
+    // beim Anordnen nicht neu aufbauen (Abgleich nach dem Speichern): Fokus und Lage der Liste bleiben
+    else if (a.ansicht === 'ordner') { if (!ordnenZieht && !(ordnenAn && dekodiere(a.param) === BL)) ordnerSeite(dekodiere(a.param)); }
     else statusZeigen();
     schilderAktualisieren();
   }

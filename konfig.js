@@ -1,1 +1,1 @@
-window.CSA_KONFIG = {"appKey":"","pfad":"/CSA-Monitor-Daten.xlsm","stand":"18.11.2026 02:43"};
+window.CSA_KONFIG = {"appKey":"","pfad":"/CSA-Monitor-Daten.xlsm","stand":"23.11.2026 00:19"};

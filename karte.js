@@ -153,7 +153,8 @@
         ebenen.push(unfall);
         schilder();
       },
-      einpassen(pkte) { karte.fitBounds(L.latLngBounds(pkte.map(x => [x.lat, x.lon])), { padding: [24, 24], maxZoom: 18, animate: false }); },
+      einpassen(pkte) { const r = rand(el);
+        karte.fitBounds(L.latLngBounds(pkte.map(x => [x.lat, x.lon])), { paddingTopLeft: [r.seite, r.oben], paddingBottomRight: [r.seite, r.seite], maxZoom: 18, animate: false }); },
       mitte() { const c = karte.getCenter(); return { lat: c.lat, lon: c.lng }; },
       verschieben(x) { karte.setView([x.lat, x.lon], karte.getZoom(), { animate: false }); },
       groesse() { karte.invalidateSize(); },
@@ -176,6 +177,13 @@
     return googleLaedt;
   }
   let googleKaputt = false;
+  // Rand beim Einpassen: oben Platz unter der Windanzeige der Karte (sonst lägen Unfallort und Beschriftung darunter, v. a. im Querformat)
+  function rand(el) {
+    const w = el.parentElement && el.parentElement.querySelector('.lg-karte-wind');
+    const r = w && w.getBoundingClientRect(), k = el.getBoundingClientRect();
+    const oben = r && r.height ? Math.min(Math.round(r.bottom - k.top + 30), Math.round(k.height * 0.4)) : 24;
+    return { oben: Math.max(24, oben), seite: 24 };
+  }
   function googleKarte(g, el, o) {
     const karte = new g.Map(el, { center: { lat: o.lat, lng: o.lon }, zoom: 17, mapTypeId: 'hybrid', scaleControl: true, streetViewControl: false, fullscreenControl: false,
       rotateControl: false, gestureHandling: 'greedy', clickableIcons: false, mapTypeControlOptions: { mapTypeIds: ['roadmap', 'hybrid'] } });
@@ -217,7 +225,7 @@
         ebenen.push(m);
         schilder();
       },
-      einpassen(pkte) { const b = new g.LatLngBounds(); for (const x of pkte) b.extend(ll(x)); karte.fitBounds(b, 24);
+      einpassen(pkte) { const b = new g.LatLngBounds(), r = rand(el); for (const x of pkte) b.extend(ll(x)); karte.fitBounds(b, { top: r.oben, right: r.seite, bottom: r.seite, left: r.seite });
         g.event.addListenerOnce(karte, 'idle', () => { if (karte.getZoom() > 18) karte.setZoom(18); }); },
       mitte() { const c = karte.getCenter(); return { lat: c.lat(), lon: c.lng() }; },
       verschieben(x) { karte.setCenter(ll(x)); },

@@ -434,7 +434,92 @@
       String(a.geraet.ordner).localeCompare(String(b.geraet.ordner), 'de', { numeric: true }));
   }
 
+  // ---------------------------------------------------------------- Gliederung: eigene Reihenfolge und Untergeräte
+  // Einsatz/_App/Geraete/gliederung.json = { reihenfolge: [Ordner …], eltern: { Untergerät: Gerät }, geaendert } – gilt für alle Geräte.
+  // Die Ordner in der Dropbox bleiben, wo sie sind (der Mac-Helfer und die Adressen #geraet/<Ordner> ändern sich nicht).
+  // Geräte ohne Eintrag stehen hinten in der üblichen Folge (Nummer, Name).
+  const GLIEDERUNG = 'gliederung.json';
+  const nfc = s => String(s == null ? '' : s).normalize('NFC');
+  function gliederungPruefen(gl) {
+    const g = gl && typeof gl === 'object' ? gl : {};
+    const reihenfolge = [...new Set((Array.isArray(g.reihenfolge) ? g.reihenfolge : []).filter(x => typeof x === 'string' && x).map(nfc))];
+    const eltern = {};
+    if (g.eltern && typeof g.eltern === 'object') for (const [k, v] of Object.entries(g.eltern)) if (typeof v === 'string' && v && nfc(k) !== nfc(v)) eltern[nfc(k)] = nfc(v);
+    return { reihenfolge, eltern, geaendert: typeof g.geaendert === 'string' ? g.geaendert : '' };
+  }
+  const standardFolge = (a, b) => (Number(a.nr) || 999) - (Number(b.nr) || 999) ||
+    String(a.name || a.ordner || '').localeCompare(String(b.name || b.ordner || ''), 'de', { numeric: true });
+  // Baum in Anzeigefolge: [{ geraet, ordner, tiefe, eltern, kinder }] – Eltern zählen nur, wenn es das Gerät gibt und kein Ring entsteht
+  function gliedern(geraete, gl) {
+    gl = gliederungPruefen(gl);
+    const nach = new Map((geraete || []).map(g => [nfc(g.ordner), g]));
+    const pos = new Map(gl.reihenfolge.map((o, i) => [o, i]));
+    const stelle = g => pos.has(nfc(g.ordner)) ? pos.get(nfc(g.ordner)) : Infinity;
+    const folge = (a, b) => { const x = stelle(a), y = stelle(b); return x !== y ? (x < y ? -1 : 1) : standardFolge(a, b); };
+    const elternVon = o => {
+      const e = gl.eltern[o];
+      if (!e || !nach.has(e)) return null;
+      for (let x = e, n = 0; x && nach.has(x); x = gl.eltern[x], n++) if (x === o || n > 60) return null;
+      return e;
+    };
+    const kinder = new Map();
+    for (const g of nach.values()) { const e = elternVon(nfc(g.ordner)) || ''; if (!kinder.has(e)) kinder.set(e, []); kinder.get(e).push(g); }
+    for (const l of kinder.values()) l.sort(folge);
+    const aus = [], gesehen = new Set();
+    const gehe = (e, tiefe) => { for (const g of kinder.get(e) || []) { const o = nfc(g.ordner); if (gesehen.has(o)) continue; gesehen.add(o);
+      aus.push({ geraet: g, ordner: o, tiefe, eltern: e || null, kinder: (kinder.get(o) || []).length }); gehe(o, tiefe + 1); } };
+    gehe('', 0);
+    return aus;
+  }
+  // nur ein Teil sichtbar (Gruppe gewählt): Tiefe nach den sichtbaren Vorfahren; „wurzel“ = oberstes sichtbares Gerät der Familie
+  function gliederungFiltern(baum, pass = () => true) {
+    const nach = new Map(baum.map(x => [x.ordner, x])), tiefe = new Map(), wurzel = new Map(), aus = [];
+    for (const x of baum) {
+      if (!pass(x.geraet)) continue;
+      let e = x.eltern; while (e && !tiefe.has(e)) e = (nach.get(e) || {}).eltern || null;
+      tiefe.set(x.ordner, e ? tiefe.get(e) + 1 : 0); wurzel.set(x.ordner, e ? wurzel.get(e) : x.ordner);
+      aus.push({ ...x, tiefe: tiefe.get(x.ordner), eltern: e, wurzel: wurzel.get(x.ordner), kinder: 0 });
+    }
+    const zahl = new Map(); for (const x of aus) if (x.eltern) zahl.set(x.eltern, (zahl.get(x.eltern) || 0) + 1);
+    for (const x of aus) x.kinder = zahl.get(x.ordner) || 0;
+    return aus;
+  }
+  const unterVon = (baum, o, ueber) => { const nach = new Map(baum.map(x => [x.ordner, x]));
+    for (let e = (nach.get(nfc(o)) || {}).eltern; e; e = (nach.get(e) || {}).eltern) if (e === nfc(ueber)) return true; return false; };
+  // Gerät x samt Untergeräten verschieben: art 'vor' | 'nach' = neben ziel auf dessen Ebene, 'in' = letztes Untergerät von ziel.
+  // Ergebnis: neue Gliederung (vollständig für die vorhandenen Geräte) oder null (nicht möglich, z. B. in sein eigenes Untergerät)
+  function verschieben(geraete, gl, x, ziel, art) {
+    const baum = gliedern(geraete, gl);
+    x = nfc(x); ziel = nfc(ziel);
+    const nach = new Map(baum.map(e => [e.ordner, e]));
+    if (!nach.has(x) || !nach.has(ziel) || x === ziel || !['vor', 'nach', 'in'].includes(art) || unterVon(baum, ziel, x)) return null;
+    const eltern = {}; for (const e of baum) if (e.eltern) eltern[e.ordner] = e.eltern;
+    const unter = (o, z) => { for (let e = eltern[o]; e; e = eltern[e]) if (e === z) return true; return false; };
+    const folge = baum.map(e => e.ordner).filter(o => o !== x);
+    let i;
+    if (art === 'in') eltern[x] = ziel;
+    else if (nach.get(ziel).eltern) eltern[x] = nach.get(ziel).eltern; else delete eltern[x];
+    if (art === 'vor') i = folge.indexOf(ziel);
+    else { i = folge.indexOf(ziel) + 1; while (i < folge.length && unter(folge[i], ziel)) i++; }   // hinter die Untergeräte des Ziels
+    folge.splice(i, 0, x);
+    const neu = { reihenfolge: folge, eltern, geaendert: new Date().toISOString() };
+    neu.reihenfolge = gliedern(geraete, neu).map(e => e.ordner);
+    return neu;
+  }
+  // Stoffansicht: Familien bleiben zusammen (Untergeräte direkt unter ihrem Gerät); die Familien stehen nach der Bewertung
+  // ihres obersten sichtbaren Geräts, bei gleicher Bewertung in der eigenen Reihenfolge. Ergebnis: [{ e, tiefe, kinder }]
+  function stoffGegliedert(ergebnis, gl, pass = () => true) {
+    const RANG = { gut: 0, bedingt: 1, gemischt: 2, nicht: 3, unbekannt: 4, offen: 5, keine: 6 };
+    const zuG = new Map(ergebnis.map(e => [e.geraet, e]));
+    const sicht = gliederungFiltern(gliedern(ergebnis.map(e => e.geraet), gl), g => pass(g));
+    const stelle = new Map(sicht.map((x, i) => [x.ordner, i])), nachO = new Map(sicht.map(x => [x.ordner, x]));
+    const rang = x => { const w = nachO.get(x.wurzel); return [RANG[zuG.get(w.geraet).stufe] ?? 9, stelle.get(w.ordner)]; };
+    return sicht.map((x, i) => ({ x, i, r: rang(x) })).sort((a, b) => a.r[0] - b.r[0] || a.r[1] - b.r[1] || a.i - b.i)
+      .map(({ x }) => ({ e: zuG.get(x.geraet), tiefe: x.tiefe, kinder: x.kinder, eltern: x.eltern }));
+  }
+
   return { FORMAT, DATEI, PRUEF_DATEI, PRUEF_SCHEMA, PRUEF_ANWEISUNG, STUFEN, STUFE_TEXT, KATEGORIEN, BILD_WAHL, BILD_STANDARD, bildLesen, bildText, ordnerEinteilen, ordnerName, infoLesen, infoText, infoOhneKategorie, kategorieAus, SCHEMA, ANWEISUNG, ausClaude, stufeAus,
            pruefen, gesamtStufe, grund, kern, finde, fuerStoff, widersprueche, zeilenSchluessel, verweisMitWerten, zeichenKern,
-           fussnoten, fussnotenVon, nurFussnote, hoch, ohneErklaerung };
+           fussnoten, fussnotenVon, nurFussnote, hoch, ohneErklaerung,
+           GLIEDERUNG, gliederungPruefen, gliedern, gliederungFiltern, verschieben, stoffGegliedert };
 });
