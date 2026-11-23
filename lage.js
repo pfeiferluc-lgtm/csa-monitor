@@ -110,7 +110,8 @@
     bottom: calc(1.9rem + var(--sicher-unten)); padding: .55rem .65rem; border-radius: .8rem; background: color-mix(in srgb, var(--surface) 94%, transparent);
     box-shadow: 0 4px 18px rgba(0, 0, 0, .35); max-height: 45vh; overflow: auto; }
   .lg-karte-rahmen.voll .lg-ausb [data-lg-ausb-info] { display: none; }
-  .ez-bereich > h2 .lg-kopf-knoepfe { margin-left: auto; display: inline-flex; gap: .4rem; }
+  #lg-start > h2 { flex-wrap: wrap; row-gap: .45rem; }
+  .ez-bereich > h2 .lg-kopf-knoepfe { margin-left: auto; display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem; max-width: 100%; }
   .ez-bereich > h2 .lg-zum-messen { text-transform: none; letter-spacing: 0; font-size: .85rem; color: var(--ink); }
   .ez-bereich > h2 .lg-zur-karte { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: .85rem; color: var(--ink); }
   .lg-karte-wind { position: absolute; top: .5rem; right: .5rem; z-index: 500; pointer-events: none; background: rgba(10, 12, 15, .78); color: #fff; border-radius: .6rem;
@@ -662,7 +663,7 @@
 
   // ---------------------------------------------------------------- Einsatz-Start: Wind und Warntafel
   function startHtml() {
-    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind vom DWD</small><span class="lg-kopf-knoepfe"><a class="knopf lg-zum-messen" href="#messen">Messen</a><a class="knopf lg-zur-karte" href="#lagekarte">${ICON.karte}Lagekarte</a></span></h2>
+    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind vom DWD</small><span class="lg-kopf-knoepfe"><a class="knopf lg-zum-messen" href="#messen">Messen</a><a class="knopf lg-zum-messen" href="#probe">Probenahme</a><a class="knopf lg-zur-karte" href="#lagekarte">${ICON.karte}Lagekarte</a></span></h2>
       <div class="kachel ez-karte"><div data-lg-wind></div></div></section>`;
   }
 

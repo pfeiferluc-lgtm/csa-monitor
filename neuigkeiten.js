@@ -5,6 +5,13 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.10.0', datum: '2026-11-23', punkte: [
+    'Neu: „Probenahme“ – Startseite › Schnellzugriff neben „Messen“ oder Einsatz › Lage. Interaktive Anleitung für alle 22 CBRN-Probenarten der BBK-Kurzanleitung: chemisch (C01–C10), biologisch (B01–B09), radiologisch/nuklear (RN01–RN03).',
+    'Je Probe: Materialliste mit Fotos zum Abhaken, Schritte A, B, C … mit den Piktogrammen der Kurzanleitung und „Erledigt“ (der nächste Schritt ist markiert), Hinweise sowie Hintergrund aus den BBK-Empfehlungen (Schutz, Dekontamination bzw. Desinfektion, Transport).',
+    'Probe erfassen: Probennummer, Probenahmestelle und Bemerkung – mit Uhrzeit in der Probenliste und, wenn ein Einsatz läuft, im Einsatztagebuch. Probenbegleitschein und Probenahmeprotokoll lassen sich direkt öffnen.',
+    'Übersicht: Ablauf der CBRN-Probenahme mit Rollen und Aufgaben, Checkliste für den Einsatzort zum Abhaken und die Grundsätze (Team, Durchführung, Dokumentation, Verpackung, Transport).',
+    'Die Inhalte der BBK-Unterlagen liegen nur im Dropbox-App-Ordner, nicht in der öffentlichen Web-App.',
+  ] },
   { version: '2.9.0', datum: '2026-11-23', punkte: [
     'Messen: Bei den Röhrchen stehen jetzt Fotos – oben unbenutzt, darunter nach der Messung mit Farbumschlag (aus den Dräger-Stoffblättern, nur im Dropbox-App-Ordner, nicht öffentlich). Ohne Foto (Säuretest, Polytest, Ethylacetat) eine Zeichnung in den Farben des Umschlags.',
     'Querempfindlichkeiten: Jedes Röhrchen nennt, was es außerdem anzeigt (mit Quelle). Neue Suche „Was soll gemessen werden?“ – z. B. „Diesel“ findet Formaldehyd 0,2/a (gelbbraune Verfärbung); dazu Treffer über die Stoffgruppe, passende Simultantest-Kanäle und was ausdrücklich nicht angezeigt wird.',
