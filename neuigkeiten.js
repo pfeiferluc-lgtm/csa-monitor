@@ -5,6 +5,10 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.8.1', datum: '2026-11-23', punkte: [
+    'Wind: Die App nennt, warum diese DWD-Station – es ist immer die nächste Station mit Windmessung zu deinem Standort. Misst eine nähere DWD-Station keinen Wind (bei Miehlen z. B. Oberbachheim, 6,6 km), steht das dabei; der Wind kommt dann z. B. aus Geisenheim (28,2 km).',
+    'Standort: Ist keine Ortung möglich, steht deutlich „Standort nicht verfügbar – Wind gilt für Miehlen“; ist die letzte Ortung älter als 15 Minuten, steht die Uhrzeit dabei.',
+  ] },
   { version: '2.8.0', datum: '2026-11-23', punkte: [
     'Neues Erscheinungsbild „Leitstand“ nach einer Designvorgabe mit den neuen Design-Skills: graphitgraue, flache Flächen; Rot nur noch für die Titelleiste und Gefahr, Blau für Bedienung (Hauptknöpfe, Suche, Auswahl, aktiver Reiter), Grün für in Ordnung.',
     'Ruhigere Seiten: Abschnittsköpfe in normaler Schreibung statt gesperrter Großbuchstaben, keine bunten Kategorie-Kanten mehr (Unterlagen, Startseite, Schnellzugriff, Erste Hilfe), Abstands-Kacheln mit kleinem Farbfeld statt farbiger Kante, große Zahlen in fester Ziffernbreite.',

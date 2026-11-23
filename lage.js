@@ -87,6 +87,8 @@
   .lg-wind b.gross { font-size: 1.15rem; } .lg-wind .zug { font-weight: 700; color: var(--akzent); }
   .lg-wind small, .lg-klein { font-size: .78rem; color: var(--muted); line-height: 1.35; }
   .lg-wind small.lg-standort { color: var(--ink2); }
+  .lg-wind small.lg-standort svg { width: 1em; height: 1em; vertical-align: -.15em; margin-right: .3rem; color: var(--akzent); }
+  .lg-wind small.lg-standort-warn, .lg-wind small.lg-standort-warn svg { color: var(--crit); }
   /* Karte (Google Maps bzw. OpenStreetMap) */
   /* eigene Ebene: die Ebenen der Karte (bis z-index 1000) dürfen nicht über Reiterleiste und Kopf liegen */
   .lg-karte-rahmen { position: relative; z-index: 0; isolation: isolate; margin: .2rem 0 .5rem; }
@@ -268,10 +270,13 @@
     const kmh = w.wind_speed_10 ?? w.wind_speed_30 ?? w.wind_speed_60;
     if (richtung === null || richtung === undefined) throw new Error('Keine Windmessung in der Nähe.');
     const st = stationVon(akt, 'wind_direction_10');
+    // nächste DWD-Station zum Standort überhaupt (Bright Sky: source_id); misst sie keinen Wind, kommt der Wind von der nächsten Station mit Windmessung
+    const naechste = (akt.sources || []).find(s => s.id === w.source_id) || null;
     return {
       richtung, kmh: kmh ?? null, boeen: w.wind_gust_speed_10 ?? w.wind_gust_speed_30 ?? null, temperatur: w.temperature ?? null,
       zeit: w.timestamp || jetzt.toISOString(), abgerufen: Date.now(), ort,
       station: st ? { name: st.station_name, km: Math.round((st.distance || 0) / 100) / 10 } : null,
+      naechste: naechste && st && naechste.id !== st.id ? { name: naechste.station_name, km: Math.round((naechste.distance || 0) / 100) / 10 } : null,
       vorhersage: vorh && Array.isArray(vorh.weather) ? vorh.weather.filter(x => x.wind_direction !== null && new Date(x.timestamp) > jetzt).slice(0, 6)
         .map(x => ({ zeit: x.timestamp, richtung: x.wind_direction, kmh: x.wind_speed })) : [],
     };
@@ -300,14 +305,21 @@
     const kmh = !m && w && w.kmh !== null ? w.kmh : null;
     const staerke = kmh !== null ? `${Math.round(kmh)} km/h${w.boeen ? `, Böen ${Math.round(w.boeen)}` : ''} · ${GG.beaufort(kmh)} Bft` : '';
     const quelle = m ? `vor Ort bestimmt um ${uhrzeit(m.zeit)}${w && w.kmh !== null && w.kmh !== undefined ? ` · Windgeschwindigkeit DWD ${Math.round(w.kmh)} km/h` : ''}` :
-      `DWD ${w.station ? esc(w.station.name) + (w.station.km ? ` (${zahlText(w.station.km)} km entfernt)` : '') : ''}, Messung ${uhrzeit(w.zeit)}${w.alt ? ' · <b>Stand ohne Netz</b>' : ''}`;
+      `DWD-Station ${w.station ? esc(w.station.name) + (w.station.km ? ` (${zahlText(w.station.km)} km)` : '') : ''} – nächste Station mit Windmessung, Messung ${uhrzeit(w.zeit)}${w.alt ? ' · <b>Stand ohne Netz</b>' : ''}` +
+      (w.naechste ? `<br>Die nähere DWD-Station ${esc(w.naechste.name)} (${zahlText(w.naechste.km)} km) misst keinen Wind.` : '');
     const stand = LS.get('gsz-ort') || (w && w.ort);
+    // Standort: echte Position (GPS) mit Alter; ohne Ortung deutlich kennzeichnen – dann gilt der Wind nicht für den Einsatzort
+    const veraltet = stand && !stand.standard && stand.zeit && Date.now() - stand.zeit > 15 * 60 * 1000;
+    const anderswo = !m && w && w.ort && stand && !stand.standard && (Math.abs(w.ort.lat - stand.lat) > 0.02 || Math.abs(w.ort.lon - stand.lon) > 0.02);
+    const standHtml = !stand || stand.standard
+      ? `<small class="lg-standort lg-standort-warn">${ICON.ort}<b>Standort nicht verfügbar</b> – Wind gilt für Miehlen. Ortung erlauben und „Standort neu bestimmen“ tippen.</small>`
+      : `<small class="lg-standort">${ICON.ort}Standort: ${esc(ortText(stand))}${veraltet ? ` · <b>Stand ${uhrzeit(new Date(stand.zeit).toISOString())} – nicht aktuell</b>` : ''}${anderswo ? ' · Wind noch für den vorigen Standort' : ''}</small>`;
     const vorh = !m && w && w.vorhersage && w.vorhersage.length ? `<div class="lg-vorh" aria-label="Vorhersage">${w.vorhersage.map(v =>
       `<span>${uhrzeit(v.zeit)}${zugPfeil(GG.ausbreitungsrichtung(v.richtung))}<b>${GG.himmelsrichtung(v.richtung)}</b>${v.kmh !== null ? Math.round(v.kmh) + ' km/h' : ''}</span>`).join('')}</div>` : '';
     return `<div class="lg-wind">${rose(von)}
       <b class="gross">Wind aus ${esc(GG.RICHTUNG_LANG[r] || r)} (${Math.round(von)}°)</b>
       <span>Ausbreitung nach <span class="zug">${esc(GG.RICHTUNG_LANG[zug] || zug)}</span>${staerke ? ' · ' + staerke : ''}</span>
-      <small>${quelle}</small><small class="lg-standort">📍 Standort: ${esc(ortText(stand))}</small></div>${vorh}
+      <small>${quelle}</small>${standHtml}</div>${vorh}
       <div class="lg-klein" style="margin-top:.45rem">Anfahrt und Aufstellung möglichst mit dem Wind im Rücken – also aus Richtung <b>${esc(GG.RICHTUNG_LANG[r] || r)}</b>.</div>`;
   }
   const kompassHtml = () => { const m = manuell(), r = m ? GG.himmelsrichtung(m.richtung) : '';
