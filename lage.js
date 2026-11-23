@@ -108,6 +108,8 @@
     bottom: calc(1.9rem + var(--sicher-unten)); padding: .55rem .65rem; border-radius: .8rem; background: color-mix(in srgb, var(--surface) 94%, transparent);
     box-shadow: 0 4px 18px rgba(0, 0, 0, .35); max-height: 45vh; overflow: auto; }
   .lg-karte-rahmen.voll .lg-ausb [data-lg-ausb-info] { display: none; }
+  .ez-bereich > h2 .lg-kopf-knoepfe { margin-left: auto; display: inline-flex; gap: .4rem; }
+  .ez-bereich > h2 .lg-zum-messen { text-transform: none; letter-spacing: 0; font-size: .85rem; color: var(--ink); }
   .ez-bereich > h2 .lg-zur-karte { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: .85rem; color: var(--ink); }
   .lg-karte-wind { position: absolute; top: .5rem; right: .5rem; z-index: 500; pointer-events: none; background: rgba(10, 12, 15, .78); color: #fff; border-radius: .6rem;
     padding: .3rem .55rem; font-size: .75rem; font-weight: 700; display: flex; align-items: center; gap: .35rem; max-width: 70%; }
@@ -486,7 +488,17 @@
           <button type="button" class="knopf" data-lg-k="ganz">Alles zeigen</button><button type="button" class="knopf" data-lg-k="gross">Karte groß</button>
           <button type="button" class="knopf" data-lg-k="voll">${ICON.voll}Vollbild</button></div>
         <div class="lg-klein" data-lg-k-info></div>
-        <div data-lg-skizze hidden data-abs="${ab.gefahr_m || ''}" data-absperr="${ab.absperr_m || ''}" data-schutz="${ab.schutz_km || ''}" data-zone="${ab.zone_m || ''}"></div>${ab.html}</section>`;
+        <div data-lg-skizze hidden data-abs="${ab.gefahr_m || ''}" data-absperr="${ab.absperr_m || ''}" data-schutz="${ab.schutz_km || ''}" data-zone="${ab.zone_m || ''}"></div>${ab.html}</section>${messenHtml(stoff)}`;
+  }
+  // Messen mit Prüfröhrchen: Stoff der ETW-Liste (Dräger-Messstrategie) → Röhrchen und ETW, Sprung in den Messmodus
+  function messenHtml(stoff) {
+    const U = window.GSZMessenUI;
+    const ms = stoff && U ? [...(stoff.cas || []), ...((stoff.bestandteile || []).map(b => b.cas))].filter(Boolean).map(c => U.stoffVon(c)).find(Boolean) : null;
+    if (!ms) return '';
+    const zt = x => String(x).replace('.', ',');
+    return `<section class="kachel ez-karte" id="lg-messen"><h2>Messen mit Prüfröhrchen</h2>
+      <div class="lg-klein" style="margin-bottom:.5rem">${esc(ms.roehrchen.map(r => r.name + (r.huebe ? ' · ' + r.huebe + ' Hübe' : '')).join(' / '))} · ETW-4 ${ms.etw4 !== null ? zt(ms.etw4) + ' ppm' : '–'} · ETW-1 ${ms.etw1 !== null ? zt(ms.etw1) + ' ppm' : '–'}</div>
+      <a class="knopf" href="#messen/bekannt/${encodeURIComponent(ms.cas.split(' ')[0])}">Mit Röhrchen messen</a></section>`;
   }
   // ---------------------------------------------------------------- Karte: Google-Schlüssel (zentral) und Steuerung
   // Einsatz/_App/Karte/karte.json = { google: '<Schlüssel der Maps JavaScript API>' } – gilt für alle Geräte; ohne Schlüssel OpenStreetMap
@@ -638,7 +650,7 @@
 
   // ---------------------------------------------------------------- Einsatz-Start: Wind und Warntafel
   function startHtml() {
-    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind vom DWD</small><a class="knopf lg-zur-karte" href="#lagekarte">${ICON.karte}Lagekarte</a></h2>
+    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind vom DWD</small><span class="lg-kopf-knoepfe"><a class="knopf lg-zum-messen" href="#messen">Messen</a><a class="knopf lg-zur-karte" href="#lagekarte">${ICON.karte}Lagekarte</a></span></h2>
       <div class="kachel ez-karte"><div data-lg-wind></div></div></section>`;
   }
 

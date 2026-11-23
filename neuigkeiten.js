@@ -5,6 +5,13 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.7.0', datum: '2026-11-23', punkte: [
+    'Neu: „Messen“ mit Prüfröhrchen nach der Dräger-Messstrategie 1.5 – Startseite › Schnellzugriff „Messen“ oder Einsatz › Lage. Drei Lagen: unbekannter Gefahrstoff, Brand, bekannter Gefahrstoff.',
+    'Unbekannter Gefahrstoff: geführter Ablauf Blatt A–E – Flüssigkeit und Universalindikator bzw. Säuretest, danach immer das nächste Röhrchen. Folgeröhrchen („falls positiv, auch Nr. …“) erscheinen automatisch, die Auswertung zeigt Hinweise und Bestätigungen.',
+    'Je Röhrchen: Hubzahl mit Empfehlung, Messbereich, Messdauer und Farbumschlag, ein großer Hubzähler mit Zeit und die Querempfindlichkeiten. Das Ergebnis wird sofort gegen ETW-4 und ETW-1 (vfdb 2023) bewertet – mit Hinweis, wenn der Wert außerhalb des Messbereichs liegt.',
+    'Brand: Mehrgasmessgerät, Simultantest Leitsubstanzen vfdb oder Set I (erreichte Markierung antippen) und die Einzelröhrchen. Bekannter Stoff: die 44 Stoffblätter der ETW-Liste mit Röhrchen, Hinweisen und Anzeige von PID und Ex-Sensor.',
+    'Läuft ein Einsatz, steht jedes Ergebnis im Einsatztagebuch; dazu ein Messprotokoll je Messort. Auf der Stoffseite (Reiter Absperren) führt „Mit Röhrchen messen“ direkt zum passenden Röhrchen.',
+  ] },
   { version: '2.6.1', datum: '2026-11-23', punkte: [
     'Anordnen geht jetzt auch ohne Ziehen: den Griff eines Geräts antippen – dann erscheinen „Nach oben“, „Nach unten“, „Einrücken“, „Ausrücken“ und die Auswahl „Untergerät von“ (nach WCAG 2.2: jede Ziehbewegung braucht eine Alternative per Antippen, z. B. mit Handschuhen).',
     'Die Leiste „Anordnen“ mit „Rückgängig“ und „Fertig“ bleibt beim Blättern oben stehen und ist dabei schmaler; der Hilfetext steht darunter.',

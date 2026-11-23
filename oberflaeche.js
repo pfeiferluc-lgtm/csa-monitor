@@ -328,6 +328,7 @@
     karte: MSVG('<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>'),
     schild: MSVG('<path d="M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/>'),
     doku: MSVG('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>'),
+    messen: MSVG('<path d="M9 3h6M10 3v15a2 2 0 0 0 4 0V3"/><path d="M10 11h4M10 15h4"/>'),
     ordner: MSVG('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
   };
 
@@ -367,6 +368,7 @@
           <button type="button" class="st-modul" data-st-ziel="suche">${ICON_LUPE}Stoff suchen</button>
           <button type="button" class="st-modul" data-st-ziel="tafel">${MODUL.tafel}Warntafel</button>
           <a class="st-modul" href="#lagekarte">${MODUL.karte}Lagekarte</a>
+          <a class="st-modul" href="#messen">${MODUL.messen}Messen</a>
           <a class="st-modul" href="#ordner/${encodeURIComponent('Beständigkeitslisten')}">${MODUL.schild}Beständig&shy;keit</a>
           <a class="st-modul" href="#doku">${MODUL.doku}Einsatz-Doku</a>
           <button type="button" class="st-modul" data-st-ziel="unterlagen">${MODUL.ordner}Unterlagen</button>
