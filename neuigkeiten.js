@@ -5,6 +5,12 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.12.0', datum: '2026-11-23', punkte: [
+    'Neu: Navigation in der App – Anfahrt › „Navigation starten“. Führt mit GPS über die gewählte Route, mit Abbiegehinweisen, „Danach“, Sprachansage, Restweg und Ankunftszeit – und hält an der Absperrgrenze statt an der Adresse („Absperrgrenze erreicht – hier halten“).',
+    'Ist die schnellste Route ungünstig (gegen den Wind, durch den Bereich in Windrichtung), fährt die Navigation die empfohlene Ausweichroute; umschaltbar „Aus West · empfohlen“ / „Schnellste“. Abseits der Route rechnet sie neu, vor dem Bereich in Windrichtung warnt sie.',
+    'Minimieren: Die Navigation läuft mit Ansagen weiter, während man z. B. das Stoffdatenblatt liest – unten führt eine Leiste zurück. Einsatztagebuch: Start und Ankunft an der Absperrgrenze mit Uhrzeit. Bei Polynt auch „Navigation zum Bereitstellungsraum“.',
+    'Apple Karten und Google Maps bleiben als Ausweichweg. Auf dem iPhone bitte den Bildschirm anlassen und die App im Vordergrund – im Hintergrund bekommt eine Web-App keinen Standort.',
+  ] },
   { version: '2.11.0', datum: '2026-11-23', punkte: [
     'Neu: „Anfahrt“ – als erster, blauer Knopf im Schnellzugriff der Startseite und in Einsatz › Lage. Einsatzort als Adresse, Koordinaten oder Kartenlink aus der Alarmierung eingeben (oder auf der Karte bzw. „Mein Standort“), Stoff falls schon bekannt (UN-Nr., Warntafel oder Name, auch ohne Netz).',
     'Die App holt den Wind am Einsatzort (DWD) und zeigt groß, aus welcher Richtung ihr anfahren solltet – mit dem Wind im Rücken –, dazu die Absperrgrenze: Gefahrenbereich nach Gefahrstoffkonzept RLP, ERG-Erstabsperrung, Abstände der ABC-Taschenkarte RLP (z. B. Klasse 1: 500 m, Gas im Tankwagen: 300 m) und bei Brand oder Explosionsgefahr die größeren Werte.',

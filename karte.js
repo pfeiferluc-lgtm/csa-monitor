@@ -310,5 +310,5 @@
     });
   }
 
-  window.GSZKarte = { zeigen, unfallort, unfallortSetzen, ziel, zonenPunkte, olivenPunkte, sektorPunkte, schilderPlanen, meterJePunkt };
+  window.GSZKarte = { zeigen, unfallort, unfallortSetzen, ziel, zonenPunkte, olivenPunkte, sektorPunkte, schilderPlanen, meterJePunkt, leaflet };
 })();

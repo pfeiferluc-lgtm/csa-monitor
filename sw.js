@@ -3,8 +3,8 @@
 // Immer beim Server nachfragen (no-cache), sonst liefert der Browser bis zu 10 Minuten lang die alte Fassung aus seinem Zwischenspeicher.
 // Anfragen an Dropbox und GESTIS laufen unverändert durch und werden hier nie zwischengespeichert (Stoffe und Einsatz-Dateien
 // speichert die App selbst im Gerätespeicher). Die Liste der Dateien setzt web-bauen.js ein.
-const CACHE = 'gsz-app-202611231628';
-const DATEIEN = ["./","index.html","xlsx.core.min.js","sha512.min.js","aes.js","excel-kern.js","konfig.js","stoffdaten.js","gestis.js","bestaendigkeit.js","speicher.js","symbole.js","aegl.js","sdb-parser.js","ocr.js","auswertung.js","neuigkeiten.js","oberflaeche.js","gefahrgut-daten.js","gefahrgut.js","karte.js","lage.js","einsatz.js","einsatzbericht.js","messstrategie.js","messstrategie-stoffe.js","messen.js","probenahme.js","anfahrt.js","claude-direkt.js","sdb-import.js","aussehen.js","web-start.js","pdf.min.js","pdf.worker.min.js","karte/leaflet.js","karte/leaflet.css","ocr/tesseract.min.js","ocr/worker.min.js","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png"];
+const CACHE = 'gsz-app-202611231719';
+const DATEIEN = ["./","index.html","xlsx.core.min.js","sha512.min.js","aes.js","excel-kern.js","konfig.js","stoffdaten.js","gestis.js","bestaendigkeit.js","speicher.js","symbole.js","aegl.js","sdb-parser.js","ocr.js","auswertung.js","neuigkeiten.js","oberflaeche.js","gefahrgut-daten.js","gefahrgut.js","karte.js","lage.js","einsatz.js","einsatzbericht.js","messstrategie.js","messstrategie-stoffe.js","messen.js","probenahme.js","navigation.js","anfahrt.js","claude-direkt.js","sdb-import.js","aussehen.js","web-start.js","pdf.min.js","pdf.worker.min.js","karte/leaflet.js","karte/leaflet.css","ocr/tesseract.min.js","ocr/worker.min.js","manifest.webmanifest","icon-192.png","icon-512.png","apple-touch-icon.png"];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(DATEIEN.map(d => new Request(d, { cache: 'no-cache' })))).then(() => self.skipWaiting()));

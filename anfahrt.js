@@ -85,7 +85,7 @@
     if (routeCache && routeCache.k === k && Date.now() - routeCache.zeit < ROUTE_GUELTIG_MS) return routeCache.routen;
     const j = await json(`${OSRM}${start.lon},${start.lat};${ziel.lon},${ziel.lat}?overview=full&geometries=geojson&steps=true&alternatives=true`);
     if (!j || j.code !== 'Ok' || !Array.isArray(j.routes) || !j.routes.length) throw new Error(j && j.message ? j.message : 'keine Route gefunden');
-    const routen = j.routes.map(r => ({ punkte: ((r.geometry && r.geometry.coordinates) || []).map(([lon, lat]) => ({ lat, lon })), m: r.distance, s: r.duration,
+    const routen = j.routes.map(r => ({ roh: r, punkte: ((r.geometry && r.geometry.coordinates) || []).map(([lon, lat]) => ({ lat, lon })), m: r.distance, s: r.duration,
       steps: ((r.legs && r.legs[0] && r.legs[0].steps) || []).map(st => ({ name: st.name || '', ref: st.ref || '', ort: st.maneuver && st.maneuver.location ? { lon: st.maneuver.location[0], lat: st.maneuver.location[1] } : null })) }));
     routeCache = { k, zeit: Date.now(), routen };
     return routen;
@@ -141,6 +141,12 @@
   .af-navi .knopf { flex: 1 1 9rem; min-height: 3rem !important; font-size: 1rem !important; font-weight: 700; }
   .af-navi .knopf svg { width: 1.15rem; height: 1.15rem; }
   .af-navi .knopf.zweit { flex: 1 1 100%; min-height: 2.6rem !important; font-size: .9rem !important; font-weight: 600; }
+  .af-navi .af-start { flex: 1 1 100%; min-height: 3.4rem !important; font-size: 1.12rem !important; }
+  .af-navi-extern { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin-top: .6rem; }
+  .af-navi-extern > span { font-size: max(13px, .84rem); color: var(--muted); flex: 0 0 auto; }
+  .af-navi-extern .knopf { flex: 1 1 8rem; font-size: .9rem; }
+  .af-navi-extern .knopf.zweit { flex: 1 1 100%; }
+  .af-navi-extern .knopf svg { width: 1.05rem; height: 1.05rem; }
   .af-wind-zeile { margin-top: .75rem; font-size: max(13px, .84rem); color: var(--ink2); line-height: 1.4; }
   .af-kompass { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .35rem; margin-top: .45rem; }
   .af-kompass button { font: inherit; font-weight: 700; padding: .55rem 0; min-height: 44px; border-radius: .55rem; border: 1px solid var(--rand); background: var(--surface2); color: var(--ink); cursor: pointer; }
@@ -165,6 +171,7 @@
     ['Explosionsgefahr', 'Abstände erheblich erweitern und Deckung nutzen; bei Explosivstoffen, Munition oder mehreren m³ druckverflüssigter Gase unter Brandeinwirkung Gefahrenbereich mindestens 500 m, Absperrbereich 1 000 m.', 'FwDV 500, 1.5.3.5 und 4.4.2.1'],
     ['Unterwegs', 'bei Gasverdacht rüstet sich der Angriffstrupp oder die Führungskraft auf der Anfahrt mit dem Mehrgasmessgerät aus; vorgehende Kräfte legen Handys, Meldeempfänger und nicht ex-geschützte Funkgeräte ab. Bei A-Stoffen das Dosisleistungsmessgerät schon auf der Anfahrt einschalten.', 'ABC-Modulausbildung LfBK 2026, S. 340 f.; KatSDV 510'],
     ['Beim Aussteigen', 'auf Dampf, Rauch, Gerüche und Reizwirkung achten und Ex messen; bei ungewohnten Gerüchen, Reizwirkung oder 10 % UEG den Abstand sofort vergrößern.', 'Feuerwehr-Lehrbuch, S. 1036'],
+    ['Erkunden', 'Anfahrt nach Windrichtung, Meldebild und Topografie der Einsatzstelle; Erkundung auf Distanz (Fernglas).', 'Präsentation „Einsätze mit Gefährlichen Stoffen und Gütern“ (2025), Folie 27'],
     ['Erstmaßnahmen', 'GAMS: Gefahren erkennen – Absichern – Menschenrettung unter Eigenschutz – Spezialkräfte nachfordern.', 'Gefahrstoffkonzept RLP, 3.1'],
   ];
   // Objekte mit eigener Regel für die Anfahrt (Alarm- und Einsatzpläne): Hinweis, wenn der Einsatzort im Umkreis liegt
@@ -459,26 +466,36 @@
       else if (art !== 'gut' && von !== null && !still) teile.push(`Letzte Strecke so wählen, dass ihr aus ${esc(richtung(von))} kommt, und an der Absperrgrenze (${meter(ab.grenze_m)}) halten.`);
       pruef = `<div class="af-pruefung ${art}">${art === 'gut' ? ICON.ok : art ? ICON.warn : ICON.navi}<span>${teile.join(' ')}</span></div>`;
     }
-    // Navi-Knöpfe: zuletzt benutzte App vorn
+    // Navigation in der App (Hauptweg, führt bis zur Absperrgrenze); Apple Karten und Google Maps als Ausweichweg zur Adresse
     const ziel = `${z.ziel.lat},${z.ziel.lon}`;
     const apple = `https://maps.apple.com/?daddr=${ziel}&dirflg=d`, google = `https://www.google.com/maps/dir/?api=1&destination=${ziel}&travelmode=driving`;
     const zuerst = LS.get(NAVI) === 'google' ? 'google' : 'apple';
-    const knopf = (art, href, text, haupt) => `<a class="knopf${haupt ? ' los' : ''}" data-af-navi="${art}" href="${esc(href)}" target="_blank" rel="noopener">${ICON.navi}${text}</a>`;
-    const kn = [knopf('apple', apple, 'Apple Karten', zuerst === 'apple'), knopf('google', google, 'Google Maps', zuerst === 'google')];
+    const knopf = (art, href, text, extra = '') => `<a class="knopf${extra}" data-af-navi="${art}" href="${esc(href)}" target="_blank" rel="noopener">${ICON.navi}${text}</a>`;
+    const kn = [knopf('apple', apple, 'Apple Karten'), knopf('google', google, 'Google Maps')];
     if (zuerst === 'google') kn.reverse();
-    if (bw && bw.zwischen) kn.push(`<a class="knopf zweit" data-af-navi="google" href="${esc(`${google}&waypoints=${bw.zwischen.lat.toFixed(6)},${bw.zwischen.lon.toFixed(6)}`)}" target="_blank" rel="noopener">${ICON.navi}Google Maps über Anfahrt aus ${esc(richtung(bw.alt.p.ankunftGrad))} (Zwischenpunkt)</a>`);
+    if (bw && bw.zwischen) kn.push(knopf('google', `${google}&waypoints=${bw.zwischen.lat.toFixed(6)},${bw.zwischen.lon.toFixed(6)}`, `Google Maps über Anfahrt aus ${esc(richtung(bw.alt.p.ankunftGrad))} (Zwischenpunkt)`, ' zweit'));
+    const nav = window.GSZNavigation, laeuftNav = nav && nav.laeuft();
+    const wahlHtml = bw && bw.alt ? `<div class="af-seg" role="radiogroup" aria-label="Route für die Navigation" style="margin-top:.85rem">
+        <button type="button" role="radio" data-af-route="empfohlen" aria-checked="${z.routeWahl !== 'schnell'}">Aus ${esc(richtung(bw.alt.p.ankunftGrad))} · empfohlen</button>
+        <button type="button" role="radio" data-af-route="schnell" aria-checked="${z.routeWahl === 'schnell'}">Schnellste · aus ${esc(richtung(bw.haupt.p.ankunftGrad))}</button></div>` : '';
+    const navHtml = !nav || (routen && !routen.length) ? '' : `${wahlHtml}<div class="af-navi"><button type="button" class="knopf los af-start" data-af-start ${routeLaedt && !routen ? 'disabled' : ''}>${ICON.navi}${laeuftNav ? 'Navigation öffnen' : 'Navigation starten'}</button></div>`;
     const obj = OBJEKTE.find(o => GG.abstandM(o, z.ziel) <= o.umkreis_m);
     const objHtml = obj ? `<div class="ez-warn af-objekt" style="margin-top:.8rem"><b>${esc(obj.name)}:</b> ${esc(obj.text)} <i>(${esc(obj.quelle)})</i>
-      ${obj.bereitstellung ? `<div class="af-knoepfe"><a class="knopf" data-af-navi="${zuerst}" href="${esc(zuerst === 'google' ? `https://www.google.com/maps/dir/?api=1&destination=${obj.bereitstellung.lat},${obj.bereitstellung.lon}&travelmode=driving` : `https://maps.apple.com/?daddr=${obj.bereitstellung.lat},${obj.bereitstellung.lon}&dirflg=d`)}" target="_blank" rel="noopener">${ICON.navi}Route zum Bereitstellungsraum (${esc(obj.bereitstellung.name)})</a></div>` : ''}</div>` : '';
+      ${obj.bereitstellung ? `<div class="af-knoepfe">${nav ? `<button type="button" class="knopf" data-af-start-bereit>${ICON.navi}Navigation zum Bereitstellungsraum</button>` : ''}<a class="knopf" data-af-navi="${zuerst}" href="${esc(zuerst === 'google' ? `https://www.google.com/maps/dir/?api=1&destination=${obj.bereitstellung.lat},${obj.bereitstellung.lon}&travelmode=driving` : `https://maps.apple.com/?daddr=${obj.bereitstellung.lat},${obj.bereitstellung.lon}&dirflg=d`)}" target="_blank" rel="noopener">${ICON.navi}${nav ? (zuerst === 'google' ? 'Google Maps' : 'Apple Karten') : 'Route zum Bereitstellungsraum'} (${esc(obj.bereitstellung.name)})</a></div>` : ''}</div>` : '';
     box.innerHTML = kern + `<div class="af-werte">${werte.join('')}</div>` + pruef + objHtml +
       (dreht ? `<div class="ez-warn" style="margin-top:.7rem"><b>Achtung:</b> Laut Vorhersage dreht der Wind bis ${uhrzeit(dreht.zeit)} auf ${esc(richtung(dreht.richtung))} (${Math.round(dreht.richtung)}°).</div>` : '') +
       (ab.hinweise && ab.hinweise.length ? `<div class="ez-warn" style="margin-top:.7rem">${ab.hinweise.map(esc).join('<br>')}</div>` : '') +
-      `<div class="af-navi">${kn.join('')}</div>
-      <div class="af-quelle">Route startet zur Einsatzstelle. Das Navi kennt die Gefahr nicht: An der Absperrgrenze halten, Lage aus Abstand erkunden.${routen && routen.length ? ' Vorschau mit OpenStreetMap-Routing (OSRM) – das Navi kann anders fahren.' : ''}</div>
+      navHtml + `<div class="af-navi-extern"><span>${navHtml ? 'oder mit' : 'Route mit'}</span>${kn.join('')}</div>
+      <div class="af-quelle">${navHtml ? 'Die Navigation in der App führt über die gewählte Route bis zur Absperrgrenze und sagt an. ' : ''}Apple Karten und Google Maps führen zur Adresse – sie kennen die Gefahr nicht: an der Absperrgrenze selbst halten.${routen && routen.length ? ' Routen: OpenStreetMap (OSRM).' : ''}</div>
       <div class="af-wind-zeile">${quelle ? quelle + ' ' : ''}<a href="#" data-af-wind="neu">Wind neu abrufen</a> · <a href="#" data-af-wind="vorort">${m ? 'Wind vor Ort ändern' : 'Wind vor Ort eingeben'}</a>${m ? ' · <a href="#" data-af-wind="dwd">DWD-Wert verwenden</a>' : ''}</div>
       <div data-af-kompass ${von === null && !windLaedt ? '' : 'hidden'}><div class="lg-klein" style="margin-top:.5rem">Der Wind kommt aus …</div><div class="af-kompass">${[['N', 0], ['NO', 45], ['O', 90], ['SO', 135], ['S', 180], ['SW', 225], ['W', 270], ['NW', 315]]
         .map(([t, g]) => `<button type="button" data-af-windwahl="${g}" class="${m && GG.himmelsrichtung(m.richtung) === t ? 'an' : ''}">${t}</button>`).join('')}</div></div>`;
     for (const a of box.querySelectorAll('[data-af-navi]')) a.addEventListener('click', () => navigieren(a.dataset.afNavi));
+    const st = box.querySelector('[data-af-start]');
+    if (st) st.addEventListener('click', () => navStarten());
+    const bs = box.querySelector('[data-af-start-bereit]');
+    if (bs) bs.addEventListener('click', () => navStarten({ bereitstellung: OBJEKTE.find(o => GG.abstandM(o, z.ziel) <= o.umkreis_m).bereitstellung }));
+    for (const b of box.querySelectorAll('[data-af-route]')) b.addEventListener('click', () => { z.routeWahl = b.dataset.afRoute; sichern(); ergebnisZeigen(); });
     for (const a of box.querySelectorAll('[data-af-wind]')) a.addEventListener('click', e => {
       e.preventDefault();
       const w = a.dataset.afWind;
@@ -487,6 +504,51 @@
       if (w === 'dwd') { z.windManuell = null; sichern(); ergebnisZeigen(); karteAktualisieren(); }
     });
     for (const b of box.querySelectorAll('[data-af-windwahl]')) b.addEventListener('click', () => { z.windManuell = { richtung: Number(b.dataset.afWindwahl), zeit: Date.now() }; sichern(); ergebnisZeigen(); karteAktualisieren(); });
+  }
+  // ---------------------------------------------------------------- Navigation in der App (navigation.js)
+  const gewaehlt = bw => bw && bw.alt && z.routeWahl !== 'schnell' ? bw.alt : bw && bw.haupt;
+  const routeText = x => x && x.p.ankunftGrad !== null ? `Anfahrt aus ${richtung(x.p.ankunftGrad)}${x.strasse ? ' über ' + x.strasse : ''}` : '';
+  let navStartet = false;
+  async function navStarten({ bereitstellung = null } = {}) {
+    const NV = window.GSZNavigation, NLg = window.GSZNaviLogik;
+    if (!NV || !NLg || !z.ziel || navStartet) return;
+    if (NV.laeuft() && NV.zeigen) { NV.zeigen(); return; }
+    navStartet = true;
+    try {
+      // Standort jetzt (GPS); liegt er weit vom Start der berechneten Route, Route ab hier neu
+      let st = null;
+      try { st = await LG.standortHolen({ gps: true }); } catch (e) { meldung(e.message + ' Die Navigation wartet auf GPS.', 6000); }
+      if (bereitstellung) {
+        const start = st && !st.standard ? st : routeStart || MIEHLEN;
+        let l;
+        try { l = await routenHolen(start, bereitstellung); } catch (e) { meldung('Keine Route zum Bereitstellungsraum (' + e.message + ') – Apple Karten oder Google Maps nutzen.', 7000); return; }
+        await NV.starten({ art: 'bereitstellung', ziel: { ...bereitstellung }, grenze_m: 0, grund: 'Bereitstellungsraum', route: NLg.routeAufbereiten(l[0].roh), routeText: bereitstellung.name,
+          holeRoute: async pos => { const l2 = await routenHolen(pos, bereitstellung); return { route: NLg.routeAufbereiten(l2[0].roh), text: bereitstellung.name }; },
+          tagebuch: t => { const b = bericht(); if (b) b.eintragen(t, 'system'); }, beiEnde: () => { if (el.isConnected) ergebnisZeigen(); } });
+        return;
+      }
+      if (st && !st.standard && (!routeStart || GG.abstandM(st, routeStart) > 300)) {
+        try { routen = await routenHolen(st, z.ziel); routeStart = st; routeFehler = ''; } catch { /* bisherige Route */ }
+      }
+      if (!routen || !routen.length) {
+        await routeLaden();
+        if (!routen || !routen.length) { meldung('Ohne Route keine Navigation in der App' + (routeFehler ? ` (${routeFehler})` : '') + ' – Apple Karten oder Google Maps nutzen.', 7000); return; }
+      }
+      const x = gewaehlt(routenBewerten());
+      const ab = abstaende(), von = windStill() ? null : windVon();
+      await NV.starten({ ziel: { ...z.ziel }, grenze_m: ab.grenze_m, grund: ab.grund, absperr_m: ab.absperr_m, wind: { von },
+        zone: von !== null ? { laenge_m: zoneLaenge(ab), winkel: ZONE_WINKEL } : null,
+        route: NLg.routeAufbereiten(x.r.roh), kritisch: x.p.kritisch, routeText: routeText(x),
+        holeRoute: async pos => {
+          const l = await routenHolen(pos, z.ziel);
+          routen = l; routeStart = pos;
+          const y = gewaehlt(routenBewerten());
+          return { route: NLg.routeAufbereiten(y.r.roh), text: routeText(y), kritisch: y.p.kritisch };
+        },
+        tagebuch: t => { const b = bericht(); if (b) b.eintragen(t, 'system'); },
+        beiEnde: () => { if (el.isConnected) { ergebnisZeigen(); karteAktualisieren(); } } });
+      ergebnisZeigen();
+    } finally { navStartet = false; }
   }
   // Navi starten: App merken, laufenden Einsatz ins Tagebuch
   function navigieren(art) {
