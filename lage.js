@@ -113,6 +113,8 @@
   #lg-start > h2 { flex-wrap: wrap; row-gap: .45rem; }
   .ez-bereich > h2 .lg-kopf-knoepfe { margin-left: auto; display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem; max-width: 100%; }
   .ez-bereich > h2 .lg-zum-messen { text-transform: none; letter-spacing: 0; font-size: .85rem; color: var(--ink); }
+  .ez-bereich > h2 .lg-zur-anfahrt, :root .ez .knopf.lg-zur-anfahrt { background: var(--akzent-voll); border-color: var(--akzent-voll); color: #fff; }
+  .ez-bereich > h2 .lg-zur-anfahrt svg { width: 1em; height: 1em; }
   .ez-bereich > h2 .lg-zur-karte { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: .85rem; color: var(--ink); }
   .lg-karte-wind { position: absolute; top: .5rem; right: .5rem; z-index: 500; pointer-events: none; background: rgba(10, 12, 15, .78); color: #fff; border-radius: .6rem;
     padding: .3rem .55rem; font-size: .75rem; font-weight: 700; display: flex; align-items: center; gap: .35rem; max-width: 70%; }
@@ -130,6 +132,7 @@
   .gk-schild.f-erg, .gk-gschild.f-erg { --c: #f0794a; border-color: #f0794a; } .gk-schild.f-zone, .gk-gschild.f-zone { --c: #f2b01e; border-color: #f2b01e; }
   .gk-schild.f-still, .gk-gschild.f-still { --c: #8e4ec6; border-color: #8e4ec6; }
   .gk-schild.f-olive, .gk-gschild.f-olive { background: #8e4ec6; border-color: #fff; color: #fff; font-size: 12px; padding: 2px 9px; }
+  .gk-schild.f-anfahrt, .gk-gschild.f-anfahrt { background: #1f9d55; border-color: #fff; color: #fff; font-size: 12px; padding: 2px 9px; }
   /* Ausbreitung: Zeit und Öffnungswinkel */
   .lg-ausb { display: flex; flex-direction: column; gap: .4rem; margin: .1rem 0 .55rem; }
   .lg-ausb-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .5rem; }
@@ -198,6 +201,7 @@
     karte: SVGA('<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>'),
     voll: SVGA('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>'),
     zu: SVGA('<path d="M6 6l12 12M18 6 6 18"/>'),
+    anfahrt: SVGA('<path d="M3 11 21 3l-8 18-2-8z"/>'),
   };
   // Pfeil in Zugrichtung (0° = nach Norden/oben)
   const zugPfeil = grad => `<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(${Math.round(grad)} 12 12)"><path d="M12 20V5M6.5 10.5 12 5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`;
@@ -286,6 +290,13 @@
   // Gerät (gewählte Quelle, Schlüssel, ein gemerkter Windy-Wert) werden einmal gelöscht bzw. nicht mehr benutzt
   LS.set('gsz-wind-quelle', null); LS.set('gsz-wetter', null);
   async function windAbrufen(ort) { return { ...(await dwdAbrufen(ort)), art: 'dwd' }; }
+  // Wind für einen beliebigen Ort (z. B. den Einsatzort bei der Anfahrt): gemerkt je Ort (≤ 20 min, ca. 2 km), ohne Netz der letzte Wert dort
+  async function windAn(ort, { frisch = false } = {}) {
+    const alt = LS.get('gsz-wind-ziel'), gleich = alt && alt.ort && Math.abs(alt.ort.lat - ort.lat) < 0.02 && Math.abs(alt.ort.lon - ort.lon) < 0.02;
+    if (!frisch && gleich && Date.now() - alt.abgerufen < WIND_GUELTIG_MS) return alt;
+    try { const w = await windAbrufen({ lat: ort.lat, lon: ort.lon, name: ort.name || '' }); LS.set('gsz-wind-ziel', w); return w; }
+    catch (e) { if (gleich) return { ...alt, alt: true, fehler: e.message }; throw e; }
+  }
   // Wind: gemerkter Wert (≤ 20 min, gleicher Ort), sonst neu; manuell bestimmter Wind (≤ 6 h) hat Vorrang
   async function wind({ frisch = false, gps = false } = {}) {
     const gemerkt = LS.get('gsz-wind'), alt = gemerkt && gemerkt.art !== 'windy' ? gemerkt : null;
@@ -560,7 +571,7 @@
     let k;
     const infoZeigen = async () => {
       const o = GSZKarte.unfallort() || u;
-      const art = o.art === 'hand' ? 'von Hand gesetzt' : o.art === 'gps' ? 'mein Standort' : 'Standard';
+      const art = o.art === 'hand' ? 'von Hand gesetzt' : o.art === 'gps' ? 'mein Standort' : o.art === 'anfahrt' ? 'aus der Anfahrt' : 'Standard';
       const zeile = name => `<b>Unfallort:</b> ${esc(name || `${o.lat.toFixed(5)}, ${o.lon.toFixed(5)}`)} <i>(${art})</i> · Karte: ${k && k.art === 'google' ? 'Google Maps' : 'OpenStreetMap'}` +
         `${k && k.fehler ? ' <span style="color:var(--crit)">(Google: ' + esc(k.fehler) + ')</span>' : ''} · <a href="#" data-lg-google>${googleSchluessel() ? 'Google-Schlüssel ändern' : 'Google Maps einrichten'}</a>`;
       info.innerHTML = zeile('');
@@ -663,7 +674,7 @@
 
   // ---------------------------------------------------------------- Einsatz-Start: Wind und Warntafel
   function startHtml() {
-    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind vom DWD</small><span class="lg-kopf-knoepfe"><a class="knopf lg-zum-messen" href="#messen">Messen</a><a class="knopf lg-zum-messen" href="#probe">Probenahme</a><a class="knopf lg-zur-karte" href="#lagekarte">${ICON.karte}Lagekarte</a></span></h2>
+    return `<section class="ez-bereich" id="lg-start"><h2>Lage <small>Wind vom DWD</small><span class="lg-kopf-knoepfe"><a class="knopf lg-zum-messen lg-zur-anfahrt" href="#anfahrt">${ICON.anfahrt}Anfahrt</a><a class="knopf lg-zum-messen" href="#messen">Messen</a><a class="knopf lg-zum-messen" href="#probe">Probenahme</a><a class="knopf lg-zur-karte" href="#lagekarte">${ICON.karte}Lagekarte</a></span></h2>
       <div class="kachel ez-karte"><div data-lg-wind></div></div></section>`;
   }
 
@@ -714,6 +725,6 @@
     return { kF, uF };
   }
 
-  window.GSZLage = { wind, standortHolen, ortName, startHtml, beleben, stoffKarteHtml, stoffTeilHtml, warntafelOeffnen, skizzeSvg, windHtml, abstaendeHtml,
+  window.GSZLage = { wind, windAn, jetztNacht, standortHolen, ortName, startHtml, beleben, stoffKarteHtml, stoffTeilHtml, warntafelOeffnen, skizzeSvg, windHtml, abstaendeHtml,
     grundlage, regelwerkLaden, umschalten, googleSchluessel, ausbreitungPlanen };
 })();

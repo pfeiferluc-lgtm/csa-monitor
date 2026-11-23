@@ -196,7 +196,124 @@
     return null;
   }
 
+  // ------------------------------------------------------------------ Anfahrt: Koordinaten, Peilung, Prüfung der Route
+  // Koordinaten aus einer Eingabe bzw. einem Link lesen: „50.2263, 7.8317“, „50,2263 7,8317“, „N 50° 13.578' E 7° 49.902'“,
+  // „50°13'34.7"N 7°49'54.1"E“, Links von Google Maps (…/@50.22,7.83,17z, ?q=50.22,7.83, destination=…), Apple Karten (ll=, q=, daddr=)
+  // und „geo:50.22,7.83“ → { lat, lon } oder null. Nur plausible Werte (Breite ±90, Länge ±180).
+  function koordinatenLesen(eingabe) {
+    const t = String(eingabe || '').trim();
+    if (!t) return null;
+    const ok = (lat, lon) => isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0)
+      ? { lat: Math.round(lat * 1e6) / 1e6, lon: Math.round(lon * 1e6) / 1e6 } : null;
+    const zahl = x => Number(String(x).replace(',', '.'));
+    // Links und geo:-Adressen
+    let m = /@(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/.exec(t) ||
+      /[?&](?:q|ll|query|destination|daddr|sll|center)=(?:loc:)?(-?\d{1,2}\.\d+)(?:,|%2C)\s*(-?\d{1,3}\.\d+)/i.exec(t) ||
+      /^geo:(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/i.exec(t);
+    if (m) return ok(zahl(m[1]), zahl(m[2]));
+    if (/^https?:\/\//i.test(t)) return null;
+    // Grad, Minuten, Sekunden mit Himmelsrichtung (vor oder hinter der Zahl)
+    const teil = '([NSOEW])?\\s*(\\d{1,3}(?:[.,]\\d+)?)\\s*°\\s*(?:(\\d{1,2}(?:[.,]\\d+)?)\\s*[\'′’]\\s*)?(?:(\\d{1,2}(?:[.,]\\d+)?)\\s*(?:"|″|”|\'\')\\s*)?([NSOEW])?';
+    m = new RegExp('^\\s*' + teil + '[\\s,;/]*' + teil + '\\s*$', 'i').exec(t);
+    if (m) {
+      // steht vor beiden Zahlen ein Buchstabe, gehört der Buchstabe hinter der ersten Zahl (m[5]) schon zur zweiten
+      const wert = (h, g, mi, se) => { const v = zahl(g) + (mi ? zahl(mi) / 60 : 0) + (se ? zahl(se) / 3600 : 0); h = String(h || '').toUpperCase(); return { v: /[SW]/.test(h) ? -v : v, h }; };
+      const a = wert(m[1] || m[5], m[2], m[3], m[4]), b = wert(m[6] || m[10] || (m[1] && m[5] ? m[5] : ''), m[7], m[8], m[9]);
+      if (/[OEW]/.test(a.h) || /[NS]/.test(b.h)) return ok(b.v, a.v);
+      return ok(a.v, b.v);
+    }
+    // zwei Dezimalzahlen: „50.2263, 7.8317“ bzw. „50,2263 7,8317“ bzw. „50.2263 7.8317“
+    m = /^\s*(-?\d{1,2}[.,]\d{3,})\s*[,;\s/]\s*(-?\d{1,3}[.,]\d{3,})\s*$/.exec(t);
+    if (m) return ok(zahl(m[1]), zahl(m[2]));
+    return null;
+  }
+  const RAD = Math.PI / 180;
+  // Entfernung in Metern (Haversine) und Peilung in Grad (0 = Nord) von a nach b
+  function abstandM(a, b) {
+    const R = 6371008.8, dp = (b.lat - a.lat) * RAD, dl = (b.lon - a.lon) * RAD;
+    const h = Math.sin(dp / 2) ** 2 + Math.cos(a.lat * RAD) * Math.cos(b.lat * RAD) * Math.sin(dl / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  function peilung(a, b) {
+    const y = Math.sin((b.lon - a.lon) * RAD) * Math.cos(b.lat * RAD);
+    const x = Math.cos(a.lat * RAD) * Math.sin(b.lat * RAD) - Math.sin(a.lat * RAD) * Math.cos(b.lat * RAD) * Math.cos((b.lon - a.lon) * RAD);
+    return grad360(Math.atan2(y, x) / RAD);
+  }
+  const winkelDiff = (a, b) => Math.abs(((Number(a) - Number(b)) % 360 + 540) % 360 - 180);
+
+  // Abstände für die Anfahrt. Absperrgrenze = Grenze des Gefahrenbereichs, bis zu der man heranfährt: der größte Wert aus
+  // Gefahrenbereich der Grundlage (RLP bzw. FwDV 500: 50 m), ERG-Erstabsperrung, den stoffabhängigen Abständen der
+  // ABC-Taschenkarte RLP (LFV RLP, Stand März 2023, „Zusätzliche Hinweise FwDV 500“: Klasse 1.1/1.2/1.3/1.5/1.6 Gefahrenbereich
+  // 500 m und Absperrbereich 1 000 m; Gase in Tank- bzw. Kesselwagen oder Industrietanks 300 m und 1 000 m; entzündbare
+  // Flüssigkeiten in Tanks 50 m und 300 m) und – bei Brand bzw. Explosionsgefahr – dem ERG-Wert für den Brand eines Tanks,
+  // ohne solchen Wert den Explosionsabständen der FwDV 500 (Gefahrenbereich mindestens 500 m, Absperrbereich 1 000 m).
+  // → { grenze_m, grund, absperr_m, absperrGrund, gefahr_m, erg_m, brand_m, schutz_m, schutzNacht, klasse: { k1, k2, k3 }, hinweise[] }
+  const TASCHENKARTE = 'ABC-Taschenkarte RLP 2023';
+  function anfahrtAbstaende(un, { grundlage = 'rlp', nacht = false, brand = false, tank = false } = {}) {
+    const gl = GRUNDLAGEN[grundlage] || GRUNDLAGEN.rlp, a = un ? absperrung(un) : null;
+    const klassen = un ? unEintraege(un).map(e => String(e.klasse || '')) : [];
+    const k1 = klassen.some(k => /^1\.[12356]/.test(k)), k2 = klassen.some(k => /^2(\.|\b|$)/.test(k)), k3 = klassen.some(k => /^3(\.|\b|$)/.test(k));
+    const erg_m = a && a.absperren_m ? a.absperren_m : null;
+    const s = a && a.schutz && a.schutz.klein ? a.schutz.klein : null;
+    const schutz_m = s ? Math.round((nacht ? s.nacht_km : s.tag_km) * 1000) : a && a.gross_m ? a.gross_m : null;
+    const brand_m = a && a.brand_m ? a.brand_m : null;
+    let grenze_m = gl.gefahrenbereich_m, grund = `Gefahrenbereich (${gl.name})`, absperr_m = gl.absperrbereich_m || null, absperrGrund = absperr_m ? gl.name : '';
+    const hoeher = (m, text) => { if (m && m > grenze_m) { grenze_m = m; grund = text; } };
+    const aussen = (m, text) => { if (m && m > (absperr_m || 0)) { absperr_m = m; absperrGrund = text; } };
+    hoeher(erg_m, `ERG-Erstabsperrung für UN ${a && a.un}`);
+    if (k1) { hoeher(500, `Explosivstoff Klasse 1 (${TASCHENKARTE})`); aussen(1000, TASCHENKARTE); }
+    if (tank && k2) { hoeher(300, `Gas im Tank- bzw. Kesselwagen oder Industrietank (${TASCHENKARTE})`); aussen(1000, TASCHENKARTE); }
+    if (tank && k3) aussen(300, TASCHENKARTE);
+    if (brand) {
+      if (brand_m) hoeher(brand_m, `ERG: Brand eines Tanks, UN ${a.un}`);
+      else { hoeher(500, 'Explosions- oder Zerknallgefahr (FwDV 500: mindestens 500 m)'); aussen(1000, 'FwDV 500'); }
+    }
+    if (absperr_m && absperr_m <= grenze_m) { absperr_m = null; absperrGrund = ''; }
+    return { grenze_m, grund, absperr_m, absperrGrund, gefahr_m: gl.gefahrenbereich_m, erg_m, brand_m, schutz_m, schutzNacht: nacht,
+      klasse: { k1, k2, k3 }, hinweise: a ? a.hinweise : [] };
+  }
+
+  // Route des Routendienstes gegen Wind und Bereiche prüfen.
+  // route: [{ lat, lon }] vom Start bis zur Einsatzstelle; ort: Einsatzstelle; vonGrad: Wind kommt aus (null = unbekannt/Windstille);
+  // grenze_m: Absperrgrenze; zone: { laenge_m, winkel } Bereich in Windrichtung (Keule ab der Einsatzstelle).
+  // → { ankunftGrad, abweichung, bewertung: 'gut' | 'seitlich' | 'gegen' | null, imWindM, kritisch: [[pkte]], durchGefahr, rest_m }
+  function routePruefen(route, ort, { vonGrad = null, grenze_m = 50, zone = { laenge_m: 1000, winkel: 90 } } = {}) {
+    const leer = { ankunftGrad: null, abweichung: null, bewertung: null, imWindM: 0, kritisch: [], durchGefahr: false, rest_m: null };
+    if (!Array.isArray(route) || route.length < 2 || !ort) return leer;
+    // dichter abtasten (höchstens 20 m je Schritt), damit kurze Abschnitte in der Keule nicht durchrutschen
+    const pk = [route[0]];
+    for (let i = 1; i < route.length; i++) {
+      const a = route[i - 1], b = route[i], d = abstandM(a, b), n = Math.min(400, Math.ceil(d / 20));
+      for (let k = 1; k <= n; k++) pk.push({ lat: a.lat + (b.lat - a.lat) * k / n, lon: a.lon + (b.lon - a.lon) * k / n });
+    }
+    const dist = pk.map(p => abstandM(ort, p));
+    const rest_m = dist[dist.length - 1];
+    // Ankunft: letzter Eintritt in den Kreis um die Einsatzstelle (doppelte Absperrgrenze, mindestens 250 m)
+    const rAn = Math.max(2 * grenze_m, 250);
+    let ein = -1;
+    for (let i = pk.length - 1; i > 0; i--) if (dist[i] <= rAn && dist[i - 1] > rAn) { ein = i; break; }
+    const ankunftGrad = ein > 0 ? peilung(ort, pk[ein]) : (dist[0] > grenze_m ? peilung(ort, pk[0]) : null);
+    // durch den Gefahrenbereich hindurch (hinein und wieder hinaus, bevor die Route endet)?
+    let drin = false, durchGefahr = false;
+    for (let i = 0; i < pk.length; i++) { if (dist[i] <= grenze_m) drin = true; else if (drin) { durchGefahr = true; break; } }
+    let imWindM = 0, kritisch = [], lauf = null;
+    const zug = vonGrad === null || vonGrad === undefined ? null : ausbreitungsrichtung(vonGrad);
+    if (zug !== null && zone && zone.laenge_m > 0) {
+      const halb = (zone.winkel || 90) / 2;
+      const inZone = i => dist[i] > grenze_m && dist[i] <= zone.laenge_m && winkelDiff(peilung(ort, pk[i]), zug) <= halb;
+      for (let i = 0; i < pk.length; i++) {
+        if (inZone(i)) { if (!lauf) { lauf = i > 0 ? [pk[i - 1]] : []; kritisch.push(lauf); } lauf.push(pk[i]); if (i > 0 && inZone(i - 1)) imWindM += abstandM(pk[i - 1], pk[i]); }
+        else if (lauf) { lauf.push(pk[i]); lauf = null; }
+      }
+      kritisch = kritisch.filter(t => t.length > 1);
+    }
+    const abweichung = ankunftGrad !== null && vonGrad !== null && vonGrad !== undefined ? Math.round(winkelDiff(ankunftGrad, vonGrad)) : null;
+    const bewertung = abweichung === null ? null : abweichung <= 45 ? 'gut' : abweichung <= 100 ? 'seitlich' : 'gegen';
+    return { ankunftGrad, abweichung, bewertung, imWindM: Math.round(imWindM), kritisch, durchGefahr, rest_m: Math.round(rest_m) };
+  }
+
   return { gefahrnummer, tafelPasst, unEintraege, unSuchen, erg, absperrung, windklasse, istNacht, fwdv500, rlp, regeln, GRUNDLAGEN, warntafelText,
+    koordinatenLesen, abstandM, peilung, winkelDiff, anfahrtAbstaende, routePruefen,
     himmelsrichtung, ausbreitungsrichtung, beaufort, RICHTUNG_LANG, AUSBREITUNG, ausbreitung, olivenForm, windDreht,
     quellen: D.quellen || {}, hatDaten: () => !!(D.un || D.ergUn) };
 });

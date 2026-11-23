@@ -283,6 +283,12 @@
   :root #startseite .st-kachel > svg { color: var(--ink2); }
   .st-modul svg, .st-modul.grau svg { color: var(--ink2); }
   .st-modul { font-weight: 600; font-size: var(--schrift-s); }
+  /* Anfahrt: erste Phase des Einsatzes – als einziges Modul farbig (Blau = Bedienung) */
+  .st-modul.st-anfahrt { background: var(--akzent-voll); color: #fff; font-weight: 700; }
+  .st-modul.st-anfahrt:hover { background: var(--akzent-voll-hover); }
+  .st-modul.st-anfahrt svg { color: #fff; }
+  :root .ez .knopf.lg-zur-anfahrt, :root .ez-bereich > h2 .knopf.lg-zur-anfahrt { background: var(--akzent-voll); border-color: var(--akzent-voll); color: #fff; }
+  :root .ez .knopf.lg-zur-anfahrt:hover { background: var(--akzent-voll-hover); border-color: var(--akzent-voll-hover); }
   :root .ez-eh h3 svg { color: var(--ink2); }
   /* Abschnittsköpfe: Satzschreibung, halbfett, Text 1 – keine gesperrten Großbuchstaben, keine getönte Kopffläche */
   :root .ez h2, :root .gsz-ansicht h2 { text-transform: none; letter-spacing: 0; font-weight: 600; }

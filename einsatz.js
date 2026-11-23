@@ -2459,7 +2459,7 @@
     else if (f && f.anzahl) html = `<b>${f.naechster ? 'Letzter Versuch fehlgeschlagen' : 'Auswertung aufgegeben'}</b> (${esc(f.anzahl)}. Versuch): ${esc(f.fehler || '')}` +
       (f.naechster ? ` – nächster Versuch ab ${esc(uhr(f.naechster))}.` : ' – die Liste oder info.txt ändern, dann versucht es der Mac-Helfer erneut.');
     else if (h.arbeit) html = `<div class="ez-fortschritt"><div class="titel">In der Warteschlange</div><div class="balken"><i style="width:0"></i></div>
-      <div class="zeile"><span>Der Mac-Helfer wertet gerade ${h.arbeit.art === 'sdb' ? 'ein Sicherheitsdatenblatt' : `„${esc(h.arbeit.ordner || '')}“`} aus – diese Liste ist danach dran.</span></div></div>`;
+      <div class="zeile"><span>Der Mac-Helfer ${h.arbeit.art === 'benennen' ? 'benennt gerade eine Unterlage' : `wertet gerade ${h.arbeit.art === 'sdb' ? 'ein Sicherheitsdatenblatt' : `„${esc(h.arbeit.ordner || '')}“`} aus`} – diese Liste ist danach dran.</span></div></div>`;
     else html = `<div class="ez-fortschritt"><div class="titel">In der Warteschlange</div><div class="balken unbestimmt"><i></i></div>
       <div class="zeile"><span>Der Mac-Helfer beginnt in Kürze (er wartet, bis die Dateien vollständig in der Dropbox sind).</span></div></div>`;
     box.innerHTML = html;
@@ -2499,7 +2499,7 @@
     else if (f.fehler) html = `<b>${(Number(f.versuche) || 0) >= 3 ? 'Prüfung aufgegeben' : 'Letzter Prüfversuch fehlgeschlagen'}</b> (${esc(f.versuche || 1)}. Versuch): ${esc(f.fehler)}` +
       ((Number(f.versuche) || 0) >= 3 ? ' – „Erneut prüfen lassen“ fordert sie neu an.' : ' – nächster Versuch in etwa 10 Minuten.');
     else if (h.arbeit) html = `<div class="ez-fortschritt"><div class="titel">Prüfung in der Warteschlange</div><div class="balken"><i style="width:0"></i></div>
-      <div class="zeile"><span>Der Mac-Helfer arbeitet gerade an ${h.arbeit.art === 'sdb' ? 'einem Sicherheitsdatenblatt' : `„${esc(h.arbeit.ordner || '')}“`} – danach ist diese Prüfung dran.</span></div></div>`;
+      <div class="zeile"><span>Der Mac-Helfer arbeitet gerade an ${h.arbeit.art === 'sdb' ? 'einem Sicherheitsdatenblatt' : h.arbeit.art === 'benennen' ? 'dem Namen einer Unterlage' : `„${esc(h.arbeit.ordner || '')}“`} – danach ist diese Prüfung dran.</span></div></div>`;
     else html = `<div class="ez-fortschritt"><div class="titel">Prüfung in der Warteschlange</div><div class="balken unbestimmt"><i></i></div>
       <div class="zeile"><span>Der Mac-Helfer beginnt in Kürze.</span></div></div>`;
     box.innerHTML = html;

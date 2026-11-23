@@ -330,6 +330,7 @@
     doku: MSVG('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>'),
     messen: MSVG('<path d="M9 3h6M10 3v15a2 2 0 0 0 4 0V3"/><path d="M10 11h4M10 15h4"/>'),
     probe: MSVG('<path d="M9 3h6M10 3v4l-4 8a4 4 0 0 0 3.6 6h4.8A4 4 0 0 0 18 15l-4-8V3"/><path d="M8 14h8"/>'),
+    anfahrt: MSVG('<path d="M3 11 21 3l-8 18-2-8z"/>'),
     ordner: MSVG('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
   };
 
@@ -366,6 +367,7 @@
       </nav>
       <section class="st-schnell" aria-label="Schnellzugriff"><h2>Schnellzugriff</h2>
         <nav class="st-module">
+          <a class="st-modul st-anfahrt" href="#anfahrt">${MODUL.anfahrt}Anfahrt</a>
           <button type="button" class="st-modul" data-st-ziel="suche">${ICON_LUPE}Stoff suchen</button>
           <button type="button" class="st-modul" data-st-ziel="tafel">${MODUL.tafel}Warntafel</button>
           <a class="st-modul" href="#lagekarte">${MODUL.karte}Lagekarte</a>

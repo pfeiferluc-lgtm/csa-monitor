@@ -137,7 +137,7 @@
     if (!aktiv()) {
       dEl.insertAdjacentHTML('beforeend', `<section class="kachel ez-karte"><h2>Einsatz beginnen</h2>
         <div class="eb-zeile"><label class="eb-feld">Stichwort<input id="eb-stichwort" placeholder="z. B. ABC 2 – Gefahrstoffaustritt" maxlength="120" autocomplete="off"></label>
-          <label class="eb-feld">Einsatzort<input id="eb-ort" placeholder="Straße, Ort" maxlength="160" autocomplete="off"></label></div>
+          <label class="eb-feld">Einsatzort<input id="eb-ort" placeholder="Straße, Ort" maxlength="160" autocomplete="off" value="${esc(window.GSZAnfahrt && GSZAnfahrt.ortText ? GSZAnfahrt.ortText() : '')}"></label></div>
         <p><button class="knopf" id="eb-beginnen" style="background:var(--crit);color:#fff;border-color:var(--crit)">${I.plus}Einsatz jetzt beginnen</button></p>
         <div class="ez-klein">Ab jetzt merkt sich die App jeden geöffneten Stoff mit Uhrzeit. Der Einsatz bleibt auch nach einem Neustart erhalten.</div></section>
         <section class="kachel ez-karte"><h2>Frühere Berichte</h2><div id="eb-alte"><div class="ez-leer">wird geladen …</div></div></section>`);

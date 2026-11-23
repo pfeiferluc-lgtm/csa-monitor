@@ -1,7 +1,7 @@
 // Messen mit Prüfröhrchen nach der Dräger-Messstrategie 1.5 (Feuerwehr): Messvorgehen bei Bränden, bei bekannten und bei
 // unbekannten Gefahrstoffen (Blatt A–E), Auswertung, Simultantest-Sets. Einsatztoleranzwerte (ETW) nach vfdb-Richtlinie 10/01,
 // Anlage 1 (Stand Januar 2023). Nur Daten und reine Logik – läuft im Browser (window.GSZMessen) und in Node (Tests).
-// Quellen im Dropbox-App-Ordner: Einsatz › Messen › „Messstrategien-9104003-Version-1-5…“, „Simultaneous-Test-Sets-pi-102069“,
+// Quellen im Dropbox-App-Ordner: Einsatz › Messen › „Messstrategie Dräger 1.5“, „Simultantest-Sets Dräger – Produktinfo“,
 // „Einsatztoleranzwerte ETW (vfdb 2023)“. Maßgeblich bleiben Aufdruck und Gebrauchsanweisung des jeweiligen Röhrchens.
 'use strict';
 (function (wurzel, fabrik) {

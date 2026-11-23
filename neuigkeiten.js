@@ -5,6 +5,13 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.11.0', datum: '2026-11-23', punkte: [
+    'Neu: „Anfahrt“ – als erster, blauer Knopf im Schnellzugriff der Startseite und in Einsatz › Lage. Einsatzort als Adresse, Koordinaten oder Kartenlink aus der Alarmierung eingeben (oder auf der Karte bzw. „Mein Standort“), Stoff falls schon bekannt (UN-Nr., Warntafel oder Name, auch ohne Netz).',
+    'Die App holt den Wind am Einsatzort (DWD) und zeigt groß, aus welcher Richtung ihr anfahren solltet – mit dem Wind im Rücken –, dazu die Absperrgrenze: Gefahrenbereich nach Gefahrstoffkonzept RLP, ERG-Erstabsperrung, Abstände der ABC-Taschenkarte RLP (z. B. Klasse 1: 500 m, Gas im Tankwagen: 300 m) und bei Brand oder Explosionsgefahr die größeren Werte.',
+    'Routenführung mit einem Tipp in Apple Karten oder Google Maps (die zuletzt benutzte App steht vorn). Vorher prüft die App die Route: Kommt sie aus der Ausbreitung (gegen den Wind) oder führt durch den Bereich in Windrichtung, warnt sie, zeigt den Abschnitt rot auf der Karte und – wenn es eine gibt – eine Ausweichroute mit Anfahrt gegen den Wind.',
+    'Der Einsatzort wird Unfallort der Lagekarte und Vorschlag für „Einsatzort“ in der Einsatz-Doku; läuft ein Einsatz, steht die Anfahrt im Einsatztagebuch. Bei Polynt weist die App auf den Bereitstellungsraum laut Alarm- und Einsatzplan hin.',
+    'Unterlagen in der Dropbox mit Nummern-Namen sind umbenannt (z. B. „Messstrategie Dräger 1.5“, „Permeationsliste AlphaTec 58-430“). Neue Dateien mit langen Nummern, Datum oder Kürzeln im Namen benennt der Mac-Helfer künftig selbst nach Inhalt um – geprüfte Beständigkeitslisten bleiben geprüft.',
+  ] },
   { version: '2.10.1', datum: '2026-11-23', punkte: [
     'Die Titelleiste mit „Zurück“ und „Menü“ bleibt beim Scrollen oben stehen – auf allen Seiten (Einsatz, Stoff, Messen, Probenahme, Geräte, Doku, Übungen, Anwesenheit, CSA-Monitor).',
     'Simultantest-Übersicht: jedes Set mit eigenem Kopfbalken (Name, Einsatzart, Hubzahl), Rahmen und Abstand – die Sets sind klar voneinander getrennt.',

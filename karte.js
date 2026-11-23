@@ -4,7 +4,9 @@
 // Gefahrenbereich (Grundlage RLP bzw. FwDV 500), ggf. Absperrbereich, die Erstabsperrung und die Schutz- bzw. Räumungszone
 // nach ERG in Windrichtung (Quadrat in Windrichtung, so lang wie breit), die Ausbreitungsolive (Keule in Zugrichtung bis zur
 // Wolkenfront nach der gewählten Zeit; bei Windstille ein Kreis) und der eigene Standort – jeweils mit Schild auf der Karte.
-// window.GSZKarte = { zeigen(el, opts) → { setzen(opts), zentrieren(), mitte(), zerstoeren() }, unfallort(), unfallortSetzen(), googleSchluessel… }
+// Für die Anfahrt zusätzlich: der empfohlene Anfahrtssektor gegen den Wind (grüner Kreisring-Ausschnitt mit Schild) und die
+// Route des Routendienstes (blau, Abschnitte durch Gefahrenbereich bzw. Ausbreitung rot).
+// window.GSZKarte = { zeigen(el, opts) → { setzen(opts), zentrieren(), zeigeBereich(pkte), mitte(), zerstoeren() }, unfallort(), unfallortSetzen(), … }
 'use strict';
 (() => {
   const LS = {
@@ -12,7 +14,8 @@
     set(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch { /* privat */ } },
   };
   const UNFALL_GUELTIG_MS = 12 * 3600 * 1000;
-  const FARBE = { gefahr: '#e5484d', absperr: '#26a95b', erg: '#f0794a', zone: '#f2b01e', ich: '#4c8df0', olive: '#8e4ec6', still: '#8e4ec6' };
+  const FARBE = { gefahr: '#e5484d', absperr: '#26a95b', erg: '#f0794a', zone: '#f2b01e', ich: '#4c8df0', olive: '#8e4ec6', still: '#8e4ec6',
+    anfahrt: '#1f9d55', route: '#2f6fe0', kritisch: '#e5484d' };
   const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const meter = m => m >= 1000 ? String(Math.round(m / 100) / 10).replace('.', ',') + ' km' : Math.round(m) + ' m';
   const skript = src => new Promise((ok, fehler) => { const s = document.createElement('script'); s.src = src; s.async = true; s.onload = ok;
@@ -44,6 +47,17 @@
     return [a, b, ziel(b.lat, b.lon, zugGrad, laenge), ziel(a.lat, a.lon, zugGrad, laenge)];
   }
   const hatZug = opts => opts.zugGrad !== null && opts.zugGrad !== undefined && isFinite(opts.zugGrad);
+  // Anfahrtssektor: Kreisring-Ausschnitt um die Richtung mitteGrad (von der Einsatzstelle aus gesehen), Öffnung winkel, Radien innen/außen
+  function sektorPunkte(o, mitteGrad, winkel, innen, aussen, n = 24) {
+    const aus = [], innenPkte = [];
+    for (let i = 0; i <= n; i++) {
+      const g = mitteGrad - winkel / 2 + winkel * i / n;
+      aus.push(ziel(o.lat, o.lon, g, aussen)); innenPkte.push(ziel(o.lat, o.lon, g, innen));
+    }
+    return aus.concat(innenPkte.reverse());
+  }
+  const anfahrtDa = opts => !!(opts.anfahrt && isFinite(opts.anfahrt.vonGrad) && opts.anfahrt.aussen_m > opts.anfahrt.innen_m);
+  const anfahrtPunkte = (o, a) => sektorPunkte(o, a.vonGrad, a.winkel || 90, a.innen_m, a.aussen_m);
   // Ausbreitungsolive: Umriss aus GSZGefahrgut.olivenForm (spitz an der Austrittsstelle mit dem Öffnungswinkel, vorne gerundet)
   function olivenPunkte(o, zugGrad, laenge, winkel) {
     const GG = window.GSZGefahrgut;
@@ -56,7 +70,8 @@
     const pkte = [ziel(o.lat, o.lon, 0, r), ziel(o.lat, o.lon, 90, r), ziel(o.lat, o.lon, 180, r), ziel(o.lat, o.lon, 270, r)];
     if (opts.zone && opts.zone.m && hatZug(opts)) pkte.push(...zonenPunkte(o, opts.zugGrad, opts.zone.m));
     if (oliveDa(opts)) pkte.push(...olivenPunkte(o, opts.zugGrad, opts.olive.laenge_m, opts.olive.winkel));
-    if (opts.standort) pkte.push(opts.standort);
+    if (anfahrtDa(opts)) pkte.push(...anfahrtPunkte(o, opts.anfahrt));
+    if (opts.standort && !opts.ohneStandortEinpassen) pkte.push(opts.standort);
     return pkte;
   }
   // Meter je Bildpunkt (Web-Mercator, 256er Kacheln – Google und OpenStreetMap gleich)
@@ -96,6 +111,15 @@
         dy: oliveM !== null && Math.abs(oliveM - zoneM) / mpp < 30 ? 26 : 0 });
     }
     if (oliveM !== null) aus.push({ p: ziel(o.lat, o.lon, zug, oliveM), text: opts.olive.kurz || opts.olive.text || 'Ausbreitung', art: 'olive', haupt: true });
+    if (anfahrtDa(opts)) {
+      const a = { p: ziel(o.lat, o.lon, opts.anfahrt.vonGrad, opts.anfahrt.aussen_m * 0.9), text: opts.anfahrt.kurz || 'Anfahrt', art: 'anfahrt', haupt: true };
+      // Lage in Bildpunkten um den Unfallort (genähert) und Kasten des Schilds
+      const kasten = x => { const px = (x.p.lon - o.lon) * Math.cos(o.lat * RAD) * 111320 / mpp + (x.dx || 0), py = -(x.p.lat - o.lat) * 110574 / mpp + (x.dy || 0);
+        const b = x.text.length * 6.3 + 18; return { l: px - b / 2, r: px + b / 2, o: py - 10, u: py + 10 }; };
+      const stoesst = x => { const k = kasten(x); return aus.some(y => { const m = kasten(y); return k.l < m.r + 4 && k.r > m.l - 4 && k.o < m.u + 2 && k.u > m.o - 2; }); };
+      const platz = [0, 26, -26, 52, -52].map(dy => ({ ...a, dy })).find(x => !stoesst(x));
+      if (platz) aus.push(platz);
+    }
     return aus;
   }
 
@@ -138,6 +162,17 @@
         if (oliveDa(opts))
           ebenen.push(L.polygon(olivenPunkte(o2, opts.zugGrad, opts.olive.laenge_m, opts.olive.winkel).map(x => [x.lat, x.lon]),
             { color: FARBE.olive, weight: 2.5, fillColor: FARBE.olive, fillOpacity: .16, className: 'gk-olive' }).bindTooltip(opts.olive.text || 'Ausbreitung').addTo(karte));
+        if (anfahrtDa(opts))
+          ebenen.push(L.polygon(anfahrtPunkte(o2, opts.anfahrt).map(x => [x.lat, x.lon]), { color: FARBE.anfahrt, weight: 2, dashArray: '6 5', fillColor: FARBE.anfahrt, fillOpacity: .18, className: 'gk-anfahrt' })
+            .bindTooltip(opts.anfahrt.text || 'Anfahrt').addTo(karte));
+        if (opts.routeAlt && opts.routeAlt.length > 1)
+          ebenen.push(L.polyline(opts.routeAlt.map(x => [x.lat, x.lon]), { color: FARBE.anfahrt, weight: 5, opacity: .95, dashArray: '10 8', className: 'gk-route-alt' }).bindTooltip('Andere Route mit Anfahrt gegen den Wind').addTo(karte));
+        if (opts.route && opts.route.length > 1) {
+          ebenen.push(L.polyline(opts.route.map(x => [x.lat, x.lon]), { color: '#fff', weight: 8, opacity: .85, interactive: false }).addTo(karte));
+          ebenen.push(L.polyline(opts.route.map(x => [x.lat, x.lon]), { color: FARBE.route, weight: 5, opacity: .95, className: 'gk-route' }).bindTooltip('Route des Navis (Vorschau)').addTo(karte));
+          for (const t of opts.routeKritisch || []) if (t.length > 1)
+            ebenen.push(L.polyline(t.map(x => [x.lat, x.lon]), { color: FARBE.kritisch, weight: 6, opacity: 1, className: 'gk-route-kritisch' }).bindTooltip('Route durch Gefahrenbereich bzw. Ausbreitung').addTo(karte));
+        }
         if (opts.still && opts.still.m) ebenen.push(L.circle(p, { radius: opts.still.m, color: FARBE.still, weight: 2, dashArray: '6 6', fillColor: FARBE.still, fillOpacity: .07 })
           .bindTooltip(opts.still.text || 'Windstille').addTo(karte));
         if (opts.ergAbs_m && opts.ergAbs_m > (opts.gefahr_m || 0)) ebenen.push(L.circle(p, { radius: opts.ergAbs_m, color: FARBE.erg, weight: 2, dashArray: '4 6', fill: false }).bindTooltip('ERG: sofort absperren ' + opts.ergAbs_m + ' m').addTo(karte));
@@ -212,6 +247,17 @@
         if (oliveDa(opts))
           ebenen.push(new g.Polygon({ map: karte, paths: olivenPunkte(o2, opts.zugGrad, opts.olive.laenge_m, opts.olive.winkel).map(ll), strokeColor: FARBE.olive, strokeWeight: 2.5,
             fillColor: FARBE.olive, fillOpacity: .18, clickable: false }));
+        if (anfahrtDa(opts))
+          ebenen.push(new g.Polygon({ map: karte, paths: anfahrtPunkte(o2, opts.anfahrt).map(ll), strokeColor: FARBE.anfahrt, strokeWeight: 2, fillColor: FARBE.anfahrt, fillOpacity: .22, clickable: false }));
+        if (opts.routeAlt && opts.routeAlt.length > 1)
+          ebenen.push(new g.Polyline({ map: karte, path: opts.routeAlt.map(ll), strokeOpacity: 0, clickable: false,
+            icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: FARBE.anfahrt, strokeWeight: 5, scale: 3 }, offset: '0', repeat: '16px' }] }));
+        if (opts.route && opts.route.length > 1) {
+          ebenen.push(new g.Polyline({ map: karte, path: opts.route.map(ll), strokeColor: '#ffffff', strokeWeight: 8, strokeOpacity: .85, clickable: false }));
+          ebenen.push(new g.Polyline({ map: karte, path: opts.route.map(ll), strokeColor: FARBE.route, strokeWeight: 5, strokeOpacity: .95, clickable: false }));
+          for (const t of opts.routeKritisch || []) if (t.length > 1)
+            ebenen.push(new g.Polyline({ map: karte, path: t.map(ll), strokeColor: FARBE.kritisch, strokeWeight: 6, strokeOpacity: 1, clickable: false }));
+        }
         if (opts.still && opts.still.m) ebenen.push(new g.Circle({ map: karte, center: p, radius: opts.still.m, strokeColor: FARBE.still, strokeWeight: 2, strokeOpacity: .85,
           fillColor: FARBE.still, fillOpacity: .07, clickable: false }));
         if (opts.ergAbs_m && opts.ergAbs_m > (opts.gefahr_m || 0)) ebenen.push(new g.Circle({ map: karte, center: p, radius: opts.ergAbs_m, strokeColor: FARBE.erg, strokeWeight: 2, fillOpacity: 0, clickable: false }));
@@ -256,6 +302,7 @@
       art: k.art, fehler: opts.fehler || '', verschieben: x => k.verschieben(x),
       setzen(neu) { Object.assign(opts, neu); if (neu.unfallort) o = neu.unfallort; zeichnen(); },
       zentrieren() { k.einpassen(grenzen(o, opts)); },
+      zeigeBereich(pkte) { if (pkte && pkte.length) k.einpassen(pkte); },
       mitte: () => k.mitte(),
       unfallort: () => o,
       zerstoeren: () => k.zerstoeren(),
@@ -263,5 +310,5 @@
     });
   }
 
-  window.GSZKarte = { zeigen, unfallort, unfallortSetzen, ziel, zonenPunkte, olivenPunkte, schilderPlanen, meterJePunkt };
+  window.GSZKarte = { zeigen, unfallort, unfallortSetzen, ziel, zonenPunkte, olivenPunkte, sektorPunkte, schilderPlanen, meterJePunkt };
 })();
