@@ -307,6 +307,11 @@
   :root .ez > .ez-kopf :is(a, button):focus-visible { outline-color: #fff; }
   /* Ziffern in Tabellenbreite für Werte, Zeiten und Abstände */
   :root .ez-kw b, :root .lg-abstand b, :root .eb-zeiten b, :root .ez-tabelle td, :root .ms-werte dd { font-variant-numeric: tabular-nums; }
+  /* Titelleiste mit „Zurück“ und „Menü“ bleibt beim Scrollen oben – in allen Ansichten */
+  :root .ez > .ez-kopf, :root .ue-kopf, :root .kopfleiste { position: sticky; top: 0; z-index: 30; }
+  :root .aw-kopf { position: sticky; top: var(--frei-oben, 0px); z-index: 30; }
+  :root .ez-ordnen-leiste { top: calc(var(--kopf-hoehe, 0px) + .4rem); }
+  html { scroll-padding-top: calc(var(--kopf-hoehe, 0px) + .5rem); }
   /* Satzschreibung statt gesperrter Großbuchstaben (Ausnahmen: GHS-Signalwort, Einheiten im Band an den Geräten) */
   :root .ez-ausbr .ueber, :root .ez-kw > div:not(.ez-ausbr) > span, :root .ez-aegl .kopfzeile > span, :root .ez-db h3, :root details.ez-mehr .inhalt b,
   :root .st-ueber, :root .st-neu h2, :root .st-zuletzt h2, :root .lg-ergaenzend, :root .karte > h2, :root .liste h3, :root .pg-kopf h3 {
@@ -330,7 +335,7 @@
       const r = el.getBoundingClientRect();
       if (!r.height) return;
       let oben = 0, unten = innerHeight;
-      for (const l of document.querySelectorAll('.ez-leiste, .aw-leiste, .ez-ordnen-leiste')) {
+      for (const l of document.querySelectorAll('.ez-leiste, .aw-leiste, .ez-ordnen-leiste, main.aktiv > .ez-kopf, .aw-kopf, .ue-kopf, .kopfleiste')) {
         if (l.contains(el)) continue;
         const s = getComputedStyle(l), b = l.getBoundingClientRect();
         if (s.display === 'none' || s.visibility === 'hidden' || !b.height || !b.width || !/fixed|sticky/.test(s.position)) continue;
@@ -340,6 +345,20 @@
       else if (r.top < oben + 4) window.scrollBy(0, r.top - oben - 12);
     });
   });
+  // Höhe der haftenden Titelleiste der sichtbaren Ansicht → --kopf-hoehe (Abstand für weitere haftende Leisten und Sprungziele)
+  const kopfMessen = () => {
+    const k = [...document.querySelectorAll('main.gsz-ansicht.aktiv > .ez-kopf, .aw-kopf, .ue-kopf, .kopfleiste')].find(x => x.offsetParent !== null);
+    const h = k ? Math.round((parseFloat(getComputedStyle(k).top) || 0) + k.offsetHeight) : 0;
+    document.documentElement.style.setProperty('--kopf-hoehe', h + 'px');
+  };
+  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(kopfMessen) : null;
+  let beobachtet = null;
+  const kopfBeobachten = () => { kopfMessen(); const k = document.querySelector('main.gsz-ansicht.aktiv > .ez-kopf, .aw-kopf, .ue-kopf, .kopfleiste');
+    if (ro && k && k !== beobachtet) { if (beobachtet) ro.unobserve(beobachtet); ro.observe(k); beobachtet = k; } };
+  addEventListener('hashchange', () => setTimeout(kopfBeobachten, 50));
+  addEventListener('resize', kopfMessen);
+  new MutationObserver(() => kopfBeobachten()).observe(document.body, { attributes: true, attributeFilter: ['data-ansicht'] });
+  setTimeout(kopfBeobachten, 300);
   const st = document.createElement('style');
   st.id = 'gsz-aussehen';
   st.textContent = css;

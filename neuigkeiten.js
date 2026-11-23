@@ -5,6 +5,10 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.10.1', datum: '2026-11-23', punkte: [
+    'Die Titelleiste mit „Zurück“ und „Menü“ bleibt beim Scrollen oben stehen – auf allen Seiten (Einsatz, Stoff, Messen, Probenahme, Geräte, Doku, Übungen, Anwesenheit, CSA-Monitor).',
+    'Simultantest-Übersicht: jedes Set mit eigenem Kopfbalken (Name, Einsatzart, Hubzahl), Rahmen und Abstand – die Sets sind klar voneinander getrennt.',
+  ] },
   { version: '2.10.0', datum: '2026-11-23', punkte: [
     'Neu: „Probenahme“ – Startseite › Schnellzugriff neben „Messen“ oder Einsatz › Lage. Interaktive Anleitung für alle 22 CBRN-Probenarten der BBK-Kurzanleitung: chemisch (C01–C10), biologisch (B01–B09), radiologisch/nuklear (RN01–RN03).',
     'Je Probe: Materialliste mit Fotos zum Abhaken, Schritte A, B, C … mit den Piktogrammen der Kurzanleitung und „Erledigt“ (der nächste Schritt ist markiert), Hinweise sowie Hintergrund aus den BBK-Empfehlungen (Schutz, Dekontamination bzw. Desinfektion, Transport).',

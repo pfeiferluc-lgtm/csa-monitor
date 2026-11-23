@@ -146,6 +146,11 @@
   .ms-set-tab th { font-size: max(13px, .78rem); color: var(--ink2); font-weight: 600; }
   .ms-set-tab td.z { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .ms-set-bild { width: 100%; max-width: 26rem; border-radius: .5rem; background: #fff; display: block; }
+  .ms-set { margin-top: 1.4rem; border: 1px solid var(--rand-stark, var(--rand)) !important; }
+  .ms-set > .ms-set-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .7rem; margin: -.8rem -.9rem .8rem; padding: .75rem 1rem .75rem .9rem;
+    background: var(--surface3, var(--surface2)); border-bottom: 1px solid var(--rand-stark, var(--rand)); border-left: 6px solid var(--c, var(--akzent)); border-radius: var(--rund) var(--rund) 0 0; }
+  .ms-set > .ms-set-kopf h2 { margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; min-height: 0 !important; font-size: 1.15rem !important; font-weight: 700 !important; color: var(--ink) !important; flex: 1 1 14rem; }
+  .ms-set-kopf .ms-schild { font-size: .8rem; }
   .ms-warn { padding: .6rem .75rem; border-radius: .55rem; border-left: 4px solid var(--crit); background: color-mix(in srgb, var(--crit) 10%, var(--surface2)); font-size: .88rem; }
   `;
   document.head.appendChild(st);
@@ -423,8 +428,10 @@
     c.insertAdjacentHTML('beforeend', `${bildDa('Simultantest-Set.jpg') ? `<section class="kachel ez-karte"><h2>Simultantest-Set</h2><img class="ms-set-bild" data-rbild="${BILD_ORDNER}Simultantest-Set.jpg" alt="Dräger-Simultantest-Set mit Halter und Schlauch">
         <div class="ms-hinweis" style="margin-top:.4rem">Fünf Röhrchen werden gleichzeitig über einen Halter mit der Pumpe durchströmt. Abgelesen wird je Röhrchen, ob die 1. bzw. 2. Markierung erreicht ist. Foto: Dräger.</div></section>` : ''}
       ${M.SETS.map(s => { const i = IDX[s.id]; const auch = i === undefined ? [] : STOFFE.filter(x => /^ja/i.test(x.simultan[i] || '')).map(kurz);
-        return `<section class="kachel ez-karte"><h2>${esc(s.name)}</h2>
-          <div class="ms-hinweis" style="margin-bottom:.5rem"><b>${s.huebe ? s.huebe + ' Hübe' : 'Hübe laut Gebrauchsanweisung'}</b> · ${esc(zweck(s))}${s.hinweis ? ' · ' + esc(s.hinweis) : ''}</div>
+        const art = s.begasung ? ['Begasung', 'var(--grau-voll, #5f6873)'] : s.brand ? ['Brand', 'var(--crit-voll, #c62828)'] : ['Brände und Unfälle', 'var(--ser-voll, #c2410c)'];
+        return `<section class="kachel ez-karte ms-set" style="--c:${art[1]}"><div class="ms-set-kopf"><h2>${esc(s.name)}</h2>
+            <span class="ms-schild" style="--c-voll:${art[1]}">${esc(art[0])}</span><span class="ms-schild" style="--c-voll:var(--grau-voll, #5f6873)">${s.huebe ? s.huebe + ' Hübe' : 'Hübe laut Anleitung'}</span></div>
+          <div class="ms-hinweis" style="margin-bottom:.5rem">${esc(zweck(s))}${s.hinweis ? ' · ' + esc(s.hinweis) : ''}</div>
           <table class="ms-set-tab"><tr><th>Kanal</th><th>1. Marke</th><th>2. Marke</th><th>ETW-4 / ETW-1</th></tr>
           ${s.kanaele.map(kn => `<tr><td><b>${esc(kn.name)}</b>${kn.anm ? `<br><small class="ez-klein">${esc(kn.anm)}</small>` : ''}</td><td class="z">${marke(kn, 0)}</td><td class="z">${marke(kn, 1)}</td>
             <td class="z">${kn.etw4 !== null && kn.etw4 !== undefined ? zt(kn.etw4) : '–'} / ${kn.etw1 !== null && kn.etw1 !== undefined ? zt(kn.etw1) : '–'} ppm</td></tr>`).join('')}</table>
