@@ -28,12 +28,14 @@
   let daten = (() => { try { return JSON.parse(localStorage.getItem(LS) || 'null') || { messungen: [] }; } catch { return { messungen: [] }; } })();
   if (!Array.isArray(daten.messungen)) daten.messungen = [];
   const sichern = () => { try { localStorage.setItem(LS, JSON.stringify(daten)); } catch { /* voll */ } };
+  // laufende Messung je Lage: der Wechsel zwischen den Lagen (z. B. kurz ins Stoffblatt) setzt die offene Messung fort
   const aktiveMessung = lage => {
-    let m = daten.messungen.find(x => x.id === daten.aktiv && !x.ende);
-    if (!m || (lage && m.lage !== lage)) {
+    let m = daten.messungen.find(x => !x.ende && (!lage || x.lage === lage));
+    if (!m) {
       m = { id: 'm' + Date.now(), lage, beginn: Date.now(), ort: '', hoehe: '', trupp: '', mehrgas: {}, fluessig: null, ph: null, erg: {}, sets: {}, stoff: '' };
-      daten.messungen.unshift(m); daten.aktiv = m.id; daten.messungen = daten.messungen.slice(0, 40); sichern();
+      daten.messungen.unshift(m); daten.messungen = daten.messungen.slice(0, 40);
     }
+    if (daten.aktiv !== m.id) { daten.aktiv = m.id; sichern(); }
     return m;
   };
   const bericht = () => window.GSZBericht && window.GSZBericht.aktiv() ? window.GSZBericht : null;
@@ -126,6 +128,24 @@
   .ms-proto th, .ms-proto td { text-align: left; padding: .4rem .45rem; border-bottom: 1px solid var(--line); vertical-align: top; }
   .ms-proto th { font-size: .74rem; color: var(--ink2); font-weight: 700; }
   .ms-proto td.w { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+  .ms-bild { margin: 0; display: flex; flex-direction: column; gap: .35rem; padding: .55rem .7rem .5rem; border-radius: .45rem; background: #fff; border: 1px solid var(--line); }
+  .ms-bild > div { display: flex; flex-direction: column; gap: .1rem; }
+  .ms-bild span { font-size: max(13px, .8125rem); color: #4b535c; font-weight: 600; }
+  .ms-bild img, .ms-bild svg { width: 100%; max-width: 34rem; height: auto; display: block; }
+  .ms-bild figcaption { font-size: max(12px, .75rem); color: #5f6873; }
+  .ms-quer { font-size: .88rem; } .ms-quer > b { display: block; margin-bottom: .2rem; }
+  .ms-quer ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: .15rem; } .ms-quer li span { font-weight: 600; } .ms-quer small { color: var(--ink2); font-size: max(13px, .8125rem); }
+  .ms-treffer { list-style: none; margin: .3rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+  .ms-treffer li { padding: .6rem .75rem; border-radius: .55rem; background: var(--surface2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: .3rem; }
+  .ms-treffer li .kopf { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem .8rem; align-items: center; }
+  .ms-treffer li small { color: var(--ink2); font-size: max(13px, .8125rem); }
+  .ms-treffer .knopf { align-self: flex-start; }
+  .ms-gruppe { margin: .9rem 0 .2rem; font-size: max(13px, .875rem); font-weight: 600; color: var(--ink2); }
+  .ms-set-tab { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .ms-set-tab th, .ms-set-tab td { text-align: left; padding: .45rem .4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .ms-set-tab th { font-size: max(13px, .78rem); color: var(--ink2); font-weight: 600; }
+  .ms-set-tab td.z { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ms-set-bild { width: 100%; max-width: 26rem; border-radius: .5rem; background: #fff; display: block; }
   .ms-warn { padding: .6rem .75rem; border-radius: .55rem; border-left: 4px solid var(--crit); background: color-mix(in srgb, var(--crit) 10%, var(--surface2)); font-size: .88rem; }
   `;
   document.head.appendChild(st);
@@ -133,10 +153,43 @@
   // Farben der Röhrchen-Anzeigeschicht (nur zur Orientierung – maßgeblich ist das Röhrchen)
   const FARBE = { 'weiß': '#f3f3f0', 'hellgelb': '#f5e8a3', 'gelb': '#f0d23c', 'dunkelgelb': '#d9a915', 'orange': '#ef8a2c', 'gelb-orange': '#f2a53a', 'rot': '#d23a2e', 'rosa': '#f1a7c6',
     'rosagelb': '#f4c7a6', 'blau': '#2f6fd6', 'blauviolett': '#5a4bb6', 'violett': '#7a49b5', 'braun': '#7b4a25', 'braunviolett': '#6c3e5a', 'grün': '#3f9b4a', 'grünbraun': '#6a6a2c',
-    'mintgrün': '#98d8b8', 'graublau': '#6f7f97', 'blaugrau': '#7088a5', 'graugrün': '#8b9b84', 'grau': '#9a9a9a', 'braunrot': '#8b3a2a', 'hellbraun': '#b8875a', 'gelbweiß': '#f6f0cf' };
+    'mintgrün': '#98d8b8', 'gelbbraun': '#b8893a', 'rötlich-braun': '#8f4a32', 'graublau': '#6f7f97', 'blaugrau': '#7088a5', 'graugrün': '#8b9b84', 'grau': '#9a9a9a', 'braunrot': '#8b3a2a', 'hellbraun': '#b8875a', 'gelbweiß': '#f6f0cf' };
   const farbe = t => { const k = String(t || '').toLowerCase().split(/[ ,(]/)[0]; return FARBE[k] || null; };
   const umschlagHtml = u => { if (!u) return ''; const [von, nach] = Array.isArray(u) ? u : String(u).split('→').map(x => x.trim());
     return `<div class="ms-umschlag"><span>Umschlag:</span>${farbe(von) ? `<i style="--f:${farbe(von)}"></i>` : ''}<b>${esc(von || '')}</b><span aria-hidden="true">→</span>${farbe(nach) ? `<i style="--f:${farbe(nach)}"></i>` : ''}<b>${esc(nach || '')}</b></div>`; };
+  // Fotos der Röhrchen aus den Dräger-Stoffblättern – im App-Ordner unter _App/Roehrchen (nicht in der öffentlichen Web-App);
+  // ohne Foto (Säuretest, Polytest, Ethylacetat) bzw. ohne Dropbox: schlichte Zeichnung in den Farben des Umschlags
+  const BILD_ORDNER = '_App/Roehrchen/';
+  const bildDa = n => (E.dateien || []).some(d => !d.ordner && String(d.pfad).normalize('NFC') === BILD_ORDNER + n);
+  const rohrSvg = (r, an) => { const [von, nach] = Array.isArray(r.umschlag) ? r.umschlag : String(r.umschlag || '').split('→').map(x => x.trim());
+    const f1 = farbe(von) || '#ecebe4', f2 = farbe(nach) || f1, striche = [0, 1, 2, 3, 4, 5].map(i => `<path d="M${70 + i * 34} 10v4" stroke="#56606b" stroke-width="1"/>`).join('');
+    return `<svg viewBox="0 0 320 28" aria-hidden="true"><path d="M3 14 15 8.5h290l12 5.5-12 5.5H15z" fill="#eef3f6" stroke="#9aa6b2" stroke-width="1.2"/>
+      <rect x="36" y="9.5" width="20" height="9" fill="#d9d2bd"/><rect x="60" y="9.5" width="190" height="9" fill="${f1}"/>${an ? `<rect x="60" y="9.5" width="78" height="9" fill="${f2}"/>` : ''}
+      <rect x="252" y="9.5" width="10" height="9" fill="#d9d2bd"/>${striche}<path d="M58 9v10" stroke="#222" stroke-width="2"/></svg>`; };
+  function bildHtml(r) {
+    if (r.sensor) return '';
+    const s = r.seite || (r.nr && M.BILD_SEITE[r.nr]);
+    const u = s && bildDa(`S${s}-unbenutzt.jpg`), b = s && bildDa(`S${s}-benutzt.jpg`);
+    const zeile = (titel, inhalt) => `<div><span>${titel}</span>${inhalt}</div>`;
+    if (u && b) return `<figure class="ms-bild">${zeile('unbenutzt', `<img data-rbild="${BILD_ORDNER}S${s}-unbenutzt.jpg" alt="Röhrchen ${esc(r.name)} unbenutzt">`)}
+      ${zeile('nach der Messung', `<img data-rbild="${BILD_ORDNER}S${s}-benutzt.jpg" alt="Röhrchen ${esc(r.name)} mit Farbumschlag">`)}<figcaption>Foto: Dräger-Messstrategie (Stoffblatt S. ${s}) · Gaseinlass links${r.quer ? ` · zeigt die Verfärbung durch den Hauptstoff${r.querFarbe ? ` – ${esc(r.quer)} färbt ${esc(r.querFarbe)}` : ''}` : ''}</figcaption></figure>`;
+    return `<figure class="ms-bild">${zeile('unbenutzt', rohrSvg(r, false))}${zeile('nach der Messung', rohrSvg(r, true))}<figcaption>Zeichnung nach dem Farbumschlag · Gaseinlass links</figcaption></figure>`;
+  }
+  async function bilderLaden(c) {
+    for (const img of c.querySelectorAll('img[data-rbild]')) {
+      try { img.src = await E.objektUrl(img.dataset.rbild); } catch { const f = img.closest('div'); if (f) f.hidden = true; }
+    }
+  }
+  const GRUPPE_TEXT = { 'Amine': 'organische Amine (basische Stoffe)', 'C=C-Doppelbindung': 'Verbindungen mit C=C-Doppelbindung', 'Halogene': 'freie Halogene',
+    'Mineralsäuren': 'Mineralsäuren/Halogenwasserstoffsäuren', 'Benzinkohlenwasserstoffe': 'Benzin-Kohlenwasserstoffe' };
+  const stoffText_ = x => GRUPPE_TEXT[x] || x;
+  const querVon = r => M.QUER.filter(e => (r.nr && e.nr === r.nr) || e.r === r.name);
+  function querHtml(r) {
+    const l = querVon(r);
+    if (!l.length) return r.zeigt ? `<div class="ms-hinweis"><b>Zeigt/Querempfindlichkeit:</b> ${esc(r.zeigt)}</div>` : '';
+    return `<div class="ms-quer"><b>Zeigt auch an</b><ul>${l.map(e => `<li><span>${esc(e.stoffe.map(stoffText_).join(', '))}</span><small> – ${esc(e.wie)}${e.s ? ` · Stoffblatt S. ${e.s}` : ''}</small></li>`).join('')}</ul>
+      ${r.zeigt ? `<div class="ms-hinweis" style="margin-top:.3rem">${esc(r.zeigt)}</div>` : ''}</div>`;
+  }
   const STUFE = { unter: ['var(--good)', 'var(--good-voll, #1d7a43)', 'unter ETW-4'], etw4: ['var(--ser)', 'var(--ser-voll, #c2410c)', 'ab ETW-4'],
     etw1: ['var(--crit)', 'var(--crit-voll, #c62828)', 'ab ETW-1'], ohne: ['var(--line)', 'var(--grau-voll, #5f6873)', 'kein ETW'], neg: ['var(--good)', 'var(--good-voll, #1d7a43)', 'keine Anzeige'],
     pos: ['var(--ser)', 'var(--ser-voll, #c2410c)', 'Anzeige'] };
@@ -192,10 +245,10 @@
         <b>${esc(ergebnisText(r, e))}</b><span>${esc(bew.text || '')}</span>${bew.bereich ? `<span class="ms-hinweis" style="flex-basis:100%"><b>Hinweis:</b> ${esc(bew.bereich)}</span>` : ''}</div>` : '';
     return `<div class="ms-r" data-roehrchen="${esc(k)}">
       <div class="ms-r-kopf">${r.nr ? `<span class="nr">${r.nr}</span>` : ''}<div><h3>${esc(r.name)}${opt.titelZusatz ? ` <small style="font-weight:400;color:var(--ink2)">${esc(opt.titelZusatz)}</small>` : ''}</h3>
-        <div class="etw">${r.qualitativ ? 'qualitativer Test' : r.sensor ? esc(r.sensor) + ' · ' + etwText(r) : etwText(r)}${r.bestellnr ? ` · Best.-Nr. ${esc(r.bestellnr)}` : ''}</div></div><div class="ms-tags">${tags}</div></div>
-      ${umschlagHtml(r.umschlag)}
+        <div class="etw">${r.quer ? `Nachweis von ${esc(r.quer)} über Querempfindlichkeit – nur qualitativ` : r.qualitativ ? 'qualitativer Test' : r.sensor ? esc(r.sensor) + ' · ' + etwText(r) : etwText(r)}${r.bestellnr ? ` · Best.-Nr. ${esc(r.bestellnr)}` : ''}</div></div><div class="ms-tags">${tags}</div></div>
+      ${bildHtml(r)}${umschlagHtml(r.umschlag)}
       ${stufenHtml}${zaehlerHtml}
-      ${r.zeigt ? `<div class="ms-hinweis"><b>Zeigt/Querempfindlichkeit:</b> ${esc(r.zeigt)}</div>` : ''}
+      ${opt.quer ? '' : querHtml(r)}
       ${ergHtml}${bewHtml}
       ${r.folgeText && e && e.anzeige ? `<div class="ms-folge">${ICON.pfeil} ${esc(r.folgeText)}</div>` : ''}</div>`;
   }
@@ -285,6 +338,8 @@
     if (unterseite === 'brand') return brandZeigen();
     if (unterseite === 'bekannt') return bekanntZeigen(teile[1] || '');
     if (unterseite === 'protokoll') return protokollZeigen();
+    if (unterseite === 'roehrchen') return roehrchenSeite(teile[1] || '', teile[2] || '');
+    if (unterseite === 'simultan') return simultanZeigen();
     startZeigen();
   }
   function startZeigen() {
@@ -295,12 +350,88 @@
         <a class="ms-lage" href="#messen/unbekannt" style="--c:var(--ser)">${ICON.frage}<b>Unbekannter Gefahrstoff</b><span>Geführter Ablauf Blatt A–E: Säuretest bzw. pH, dann Röhrchen nach Anzeige</span><span class="pf">›</span></a>
         <a class="ms-lage" href="#messen/brand" style="--c:var(--crit)">${ICON.feuer}<b>Brand</b><span>Mehrgasmessgerät, Simultantest (Leitsubstanzen bzw. Set I), Einzelröhrchen</span><span class="pf">›</span></a>
         <a class="ms-lage" href="#messen/bekannt" style="--c:var(--akzent)">${ICON.stoff}<b>Bekannter Gefahrstoff</b><span>44 Stoffe der ETW-Liste: passendes Röhrchen, Hübe, Anzeige von Sensoren</span><span class="pf">›</span></a>
+        <a class="ms-lage" href="#messen/simultan" style="--c:var(--ink2)">${ICON.roehrchen}<b>Simultantest-Sets</b><span>Was misst welches Set: Kanäle, Markierungen, Bewertung gegen ETW</span><span class="pf">›</span></a>
       </div>
-      ${letzte ? `<div class="ez-aktionen"><a class="knopf" href="#messen/${letzte.lage || 'unbekannt'}">${ICON.pfeil}Laufende Messung fortsetzen (${esc(letzte.lage === 'brand' ? 'Brand' : letzte.lage === 'bekannt' ? 'bekannter Stoff' : 'unbekannter Stoff')}, seit ${uhr(letzte.beginn)})</a>
+      ${letzte && letzte.lage !== 'einzel' ? `<div class="ez-aktionen"><a class="knopf" href="#messen/${letzte.lage || 'unbekannt'}">${ICON.pfeil}Laufende Messung fortsetzen (${esc(letzte.lage === 'brand' ? 'Brand' : letzte.lage === 'bekannt' ? 'bekannter Stoff' : 'unbekannter Stoff')}, seit ${uhr(letzte.beginn)})</a>
         <a class="knopf" href="#messen/protokoll">${ICON.doku}Protokoll</a></div>` : daten.messungen.length ? `<div class="ez-aktionen"><a class="knopf" href="#messen/protokoll">${ICON.doku}Protokoll der Messungen</a></div>` : ''}
     </section>
+    <section class="kachel ez-karte" id="ms-was-karte"><h2>Was soll gemessen werden?</h2>
+      <label class="ms-feld">Stoff oder Stoffgruppe – findet auch Röhrchen über Querempfindlichkeiten<input id="ms-was" type="search" placeholder="z. B. Diesel, Butanon, Xylol, Methanol, 1005" autocomplete="off"></label>
+      <div id="ms-was-erg"></div></section>
     <section class="kachel ez-karte"><h2>Grundsätze</h2><ul class="ez-zeilen">${M.HINWEISE.map(h => `<li data-z="•">${esc(h)}</li>`).join('')}</ul>
       <div class="ez-klein" style="margin-top:.5rem">${esc(M.QUELLE)}. Maßgeblich sind Aufdruck und Gebrauchsanweisung des jeweiligen Röhrchens.</div></section>`);
+    const was = c.querySelector('#ms-was'), erg = c.querySelector('#ms-was-erg');
+    let t = null;
+    was.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { erg.innerHTML = suchErgebnisHtml(was.value); }, 150); });
+  }
+  // ---------------------------------------------------------------- Suche: Stoffblatt, Röhrchen über Querempfindlichkeit, Simultantest, „wird nicht angezeigt“
+  const stoffPasst = (s, q) => { const n = q.toLowerCase().trim(); if (!n) return false;
+    return s.un.includes(n) || s.cas.includes(n) || s.name.toLowerCase().split(/[^a-zäöüß0-9]+/).some(w => w.length && w.startsWith(n)); };
+  const roehrchenSchluessel = e => e.nr ? 'nr' + e.nr : 's' + e.s;
+  function suchErgebnisHtml(q) {
+    const n = String(q || '').trim(); if (n.length < 3) return '';
+    const st = STOFFE.filter(s => stoffPasst(s, n)).slice(0, 6);
+    const x = M.quersuche(n);
+    const haupt = new Set(st.flatMap(s => s.roehrchen.map(rr => rr.name)));
+    const direkt = x.direkt.filter(e => !haupt.has(e.r)), gruppe = x.gruppe.filter(e => !haupt.has(e.r));
+    const knopf = (e, stoff) => e.nr === 5 ? '' : `<a class="knopf" href="#messen/roehrchen/${roehrchenSchluessel(e)}/${encodeURIComponent(stoff)}">${ICON.roehrchen}Mit diesem Röhrchen messen</a>`;
+    const teil = [];
+    if (st.length) teil.push(`<div class="ms-gruppe">Stoffblatt (eigenes Röhrchen)</div><ul class="ms-treffer">${st.map(s => `<li><div class="kopf"><b>${esc(s.name)}</b><small>UN ${esc(s.un)} · ETW-4 ${s.etw4 !== null ? zt(s.etw4) + ' ppm' : '–'}</small></div>
+      <small>${esc(s.roehrchen.map(rr => rr.name).join(', '))}</small><a class="knopf" href="#messen/bekannt/${encodeURIComponent(s.cas.split(' ')[0])}">${ICON.pfeil}Stoffblatt und Röhrchen</a></li>`).join('')}</ul>`);
+    if (direkt.length) teil.push(`<div class="ms-gruppe">Wird ausdrücklich angezeigt (Querempfindlichkeit)</div><ul class="ms-treffer">${direkt.map(e => `<li><div class="kopf"><b>${e.nr ? 'Nr. ' + e.nr + ' · ' : ''}${esc(e.r)}</b><small>${e.s ? 'Stoffblatt S. ' + e.s : 'Messstrategie'}</small></div>
+      <span>${esc(e.treffer.map(stoffText_).join(', '))}: ${esc(e.wie)}</span>${knopf(e, e.treffer[0])}</li>`).join('')}</ul>`);
+    if (gruppe.length) teil.push(`<div class="ms-gruppe">Über die Stoffgruppe${x.gruppen.length ? ' (' + esc(x.gruppen.map(stoffText_).join(', ')) + ')' : ''} – Empfindlichkeit unterschiedlich, nur Hinweis</div><ul class="ms-treffer">${gruppe.map(e => `<li><div class="kopf"><b>${e.nr ? 'Nr. ' + e.nr + ' · ' : ''}${esc(e.r)}</b><small>${e.s ? 'Stoffblatt S. ' + e.s : 'Messstrategie'}</small></div>
+      <span>${esc(e.treffer.map(stoffText_).join(', '))}: ${esc(e.wie)}</span>${knopf(e, n)}</li>`).join('')}</ul>`);
+    if (x.sets.length) teil.push(`<div class="ms-gruppe">Simultantest</div><ul class="ms-treffer">${x.sets.map(t => `<li><div class="kopf"><b>${esc(t.set.name)}</b><small>${t.ueberGruppe ? 'über die Stoffgruppe' : 'Kanal'}</small></div>
+      <span>${esc(t.kanal.name)}: ${t.kanal.marken.filter(v => v !== null).map(v => zt(v) + ' ppm').join(' / ')}</span><a class="knopf" href="#messen/simultan">${ICON.pfeil}Simultantest-Übersicht</a></li>`).join('')}</ul>`);
+    if (x.nicht.length) teil.push(`<div class="ms-gruppe">Wird ausdrücklich nicht angezeigt</div><ul class="ms-treffer">${x.nicht.map(e => `<li><div class="kopf"><b>${esc(e.r)}</b><small>${e.s ? 'Stoffblatt S. ' + e.s : 'Messstrategie'}</small></div><span>${esc(e.text)}</span></li>`).join('')}</ul>`);
+    return teil.length ? teil.join('') + '<div class="ez-klein" style="margin-top:.6rem">Querempfindlichkeit heißt: Das Röhrchen verfärbt sich, die Skala gilt aber für seinen Hauptstoff – das Ergebnis ist ein Hinweis, keine Konzentration. Möglichst mit einer zweiten Methode bestätigen.</div>'
+      : '<div class="ez-leer" style="margin-top:.5rem">Kein Röhrchen der Messstrategie zeigt diesen Stoff laut Unterlagen an. Polytest (Nr. 3) und PID können bei vielen organischen Stoffen einen Hinweis geben.</div>';
+  }
+  // ---------------------------------------------------------------- einzelnes Röhrchen (aus der Suche), auf Wunsch für einen Stoff über Querempfindlichkeit
+  function roehrchenVon(key) {
+    if (/^nr\d+$/.test(key)) { const r = M.roehrchen(key.slice(2)); return r ? { ...r, seite: M.BILD_SEITE[r.nr] } : null; }
+    if (/^s\d+$/.test(key)) { const st = STOFFE.find(x => x.seite === Number(key.slice(1))); return st ? { ...roehrchenAusStoff(st, st.roehrchen[0]), stoffblatt: st } : null; }
+    return null;
+  }
+  function roehrchenSeite(key, quer) {
+    const r0 = roehrchenVon(key);
+    const c = neu({ titel: r0 ? r0.name : 'Röhrchen', unter: quer ? `Messen · ${quer} über Querempfindlichkeit` : 'Messen · Röhrchen', eltern: 'messen' });
+    if (!r0) { c.insertAdjacentHTML('beforeend', '<section class="kachel ez-karte"><div class="ez-leer">Röhrchen nicht gefunden.</div></section>'); return; }
+    const m = aktiveMessung('einzel'); m.querErg = m.querErg || {};
+    const k = key + '|' + quer, e = m.querErg[k];
+    const qe = quer ? M.QUER.filter(x => (r0.nr && x.nr === r0.nr) || x.r === r0.name).find(x => x.stoffe.some(sx => sx.toLowerCase() === quer.toLowerCase())) || M.QUER.find(x => (r0.nr && x.nr === r0.nr) || x.r === r0.name) : null;
+    const r = quer ? { ...r0, qualitativ: true, quer, umschlag: qe && qe.farbe ? [(Array.isArray(r0.umschlag) ? r0.umschlag[0] : String(r0.umschlag || '').split('→')[0].trim()), qe.farbe] : r0.umschlag, querFarbe: qe && qe.farbe } : r0;
+    c.insertAdjacentHTML('beforeend', `${quer ? `<div class="ms-warn" style="border-left-color:var(--akzent);background:var(--akzent-t, rgba(92,157,245,.14));margin-bottom:.8rem">
+        <b>${esc(quer)}</b> wird von ${esc(r0.name)} angezeigt${qe ? ': ' + esc(qe.wie) : ''}. Die Skala gilt für ${esc(r0.stoff || r0.name.replace(/ [\d,%/a-d]+$/, ''))} – das Ergebnis ist nur ein Hinweis (Verfärbung ja/nein), keine Konzentration von ${esc(quer)}. Möglichst mit einer zweiten Methode bestätigen.${qe && qe.s ? ` <span class="ez-klein">Quelle: Stoffblatt S. ${qe.s}.</span>` : ''}</div>` : ''}
+      ${kopfHtml(m, { pid: true })}
+      <section class="kachel ez-karte" id="ms-messen"><h2>Messen</h2>${roehrchenKarte(r, e, { schluessel: 'q', quer })}</section>
+      ${r0.stoffblatt ? `<div class="ez-aktionen"><a class="knopf" href="#messen/bekannt/${encodeURIComponent(r0.stoffblatt.cas.split(' ')[0])}">${ICON.pfeil}Stoffblatt ${esc(kurz(r0.stoffblatt))}</a></div>` : ''}`);
+    kopfBedienen(c, m, () => {});
+    kartenBedienen(c, () => ({ r, e: m.querErg[k], huebe: (r.stufen.find(x => x.empf) || r.stufen[0] || {}).n, setzen(neu, nurHuebe) { m.querErg[k] = { ...neu, roehrchen: r0.name, quer }; sichern();
+      if (!nurHuebe && typeof neu.anzeige === 'boolean') ergebnisInsTagebuch(m, r, neu, quer ? ` (auf ${quer} über Querempfindlichkeit)` : ''); roehrchenSeite(key, quer); } }),
+      (kk, knopf) => { roehrchenSeite(key, quer); const b = el.querySelector(`[data-roehrchen="${kk}"] [${knopf}]`); if (b) b.focus(); });
+    bilderLaden(c);
+  }
+  // ---------------------------------------------------------------- Übersicht: was misst welches Simultantest-Set
+  function simultanZeigen() {
+    const c = neu({ titel: 'Simultantest-Sets', unter: 'Messen · was misst welches Set', eltern: 'messen' });
+    const IDX = { set1: 0, set2: 1, set3: 2, leit: 3 };
+    const zweck = s => s.begasung ? 'Begasung (Container, Laderäume)' : s.brand ? 'Brand – nach dem Brand-Blatt der Messstrategie' : 'Brände und Unfälle – ergänzend';
+    const marke = (kn, i) => { const v = kn.marken[i]; if (v === null || v === undefined) return '–'; const b = M.kanalBewerten(kn, i + 1);
+      return `${zt(v)} ppm${b && b.stufe !== 'unter' ? `<br><small style="color:${b.stufe === 'etw1' ? 'var(--crit)' : 'var(--ser)'}">${b.stufe === 'etw1' ? 'ab ETW-1' : 'ab ETW-4'}</small>` : b ? '<br><small style="color:var(--good)">unter ETW-4</small>' : ''}`; };
+    c.insertAdjacentHTML('beforeend', `${bildDa('Simultantest-Set.jpg') ? `<section class="kachel ez-karte"><h2>Simultantest-Set</h2><img class="ms-set-bild" data-rbild="${BILD_ORDNER}Simultantest-Set.jpg" alt="Dräger-Simultantest-Set mit Halter und Schlauch">
+        <div class="ms-hinweis" style="margin-top:.4rem">Fünf Röhrchen werden gleichzeitig über einen Halter mit der Pumpe durchströmt. Abgelesen wird je Röhrchen, ob die 1. bzw. 2. Markierung erreicht ist. Foto: Dräger.</div></section>` : ''}
+      ${M.SETS.map(s => { const i = IDX[s.id]; const auch = i === undefined ? [] : STOFFE.filter(x => /^ja/i.test(x.simultan[i] || '')).map(kurz);
+        return `<section class="kachel ez-karte"><h2>${esc(s.name)}</h2>
+          <div class="ms-hinweis" style="margin-bottom:.5rem"><b>${s.huebe ? s.huebe + ' Hübe' : 'Hübe laut Gebrauchsanweisung'}</b> · ${esc(zweck(s))}${s.hinweis ? ' · ' + esc(s.hinweis) : ''}</div>
+          <table class="ms-set-tab"><tr><th>Kanal</th><th>1. Marke</th><th>2. Marke</th><th>ETW-4 / ETW-1</th></tr>
+          ${s.kanaele.map(kn => `<tr><td><b>${esc(kn.name)}</b>${kn.anm ? `<br><small class="ez-klein">${esc(kn.anm)}</small>` : ''}</td><td class="z">${marke(kn, 0)}</td><td class="z">${marke(kn, 1)}</td>
+            <td class="z">${kn.etw4 !== null && kn.etw4 !== undefined ? zt(kn.etw4) : '–'} / ${kn.etw1 !== null && kn.etw1 !== undefined ? zt(kn.etw1) : '–'} ppm</td></tr>`).join('')}</table>
+          ${auch.length ? `<div class="ms-hinweis" style="margin-top:.5rem"><b>Laut Stoffblättern zeigt das Set von den 44 ETW-Stoffen an:</b> ${esc(auch.join(', '))}.</div>` : ''}
+          ${s.brand && !s.begasung ? `<div class="ez-aktionen"><a class="knopf" href="#messen/brand">${ICON.feuer}Bei Brand messen</a></div>` : ''}</section>`; }).join('')}
+      <div class="ez-klein">Markierungen nach Dräger-Produktinformation Simultantest-Sets (2025); ETW nach vfdb-RL 10/01 (2023). Für Set II, III und die Begasungs-Sets nennen die Unterlagen keine Hubzahl – Gebrauchsanweisung des Sets beachten.</div>`);
+    bilderLaden(c);
   }
 
   // ---------------------------------------------------------------- unbekannter Gefahrstoff
@@ -357,6 +488,7 @@
         if (!nurHuebe && typeof neu.anzeige === 'boolean') { const n2 = M.plan(m).naechste; const ziel = n2.nr ? el.querySelector(`[data-schritt="${n2.nr}"]`) : el.querySelector('#ms-auswertung');
           if (ziel) ziel.scrollIntoView({ block: 'start', behavior: 'smooth' }); } } }; };
     kartenBedienen(c, findeKarte, (k, knopf) => { unbekanntZeigen(Number(k.split('-').pop())); const b = el.querySelector(`[data-roehrchen="${k}"] [${knopf}]`); if (b) b.focus(); });
+    bilderLaden(c);
   }
   function auswertungHtml(m) {
     const aw = M.auswerten(m), mg = m.mehrgas || {}, ex = M.zahl(mg.ex), pid = M.zahl(mg.pid), xp = ex !== null && pid !== null ? M.exPid(ex > 0, pid > 0) : null;
@@ -393,8 +525,8 @@
       <div class="ms-hinweis" style="grid-column:1/-1">${set.huebe ? (z && z.n >= set.huebe ? '<b>Hubzahl erreicht – Markierungen ablesen.</b>' : 'Nach jedem Hub tippen.') : 'Hubzahl nach Gebrauchsanweisung des Sets.'}</div></div>`;
     c.insertAdjacentHTML('beforeend', `${kopfHtml(m, { pid: false })}
       <section class="kachel ez-karte" id="ms-set"><h2>Dräger-Simultantest</h2>
-        <div class="ms-seg" role="group" aria-label="Simultantest-Set">${M.SETS.map(s => `<button type="button" data-set="${s.id}" aria-pressed="${s.id === set.id}">${esc(s.name.replace('Simultantest-', '').replace('Simultantest ', ''))}<small>${s.huebe ? s.huebe + ' Hübe' : 'Hübe laut Anleitung'}${s.brand ? ' · Brand-Blatt' : ''}</small></button>`).join('')}</div>
-        <div class="ms-hinweis" style="margin:.5rem 0">${set.brand ? 'Bei Bränden nach der Messstrategie: Leitsubstanzen vfdb (20 Hübe) <b>oder</b> Set I (10 Hübe).' : 'Ergänzend, z. B. bei Verdacht auf weitere Brand- und Zersetzungsgase.'} ${set.hinweis ? esc(set.hinweis) : ''}</div>
+        <div class="ms-seg" role="group" aria-label="Simultantest-Set">${M.SETS.filter(s => !s.begasung).map(s => `<button type="button" data-set="${s.id}" aria-pressed="${s.id === set.id}">${esc(s.name.replace('Simultantest-', '').replace('Simultantest ', ''))}<small>${s.huebe ? s.huebe + ' Hübe' : 'Hübe laut Anleitung'}${s.brand ? ' · Brand-Blatt' : ''}</small></button>`).join('')}</div>
+        <div class="ms-hinweis" style="margin:.5rem 0"><a href="#messen/simultan">Was misst welches Set?</a> · ${set.brand ? 'Bei Bränden nach der Messstrategie: Leitsubstanzen vfdb (20 Hübe) <b>oder</b> Set I (10 Hübe).' : 'Ergänzend, z. B. bei Verdacht auf weitere Brand- und Zersetzungsgase.'} ${set.hinweis ? esc(set.hinweis) : ''}</div>
         ${zaehlerHtml}
         <div style="margin-top:.6rem">${set.kanaele.map(kanal).join('')}</div></section>
       <section class="kachel ez-karte" id="ms-einzel"><h2>Dräger-Einzelröhrchen</h2><div class="ms-hinweis">Nach dem Brand-Blatt der Messstrategie mit diesen Hubzahlen.</div>
@@ -419,6 +551,7 @@
     kartenBedienen(c, kk => { const nr = Number(kk.split('-').pop()), r = M.roehrchen(nr), x = M.BRAND_EINZEL.find(y => y.nr === nr); if (!r || !x) return null;
       return { r, e: (m.einzel || {})[nr], huebe: x.huebe, setzen(neu, nurHuebe) { m.einzel = m.einzel || {}; m.einzel[nr] = neu; sichern(); if (!nurHuebe && typeof neu.anzeige === 'boolean') ergebnisInsTagebuch(m, r, neu, ' (Brand)'); brandZeigen(); } }; },
       (kk, knopf) => { brandZeigen(); const b = el.querySelector(`[data-roehrchen="${kk}"] [${knopf}]`); if (b) b.focus(); });
+    bilderLaden(c);
   }
 
   // ---------------------------------------------------------------- bekannter Gefahrstoff
@@ -427,8 +560,8 @@
   const nfpaHtml = n => `<span title="NFPA 704: Gesundheit ${esc(n[0])}, Brand ${esc(n[1])}, Reaktion ${esc(n[2])}${n[3] ? ', ' + esc(n[3]) : ''}" style="display:inline-grid;grid-template-columns:repeat(3,1.6rem);gap:2px;font-weight:800;font-size:.85rem;text-align:center">
     <span style="background:#2457b3;color:#fff;border-radius:.2rem">${esc(n[0])}</span><span style="background:#c62828;color:#fff;border-radius:.2rem">${esc(n[1])}</span><span style="background:#f0d23c;color:#111;border-radius:.2rem">${esc(n[2])}</span></span>${n[3] ? ` <b>${esc(n[3])}</b>` : ''}`;
   function roehrchenAusStoff(s, rr) {
-    if (rr.nr) { const r = M.roehrchen(rr.nr); return { ...r, bestellnr: rr.bestellnr || r.bestellnr, etw1: s.etw1, etw4: s.etw4, einheit: r.einheit }; }
-    return { name: rr.name, bestellnr: rr.bestellnr, etw1: s.etw1, etw4: s.etw4, einheit: 'ppm', umschlag: rr.umschlag, stufen: rr.stufen || [],
+    if (rr.nr) { const r = M.roehrchen(rr.nr); return { ...r, bestellnr: rr.bestellnr || r.bestellnr, etw1: s.etw1, etw4: s.etw4, einheit: r.einheit, seite: s.seite }; }
+    return { name: rr.name, bestellnr: rr.bestellnr, etw1: s.etw1, etw4: s.etw4, einheit: 'ppm', umschlag: rr.umschlag, stufen: rr.stufen || [], seite: s.seite,
       huebeText: rr.stufen && rr.stufen.length ? '' : rr.huebe, dauerText: rr.stufen && rr.stufen.length ? '' : rr.messdauer };
   }
   function bekanntZeigen(cas) {
@@ -437,11 +570,14 @@
     if (!s) {
       c.insertAdjacentHTML('beforeend', `<section class="kachel ez-karte"><h2>Stoff wählen</h2>
         <label class="ms-feld">Suche (Name, UN- oder CAS-Nummer)<input id="ms-suche" type="search" placeholder="z. B. Ammoniak, 1005, 7664-41-7" autocomplete="off"></label>
-        <ul class="ms-liste" id="ms-stoffe" style="margin-top:.6rem"></ul>
+        <ul class="ms-liste" id="ms-stoffe" style="margin-top:.6rem"></ul><div id="ms-bek-quer"></div>
         <div class="ez-klein" style="margin-top:.6rem">Stoffblätter der Dräger-Messstrategie 1.5 (Kapitel III); ETW nach vfdb-RL 10/01 (2023). Für andere Stoffe: Röhrchen nach Gebrauchsanweisung bzw. Dräger-Röhrchen-Handbuch.</div></section>`);
       const liste = el.querySelector('#ms-stoffe'), such = el.querySelector('#ms-suche');
       const fuellen = () => { const q = such.value.trim().toLowerCase();
         const t = STOFFE.filter(x => !q || x.name.toLowerCase().includes(q) || x.un.includes(q) || x.cas.includes(q));
+        if (!t.length && q.length >= 3) liste.innerHTML = '<li class="ez-leer">Kein Stoffblatt – Röhrchen über Querempfindlichkeit:</li>';
+        const quer = el.querySelector('#ms-bek-quer'); if (quer) quer.innerHTML = !t.length && q.length >= 3 ? suchErgebnisHtml(q) : '';
+        if (!t.length && q.length >= 3) return;
         liste.innerHTML = t.map(x => `<li><a href="#messen/bekannt/${encodeURIComponent(x.cas.split(' ')[0])}"><span><b>${esc(x.name)}</b></span><small>UN ${esc(x.un)} · ${esc(x.roehrchen.map(r => r.name).join(', '))}</small></a></li>`).join('') || '<li class="ez-leer">Kein Stoff der Liste passt.</li>'; };
       such.addEventListener('input', fuellen); fuellen();
       return;
@@ -472,6 +608,7 @@
       return { r, e: (m.stoffErg || {})[i], huebe: (r.stufen.find(x => x.empf) || r.stufen[0] || {}).n, setzen(neu, nurHuebe) { m.stoffErg = m.stoffErg || {}; m.stoffErg[i] = neu; sichern();
         if (!nurHuebe && typeof neu.anzeige === 'boolean') ergebnisInsTagebuch(m, r, neu, ' (' + kurz(s) + ')'); bekanntZeigen(cas); } }; },
       (k, knopf) => { bekanntZeigen(cas); const b = el.querySelector(`[data-roehrchen="${k}"] [${knopf}]`); if (b) b.focus(); });
+    bilderLaden(c);
   }
 
   // ---------------------------------------------------------------- Protokoll
@@ -483,6 +620,10 @@
     } else if (mm.lage === 'brand') {
       for (const s of M.SETS) for (const [i, w] of Object.entries((mm.sets || {})[s.id] || {})) { const kn = s.kanaele[i], b = M.kanalBewerten(kn, w); z.push([`${s.name.replace(/^Simultantest(-Set)? ?/, '')}: ${kn.name}`, w ? w + '. Marke' : 'keine Anzeige', b ? b.text : '']); }
       for (const [nr, e] of Object.entries(mm.einzel || {})) { const r = M.roehrchen(nr); if (r && e && typeof e.anzeige === 'boolean') { const b = bewertungVon(r, e); z.push([`Nr. ${nr} ${r.name} · ${e.huebe || '?'} H.`, ergebnisText(r, e), b ? b.text : '', e.zeit]); } }
+    } else if (mm.lage === 'einzel') {
+      for (const [k, e] of Object.entries(mm.querErg || {})) { const r0 = roehrchenVon(k.split('|')[0]); if (!r0 || !e || typeof e.anzeige !== 'boolean') continue;
+        const quer = k.split('|')[1]; const r = quer ? { ...r0, qualitativ: true, quer } : r0; const b = bewertungVon(r, e);
+        z.push([`${r0.name}${quer ? ' auf ' + quer : ''}${e.huebe ? ' · ' + e.huebe + ' H.' : ''}`, ergebnisText(r, e), quer ? 'Querempfindlichkeit – nur Hinweis' : b ? b.text : '', e.zeit]); }
     } else if (mm.lage === 'bekannt') {
       const s = stoffVon(mm.stoff);
       if (s) for (const [i, e] of Object.entries(mm.stoffErg || {})) { const r = roehrchenAusStoff(s, s.roehrchen[i]); if (e && typeof e.anzeige === 'boolean') { const b = bewertungVon(r, e); z.push([`${kurz(s)}: ${r.name}${e.huebe ? ' · ' + e.huebe + ' H.' : ''}`, ergebnisText(r, e), b ? b.text : '', e.zeit]); } }
@@ -496,10 +637,10 @@
     const c = neu({ titel: 'Messprotokoll', unter: 'Messen', eltern: 'messen' });
     if (!daten.messungen.length) { c.insertAdjacentHTML('beforeend', '<section class="kachel ez-karte"><div class="ez-leer">Noch keine Messungen.</div></section>'); return; }
     c.insertAdjacentHTML('beforeend', daten.messungen.map(mm => { const z = protokollZeilen(mm);
-      return `<section class="kachel ez-karte"><h2>${esc(mm.lage === 'brand' ? 'Brand' : mm.lage === 'bekannt' ? 'Bekannter Stoff' + (stoffVon(mm.stoff) ? ': ' + kurz(stoffVon(mm.stoff)) : '') : 'Unbekannter Stoff')} · ${new Date(mm.beginn).toLocaleDateString('de-DE')} ${uhr(mm.beginn)}${mm.ende ? '–' + uhr(mm.ende) : ' (läuft)'}</h2>
+      return `<section class="kachel ez-karte"><h2>${esc(mm.lage === 'brand' ? 'Brand' : mm.lage === 'einzel' ? 'Einzelne Röhrchen' : mm.lage === 'bekannt' ? 'Bekannter Stoff' + (stoffVon(mm.stoff) ? ': ' + kurz(stoffVon(mm.stoff)) : '') : 'Unbekannter Stoff')} · ${new Date(mm.beginn).toLocaleDateString('de-DE')} ${uhr(mm.beginn)}${mm.ende ? '–' + uhr(mm.ende) : ' (läuft)'}</h2>
         ${ortText(mm) ? `<div class="ms-hinweis" style="margin-bottom:.4rem">${esc(ortText(mm))}</div>` : ''}
         ${z.length ? `<table class="ms-proto"><tr><th>Messung</th><th>Ergebnis</th><th>Bewertung</th></tr>${z.map(([a, b, c]) => `<tr><td>${esc(a)}</td><td class="w">${esc(b)}</td><td>${esc(c)}</td></tr>`).join('')}</table>` : '<div class="ez-leer">Keine Ergebnisse.</div>'}
-        ${!mm.ende ? `<div class="ez-aktionen"><a class="knopf" href="#messen/${mm.lage || 'unbekannt'}${mm.lage === 'bekannt' && mm.stoff ? '/' + encodeURIComponent(mm.stoff) : ''}">${ICON.pfeil}Fortsetzen</a><button type="button" class="knopf" data-ende="${mm.id}">Messung abschließen</button></div>` : ''}</section>`; }).join('') +
+        ${!mm.ende ? `<div class="ez-aktionen"><a class="knopf" href="#messen/${mm.lage === 'einzel' ? '' : mm.lage || 'unbekannt'}${mm.lage === 'bekannt' && mm.stoff ? '/' + encodeURIComponent(mm.stoff) : ''}">${ICON.pfeil}Fortsetzen</a><button type="button" class="knopf" data-ende="${mm.id}">Messung abschließen</button></div>` : ''}</section>`; }).join('') +
       `<div class="ez-aktionen"><button type="button" class="knopf" id="ms-leeren">Alle abgeschlossenen Messungen von diesem Gerät löschen</button></div>`);
     c.addEventListener('click', ev => {
       const t = ev.target.closest('button'); if (!t) return;

@@ -198,16 +198,23 @@
         { name: 'Nitrose Gase', marken: [8.2, 12], etw4: 8.2, etw1: 12 }, { name: 'Formaldehyd', marken: [1, null], etw4: 1, etw1: null, anm: 'ETW-1 von vfdb nicht festgelegt.' }] },
     { id: 'set1', name: 'Simultantest-Set I (anorganische Brandgase)', huebe: 10, bestellnr: '8101735', brand: true,
       kanaele: [{ name: 'Kohlenstoffmonoxid', marken: [30, 150], etw4: 33, etw1: 83 }, { name: 'Blausäure', marken: [null, 9.5], etw4: 3.5, etw1: 7.1 },
-        { name: 'Salzsäure', marken: [2, 10], etw4: 11, etw1: 22 }, { name: 'Nitrose Gase (NO₂)', marken: [null, 2.5], etw4: 8.2, etw1: 12 },
-        { name: 'Ammoniak', marken: [30, 150], etw4: 110, etw1: 160 }] },
+        { name: 'Salzsäure', marken: [2, 10], etw4: 11, etw1: 22, gruppe: 'Mineralsäuren', anm: 'Kanal „Saure Gase“ (Leitstoff Salzsäure).' }, { name: 'Nitrose Gase (NO₂)', marken: [null, 2.5], etw4: 8.2, etw1: 12 },
+        { name: 'Ammoniak', marken: [30, 150], etw4: 110, etw1: 160, gruppe: 'Amine', anm: 'Kanal „Basische Gase“ (Leitstoff Ammoniak).' }] },
     { id: 'set2', name: 'Simultantest-Set II (anorganische Brandgase)', huebe: null, bestellnr: '8101736',
       kanaele: [{ name: 'Schwefeldioxid', marken: [null, 10], etw4: 0.75, etw1: 0.75 }, { name: 'Chlor', marken: [null, 2.5], etw4: 1, etw1: 2 },
         { name: 'Schwefelwasserstoff', marken: [5, 25], etw4: 20, etw1: 27 }, { name: 'Phosphorwasserstoff', marken: [null, 0.3], etw4: 0.5, etw1: 2 },
         { name: 'Phosgen', marken: [null, 0.5], etw4: 0.08, etw1: 0.3 }] },
     { id: 'set3', name: 'Simultantest-Set III (organische Dämpfe)', huebe: null, bestellnr: '8101770',
-      kanaele: [{ name: 'Ketone (Aceton)', marken: [500, 2500], etw4: 500, etw1: null }, { name: 'Aromaten (Toluol)', marken: [50, 250], etw4: 310, etw1: 560 },
-        { name: 'Alkohole (Methanol)', marken: [200, 1000], etw4: 720, etw1: null }, { name: 'Aliphatische KW (n-Hexan)', marken: [50, 100], etw4: 2900, etw1: 2900 },
-        { name: 'Chlorierte KW (Perchlorethylen)', marken: [20, 100], etw4: 120, etw1: 230 }] },
+      kanaele: [{ name: 'Ketone (Aceton)', marken: [500, 2500], etw4: 500, etw1: null, gruppe: 'Ketone' }, { name: 'Aromaten (Toluol)', marken: [50, 250], etw4: 310, etw1: 560, gruppe: 'Aromaten' },
+        { name: 'Alkohole (Methanol)', marken: [200, 1000], etw4: 720, etw1: null, gruppe: 'Alkohole' }, { name: 'Aliphatische KW (n-Hexan)', marken: [50, 100], etw4: 2900, etw1: 2900, gruppe: 'Benzinkohlenwasserstoffe' },
+        { name: 'Chlorierte KW (Perchlorethylen)', marken: [20, 100], etw4: 120, etw1: 230, gruppe: 'Chlorkohlenwasserstoffe' }] },
+    // Begasung (Container, Laderäume): je Kanal eine Markierung (Dräger-Produktinformation Simultantest-Sets)
+    { id: 'beg1', name: 'Simultantest-Set Begasung I', huebe: null, bestellnr: '8103410', begasung: true,
+      kanaele: [{ name: 'Formaldehyd', marken: [1, null], etw4: 1, etw1: null }, { name: 'Phosphorwasserstoff', marken: [0.1, null], etw4: 0.5, etw1: 2 },
+        { name: 'Blausäure', marken: [10, null], etw4: 3.5, etw1: 7.1 }, { name: 'Methylbromid', marken: [5, null], etw4: null, etw1: null }, { name: 'Ammoniak', marken: [50, null], etw4: 110, etw1: 160 }] },
+    { id: 'beg2', name: 'Simultantest-Set Begasung II', huebe: null, bestellnr: '8103380', begasung: true,
+      kanaele: [{ name: 'Formaldehyd', marken: [1, null], etw4: 1, etw1: null }, { name: 'Phosphorwasserstoff', marken: [0.3, null], etw4: 0.5, etw1: 2 },
+        { name: 'Blausäure', marken: [10, null], etw4: 3.5, etw1: 7.1 }, { name: 'Methylbromid', marken: [0.5, null], etw4: null, etw1: null }, { name: 'Ethylenoxid', marken: [1, null], etw4: 14, etw1: 45 }] },
   ];
   // Einzelröhrchen nach dem Simultantest bei Bränden (Messstrategie S. 10): Nr. und Hubzahl
   const BRAND_EINZEL = [{ nr: 17, huebe: 10 }, { nr: 16, huebe: 2 }, { nr: 11, huebe: 2 }, { nr: 14, huebe: 10 }];
@@ -222,6 +229,117 @@
     return { stufe: s, text: `mindestens ${zahlText(ab)} ppm` };
   }
 
+  // ---------------------------------------------------------------- Querempfindlichkeiten: welches Röhrchen zeigt (auch) welchen Stoff an
+  // Aus den Stoffblättern (Kapitel III, Seite s) und der Messstrategie (Blatt A–E, Auswertung S. 21). nr = Röhrchen des Messkonzepts.
+  // stoffe: ausdrücklich genannte Stoffe oder Stoffgruppen (siehe GRUPPEN). Angezeigt heißt: Verfärbung – die Skala gilt nur für den Hauptstoff.
+  const QUER = [
+    { r: 'Formaldehyd 0,2/a', nr: 14, s: 47, stoffe: ['Styrol', 'Vinylacetat', 'Acetaldehyd', 'Acrolein', 'Dieselkraftstoff', 'Furfurylalkohol'], wie: 'mit gelbbrauner Farbe (Formaldehyd: rosa)', farbe: 'gelbbraun' },
+    { r: 'Ethylenoxid 1/a', s: 44, stoffe: ['Styrol', 'Vinylacetat', 'Acetaldehyd'], wie: 'mit gelbbrauner Farbe', farbe: 'gelbbraun' },
+    { r: 'Ethylenoxid 1/a', s: 44, stoffe: ['Formaldehyd', 'Ethylenglykol'], wie: 'gleiche Verfärbung – Ethylenoxid-Messung dann nicht möglich' },
+    { r: 'Aceton 100/b', nr: 8, s: 25, stoffe: ['Ketone', 'Aldehyde'], wie: 'andere Ketone mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Ammoniak 5/a', nr: 2, s: 28, stoffe: ['Amine', 'Hydrazin', 'Anilin', 'Ethylendiamin'], wie: 'andere basische Stoffe, z. B. organische Amine' },
+    { r: 'Anilin 0,5/a', s: 29, stoffe: ['Ether', 'Ketone', 'Ester', 'Aromaten', 'Benzinkohlenwasserstoffe'], wie: 'mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Arsenwasserstoff 0,05/a', s: 30, stoffe: ['Phosphorwasserstoff', 'Antimonwasserstoff'], wie: 'mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Benzol 5/b', s: 31, stoffe: ['Benzinkohlenwasserstoffe', 'Aromaten'], wie: 'mit unterschiedlicher Empfindlichkeit, keine Unterscheidung möglich' },
+    { r: 'Chlor 0,2/a', nr: 10, s: 33, stoffe: ['Brom'], wie: 'gleiche Empfindlichkeit, blassere Farbe' },
+    { r: 'Chlor 0,2/a', nr: 10, s: 33, stoffe: ['Chlordioxid', 'Stickstoffdioxid'], wie: 'Chlordioxid mit unterschiedlicher, Stickstoffdioxid mit geringerer Empfindlichkeit (blasser)' },
+    { r: 'Chlorbenzol 5/a', s: 34, stoffe: ['Chlorkohlenwasserstoffe'], wie: 'andere Chlorkohlenwasserstoffe mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Chloroform 2/b', s: 36, stoffe: ['Chlorkohlenwasserstoffe'], wie: 'andere Chlorkohlenwasserstoffe mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Salzsäure 0,2/a', nr: 16, s: 37, stoffe: ['Mineralsäuren', 'sauer reagierende Stoffe'], wie: 'andere saure Gase mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Blausäure 0,5/a', nr: 17, s: 38, stoffe: ['Phosphorwasserstoff'], wie: 'wird mit angezeigt (Blatt B)' },
+    { r: 'Cyclohexylamin 2/a', s: 39, stoffe: ['Amine', 'Ammoniak'], wie: 'andere basische Stoffe' },
+    { r: 'Epichlorhydrin 5/c', s: 40, stoffe: ['Chlorkohlenwasserstoffe', 'Halogene', 'Mineralsäuren'], wie: 'Chlorkohlenwasserstoffe mit unterschiedlicher Empfindlichkeit; freie Halogene und Halogenwasserstoffsäuren werden ebenfalls angezeigt' },
+    { r: 'Essigsäure 5/a', s: 41, stoffe: ['organische Säuren'], wie: 'gleiche Farbe, teils unterschiedliche Empfindlichkeit' },
+    { r: 'Essigsäure 5/a', s: 41, stoffe: ['Mineralsäuren'], wie: 'mit roter Farbe und unterschiedlicher Empfindlichkeit', farbe: 'rot' },
+    { r: 'Ethanol 100/a', s: 42, stoffe: ['Methanol', 'Tetrahydrofuran'], wie: 'mit ähnlicher Empfindlichkeit' },
+    { r: 'Ethanol 100/a', s: 42, stoffe: ['Alkohole'], wie: 'keine Unterscheidung der Alkohole; höhere Alkohole mit stark abnehmender Empfindlichkeit' },
+    { r: 'Fluor 0,1/a', s: 45, stoffe: ['Stickstoffdioxid', 'Chlor', 'Chlordioxid'], wie: 'mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Fluorwasserstoff 0,5/a', s: 46, stoffe: ['Mineralsäuren', 'Salzsäure', 'Salpetersäure'], wie: 'werden ebenfalls angezeigt' },
+    { r: 'Hexan 10/a', s: 48, stoffe: ['Benzinkohlenwasserstoffe'], wie: 'mit unterschiedlicher Empfindlichkeit, keine Unterscheidung möglich' },
+    { r: 'Hexan 10/a', s: 48, stoffe: ['Kohlenstoffmonoxid'], wie: 'mit etwas geringerer Empfindlichkeit als n-Hexan' },
+    { r: 'Hydrazin 0,25/a', s: 49, stoffe: ['Amine', 'Ammoniak'], wie: 'mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Kohlenstoffdioxid 0,5%/a', nr: 15, s: 50, stoffe: ['Schwefeldioxid'], wie: 'mit dreifach geringerer Empfindlichkeit' },
+    { r: 'Schwefelkohlenstoff 5/a', s: 51, stoffe: ['Benzinkohlenwasserstoffe', 'Aromaten'], wie: 'aliphatische und aromatische Kohlenwasserstoffe mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Methanol 20/a', s: 53, stoffe: ['Alkohole'], wie: 'keine Unterscheidung der Alkohole; höhere Alkohole mit stark abnehmender Empfindlichkeit' },
+    { r: 'Methanol 20/a', s: 53, stoffe: ['Ether', 'Xylole'], wie: 'mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Mercaptan 0,1/a', s: 54, stoffe: ['Propylmercaptan', 'tert.-Butylmercaptan', 'Mercaptane'], wie: 'mit geringerer Empfindlichkeit' },
+    { r: 'Phosphorwasserstoff 0,1/c', nr: 13, s: 55, stoffe: ['Arsenwasserstoff', 'Schwefelwasserstoff'], wie: 'mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Salpetersäure 1/a', s: 56, stoffe: ['Stickstoffdioxid'], wie: '50 ppm Stickstoffdioxid zeigen wie 3 ppm Salpetersäure' },
+    { r: 'Schwefeldioxid 0,5/a', nr: 18, s: 57, stoffe: ['Schwefelwasserstoff'], wie: 'wird mit angezeigt (Blatt B)' },
+    { r: 'Schwefelwasserstoff 2/b', nr: 4, s: 58, stoffe: ['Mercaptane'], wie: 'nur in hohen Konzentrationen (Blatt D)' },
+    { r: 'Nitrose Gase 0,2/a', nr: 11, s: 59, stoffe: ['Chlor', 'Ozon', 'Stickstoffmonoxid'], wie: 'Chlor und Ozon mit unterschiedlicher Empfindlichkeit, Stickstoffmonoxid erhöht die Anzeige' },
+    { r: 'Styrol 10/b', s: 60, stoffe: ['Xylole', 'Toluol', 'Butadien', 'Ethylbenzol'], wie: 'stören die Anzeige (reagieren mit dem Formaldehyd-Schwefelsäure-System)' },
+    { r: 'Perchlorethylen 2/a', nr: 6, s: 61, stoffe: ['Chlorkohlenwasserstoffe', 'Halogene', 'Mineralsäuren'], wie: 'andere Chlorkohlenwasserstoffe, freie Halogene und Halogenwasserstoffsäuren' },
+    { r: 'Tetrachlorkohlenstoff 1/a', s: 62, stoffe: ['Chlorpikrin', 'Phosgen'], wie: 'mit etwa gleicher Empfindlichkeit' },
+    { r: 'Toluol 100/a', nr: 7, s: 63, stoffe: ['Xylole'], wie: 'etwa gleiche Empfindlichkeit, blauviolette Farbe', farbe: 'blauviolett' },
+    { r: 'Toluol 100/a', nr: 7, s: 63, stoffe: ['Benzol'], wie: 'färbt die ganze Anzeigeschicht diffus gelbbraun', farbe: 'gelbbraun' },
+    { r: 'Toluol 100/a', nr: 7, s: 63, stoffe: ['Benzinkohlenwasserstoffe'], wie: 'färben die ganze Anzeigeschicht diffus rötlich-braun', farbe: 'rötlich-braun' },
+    { r: 'Toluol 100/a', nr: 7, s: 63, stoffe: ['Aromaten'], wie: 'hauptsächlich aromatische Kohlenwasserstoffe (Blatt D)' },
+    { r: 'Trichlorethan 50/d', s: 65, stoffe: ['Chlorkohlenwasserstoffe'], wie: 'mit unterschiedlicher Empfindlichkeit' },
+    { r: 'Benzinkohlenwasserstoffe 10/a', s: 66, stoffe: ['Benzinkohlenwasserstoffe', 'Octan'], wie: 'außer n-Octan auch andere organische und anorganische Verbindungen' },
+    { r: 'Trichlorethylen 50/a', s: 67, stoffe: ['Chlorkohlenwasserstoffe', 'Halogene', 'Mineralsäuren'], wie: 'Chlorkohlenwasserstoffe mit unterschiedlicher Empfindlichkeit; freie Halogene und Halogenwasserstoffsäuren werden ebenfalls angezeigt' },
+    { r: 'Vinylchlorid 100/a', s: 68, stoffe: ['C=C-Doppelbindung'], wie: 'viele organische Verbindungen mit C=C-Doppelbindung, keine Unterscheidung möglich' },
+    { r: 'Ethylacetat 200/a', nr: 9, stoffe: ['Benzinkohlenwasserstoffe', 'Alkohole', 'Aromaten', 'Ester', 'Ether', 'Aldehyde', 'Ketone'], wie: 'zeigt hauptsächlich Benzin-Kohlenwasserstoffe, daneben Alkohole, Aromaten, Ester, Ether, Aldehyde und Ketone (Blatt D)' },
+    { r: 'Polytest', nr: 3, stoffe: ['Aceton', 'Acetylen', 'Arsenwasserstoff', 'Benzol', 'Butan', 'Ethylen', 'Kohlenstoffmonoxid', 'Octan', 'Perchlorethylen', 'Propan', 'Schwefelkohlenstoff', 'Schwefelwasserstoff', 'Styrol', 'Toluol', 'Xylole'],
+      wie: 'qualitativ – Nachweisgrenzen bei 5 Hüben siehe Auswertung' },
+    { r: 'Säuretest', nr: 1, stoffe: ['sauer reagierende Stoffe', 'Mineralsäuren', 'Salzsäure'], wie: 'qualitativ (Blatt A)' },
+    { r: 'Kohlenstoffmonoxid (CO-Sensor)', nr: 5, stoffe: ['Ethen', 'Ethin', 'Wasserstoff'], wie: 'Querempfindlichkeit des Dräger-XXS-CO-Sensors' },
+  ];
+  // ausdrücklich NICHT angezeigt bzw. stört nicht (Auswahl aus den Stoffblättern)
+  const NICHT = [
+    { r: 'Aceton 100/b', s: 25, stoffe: ['Ester'], text: 'Ester werden nicht angezeigt.' },
+    { r: 'Chlorbenzol 5/a', s: 34, stoffe: ['Methylenchlorid', 'Dichlormethan'], text: 'Methylenchlorid stört die Anzeige nicht.' },
+    { r: 'Ethanol 100/a', s: 42, stoffe: ['Benzinkohlenwasserstoffe', 'Ketone', 'Ester', 'Ether', 'Chlorkohlenwasserstoffe', 'Formaldehyd', 'Benzol', 'Toluol'], text: 'Aliphatische Benzinkohlenwasserstoffe, Ketone, Ester, Ether, Halogenkohlenwasserstoffe sowie Formaldehyd, Benzol und Toluol werden nicht angezeigt.' },
+    { r: 'Methanol 20/a', s: 53, stoffe: ['Benzinkohlenwasserstoffe', 'Ketone', 'Ester', 'Chlorkohlenwasserstoffe', 'Benzol'], text: 'Aliphatische Benzinkohlenwasserstoffe, Ketone, Ester, Halogenkohlenwasserstoffe und Benzol werden nicht angezeigt.' },
+    { r: 'Toluylendiisocyanat 0,02/a', s: 64, stoffe: ['Isocyanate'], text: 'Andere Isocyanate werden nicht angezeigt.' },
+    { r: 'Polytest', nr: 3, stoffe: ['Methan', 'Ethan', 'Wasserstoff', 'Kohlenstoffdioxid'], text: 'Nicht angezeigt werden z. B. Methan, Ethan, Wasserstoff, Kohlenstoffdioxid.' },
+  ];
+  // Stoffgruppen mit Beispielen (Zuordnung für die Suche; die Empfindlichkeit für einzelne Stoffe einer Gruppe ist meist unterschiedlich)
+  const GRUPPEN = {
+    'Ketone': ['Aceton', 'Butanon', 'Methylethylketon', 'MEK', 'Methylisobutylketon', 'MIBK', 'Cyclohexanon'],
+    'Aldehyde': ['Formaldehyd', 'Acetaldehyd', 'Acrolein', 'Propionaldehyd'],
+    'Alkohole': ['Methanol', 'Ethanol', 'Propanol', 'Isopropanol', '2-Propanol', 'Butanol'],
+    'Aromaten': ['Benzol', 'Toluol', 'Xylol', 'Xylole', 'Ethylbenzol', 'Styrol', 'Cumol'],
+    'Benzinkohlenwasserstoffe': ['Benzin', 'Ottokraftstoff', 'Waschbenzin', 'Hexan', 'n-Hexan', 'Heptan', 'Octan', 'Oktan'],
+    'Chlorkohlenwasserstoffe': ['Dichlormethan', 'Methylenchlorid', 'Chloroform', 'Trichlormethan', 'Tetrachlorkohlenstoff', 'Tetrachlormethan', 'Trichlorethen', 'Trichlorethylen',
+      'Perchlorethylen', 'Tetrachlorethen', 'Chlorbenzol', 'Trichlorethan', 'Vinylchlorid', 'Epichlorhydrin'],
+    'Amine': ['Methylamin', 'Dimethylamin', 'Trimethylamin', 'Triethylamin', 'Anilin', 'Cyclohexylamin', 'Ethylendiamin', 'Hydrazin'],
+    'Ester': ['Ethylacetat', 'Butylacetat', 'Methylacetat', 'Vinylacetat'],
+    'Ether': ['Diethylether', 'Tetrahydrofuran', 'THF', 'MTBE'],
+    'Mineralsäuren': ['Salzsäure', 'Chlorwasserstoff', 'Salpetersäure', 'Flusssäure', 'Fluorwasserstoff', 'Bromwasserstoff', 'Schwefelsäure', 'Phosphorsäure'],
+    'organische Säuren': ['Essigsäure', 'Ameisensäure', 'Propionsäure'],
+    'Halogene': ['Chlor', 'Brom', 'Fluor', 'Iod'],
+    'Mercaptane': ['Methylmercaptan', 'Methanthiol', 'Ethylmercaptan', 'Propylmercaptan', 'tert.-Butylmercaptan'],
+    'C=C-Doppelbindung': ['Ethylen', 'Ethen', 'Propen', 'Propylen', 'Butadien', 'Styrol', 'Vinylchlorid', 'Vinylacetat'],
+    'sauer reagierende Stoffe': ['Salzsäure', 'Chlorwasserstoff', 'Salpetersäure', 'Essigsäure', 'Schwefeldioxid'],
+    'Isocyanate': ['Methylisocyanat', 'Hexamethylendiisocyanat', 'HDI', 'MDI'],
+  };
+  const ALIAS = { 'diesel': 'Dieselkraftstoff', 'xylol': 'Xylole', 'oktan': 'Octan', 'blausäure': 'Cyanwasserstoff', 'phosphin': 'Phosphorwasserstoff', 'ethin': 'Acetylen', 'acetylen': 'Ethin' };
+  const norm = t => String(t || '').toLowerCase().replace(/[‐-]/g, '-').trim();
+  // Suche: q → { direkt: [Treffer mit ausdrücklich genanntem Stoff], gruppe: [Treffer über die Stoffgruppe], nicht: [ausdrücklich nicht], sets: [Simultantest-Kanäle] }
+  function quersuche(q) {
+    const n = norm(q); if (n.length < 3) return { direkt: [], gruppe: [], nicht: [], sets: [] };
+    const namen = new Set([n]); if (ALIAS[n]) namen.add(norm(ALIAS[n]));
+    // Stoffname passt, wenn ein Wort darin mit der Eingabe beginnt (Diesel → Dieselkraftstoff, Xylol → Xylole, Hexan → n-Hexan)
+    const woerter = t => norm(t).split(/[^a-zäöüß0-9]+/).filter(Boolean);
+    const passt = stoff => [...namen].some(x => norm(stoff) === x || (x.length >= 4 && woerter(stoff).some(w => w.startsWith(x))));
+    // Gruppe: nur bei genauem Treffer eines Beispiels oder des Gruppennamens (Brom ≠ Bromwasserstoff, Butanon ≠ Butan)
+    const gruppenVon = Object.entries(GRUPPEN).filter(([g, l]) => [...namen].some(x => norm(g) === x || l.some(m => norm(m) === x))).map(([g]) => g);
+    const direkt = [], gruppe = [];
+    for (const e of QUER) {
+      const d = e.stoffe.filter(s => !GRUPPEN[s] && passt(s));
+      if (d.length) direkt.push({ ...e, treffer: d });
+    }
+    for (const e of QUER) {
+      const g = e.stoffe.filter(s => GRUPPEN[s] && gruppenVon.includes(s));
+      if (g.length && !direkt.some(x => x.r === e.r) && !gruppe.some(x => x.r === e.r)) gruppe.push({ ...e, treffer: g });
+    }
+    const nicht = NICHT.filter(e => e.stoffe.some(s => passt(s) || (GRUPPEN[s] && gruppenVon.includes(s))));
+    const sets = [];
+    for (const s of SETS) for (const k of s.kanaele) if (passt(k.name) || (k.gruppe && gruppenVon.includes(k.gruppe))) sets.push({ set: s, kanal: k, ueberGruppe: !passt(k.name) });
+    return { direkt, gruppe, nicht, sets, gruppen: gruppenVon };
+  }
+
   // ---------------------------------------------------------------- Messwerte des Mehrgasmessgeräts
   const MEHRGAS = [
     { id: 'ex', name: 'Ex', einheit: '% UEG', warn: v => v >= 10, warnText: 'ab 10 % UEG: Ex-Gefahr – Zündquellen meiden' },
@@ -232,5 +350,7 @@
   ];
 
   return { QUELLE, ROEHRCHEN: R, roehrchen, BLATT, HINWEISE, POLYTEST_GRENZEN, POLYTEST_NICHT, plan, auswerten, AUSWERTUNG, exPid, EX_PID_HINWEIS,
-    bewerten, zahl, zahlText, SETS, BRAND_EINZEL, BRAND_MEHRGAS, kanalBewerten, MEHRGAS };
+    bewerten, zahl, zahlText, SETS, BRAND_EINZEL, BRAND_MEHRGAS, kanalBewerten, MEHRGAS, QUER, NICHT, GRUPPEN, quersuche,
+    // Fotos der Stoffblätter (Seite) zu den Röhrchen des Messkonzepts – Dateien im App-Ordner unter _App/Roehrchen (nicht öffentlich)
+    BILD_SEITE: { 2: 28, 4: 58, 6: 61, 7: 63, 8: 25, 10: 33, 11: 59, 12: 32, 13: 55, 14: 47, 15: 50, 16: 37, 17: 38, 18: 57 } };
 });

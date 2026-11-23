@@ -2956,5 +2956,5 @@
   window.GSZEinsatz = { stoffSeite, stoffElement: sEl, dateiZeigen, kopf, ansichtElement, esc, datumZeit, groesse, meldung, I, zoomErlauben,
     ehHtml, dekonHtml,
     listeHolen, geraete, get dateien() { return dateien; }, stoffHolen, suchen: suchenUndZeigen, symbol, zuletzt, miniTafel, nameSchoen,
-    stoffInfoVon, kategorie, pruefBadge, STUFE_FARBE, ad };
+    stoffInfoVon, kategorie, pruefBadge, STUFE_FARBE, ad, objektUrl };
 })();

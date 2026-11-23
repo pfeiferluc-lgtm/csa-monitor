@@ -5,6 +5,13 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.9.0', datum: '2026-11-23', punkte: [
+    'Messen: Bei den Röhrchen stehen jetzt Fotos – oben unbenutzt, darunter nach der Messung mit Farbumschlag (aus den Dräger-Stoffblättern, nur im Dropbox-App-Ordner, nicht öffentlich). Ohne Foto (Säuretest, Polytest, Ethylacetat) eine Zeichnung in den Farben des Umschlags.',
+    'Querempfindlichkeiten: Jedes Röhrchen nennt, was es außerdem anzeigt (mit Quelle). Neue Suche „Was soll gemessen werden?“ – z. B. „Diesel“ findet Formaldehyd 0,2/a (gelbbraune Verfärbung); dazu Treffer über die Stoffgruppe, passende Simultantest-Kanäle und was ausdrücklich nicht angezeigt wird.',
+    'Messung über Querempfindlichkeit: nur als Hinweis (Verfärbung ja/nein), ohne Konzentration und ETW-Bewertung – so auch im Einsatztagebuch vermerkt.',
+    'Neue Übersicht „Simultantest-Sets“: alle Sets (Leitsubstanzen, I, II, III, Begasung I und II) mit Kanälen, Markierungen, Einordnung gegen ETW und welche der 44 ETW-Stoffe sie laut Stoffblättern anzeigen.',
+    'Eine begonnene Messung bleibt offen, wenn man zwischendurch in ein Stoffblatt oder eine andere Lage wechselt.',
+  ] },
   { version: '2.8.1', datum: '2026-11-23', punkte: [
     'Wind: Die App nennt, warum diese DWD-Station – es ist immer die nächste Station mit Windmessung zu deinem Standort. Misst eine nähere DWD-Station keinen Wind (bei Miehlen z. B. Oberbachheim, 6,6 km), steht das dabei; der Wind kommt dann z. B. aus Geisenheim (28,2 km).',
     'Standort: Ist keine Ortung möglich, steht deutlich „Standort nicht verfügbar – Wind gilt für Miehlen“; ist die letzte Ortung älter als 15 Minuten, steht die Uhrzeit dabei.',
