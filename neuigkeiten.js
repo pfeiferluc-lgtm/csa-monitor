@@ -5,6 +5,12 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.8.0', datum: '2026-11-23', punkte: [
+    'Neues Erscheinungsbild „Leitstand“ nach einer Designvorgabe mit den neuen Design-Skills: graphitgraue, flache Flächen; Rot nur noch für die Titelleiste und Gefahr, Blau für Bedienung (Hauptknöpfe, Suche, Auswahl, aktiver Reiter), Grün für in Ordnung.',
+    'Ruhigere Seiten: Abschnittsköpfe in normaler Schreibung statt gesperrter Großbuchstaben, keine bunten Kategorie-Kanten mehr (Unterlagen, Startseite, Schnellzugriff, Erste Hilfe), Abstands-Kacheln mit kleinem Farbfeld statt farbiger Kante, große Zahlen in fester Ziffernbreite.',
+    'Einheitlich: ein Auswahlstil für Segmente und Filter (blau, auch bei der Ausbreitungszeit), ein Stil für alle Eingabefelder (ohne Gelb), deutlicher Fokusrahmen; Mindestschrift 13 px.',
+    'iPad hochkant: Einsatzseite und Stoffübersicht schon ab 744 px zweispaltig.',
+  ] },
   { version: '2.7.0', datum: '2026-11-23', punkte: [
     'Neu: „Messen“ mit Prüfröhrchen nach der Dräger-Messstrategie 1.5 – Startseite › Schnellzugriff „Messen“ oder Einsatz › Lage. Drei Lagen: unbekannter Gefahrstoff, Brand, bekannter Gefahrstoff.',
     'Unbekannter Gefahrstoff: geführter Ablauf Blatt A–E – Flüssigkeit und Universalindikator bzw. Säuretest, danach immer das nächste Röhrchen. Folgeröhrchen („falls positiv, auch Nr. …“) erscheinen automatisch, die Auswertung zeigt Hinweise und Bestätigungen.',

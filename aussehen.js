@@ -7,20 +7,39 @@
 'use strict';
 (() => {
   const css = `
-  /* ------------------------------------------------------------ Farben und Maße */
-  :root { --bar: #b3261e; --bar2: #9b2019; --bar-ink: #fff; --rot: #d0302a; --rund: .5rem;
-    --page: #111214; --surface: #1b1c20; --surface2: #24262b; --kopf: #17181b; --line: #2c2e34; --rand: #3a3d45;
-    --ink: #f2f3f5; --ink2: #c5c8ce; --muted: #8f949c; --schatten: 0 0 0 1px var(--line); --leiste-bg: #18191c; }
-  :root.hell { --page: #eceef1; --surface: #ffffff; --surface2: #f4f5f7; --kopf: #ffffff; --line: #e0e3e7; --rand: #ccd1d8;
-    --ink: #14171a; --ink2: #3b424a; --muted: #67707a; --schatten: 0 0 0 1px var(--line), 0 1px 2px rgba(16, 24, 40, .05); --leiste-bg: #ffffff; }
+  /* ------------------------------------------------------------ Token „Leitstand“ (2.8.0, Designvorgabe DESIGN.md)
+     Graphitgraue flache Flächen, Rot nur für Titelleiste und Gefahr, Blau für Bedienung, Grün für in Ordnung.
+     Kontraste nach WCAG 2.2 AA gerechnet: Text ≥ 4,5:1 auf allen Flächen, Füllungen unter weißer Schrift ≥ 5:1, Feldränder ≥ 3:1. */
+  :root { color-scheme: dark;
+    --bar: #b3261e; --bar2: #9b2019; --bar-hover: #9e211a; --bar-ink: #ffffff; --bar-ink2: rgba(255, 255, 255, .82); --rot: var(--bar);
+    --page: #0d1014; --surface: #161a1f; --surface2: #1e232a; --surface3: #272d36; --kopf: #1a1f25; --leiste-bg: #161a1f;
+    --line: #2b313a; --rand: #3c444f; --rand-stark: #6c7785;
+    --ink: #e9edf1; --ink2: #b7c0ca; --muted: #8f99a5; --ink-aus: #5d6672;
+    --akzent: #5c9df5; --akzent-voll: #2563c9; --akzent-voll-hover: #1f55ad; --akzent-voll-aktiv: #1a4893; --akzent-t: rgba(92, 157, 245, .16);
+    --crit: #ff6b61; --crit-voll: #c62828; --crit-t: rgba(255, 107, 97, .14); --crit-voll-hover: #a51f1f;
+    --ser: #f5894f; --ser-voll: #c2410c; --ser-t: rgba(245, 137, 79, .14);
+    --warn: #f2b01e; --warn-voll: #f2b01e; --warn-t: rgba(242, 176, 30, .14); --auf-warn: #1a1400;
+    --good: #3dbb70; --good-voll: #1d7a43; --good-t: rgba(61, 187, 112, .14);
+    --info: var(--akzent); --grau-voll: #5f6873; --bedingt-voll: #8a6100;
+    --eingabe: #11151a; --eingabe-rand: var(--rand-stark);
+    --schrift-xs: max(13px, .8125rem); --schrift-s: max(13px, .875rem); --schrift-m: 1rem; --schrift-l: 1.125rem; --schrift-xl: 1.25rem; --schrift-2xl: 1.75rem; --schrift-3xl: 2.25rem;
+    --radius-s: .25rem; --radius-m: .375rem; --radius-l: .5rem; --rund: var(--radius-l);
+    --schatten: 0 0 0 1px var(--line); --schatten-ebene: 0 0 0 1px var(--rand), 0 8px 24px rgba(0, 0, 0, .5); }
+  :root.hell { color-scheme: light;
+    --page: #eef0f3; --surface: #ffffff; --surface2: #f5f7f9; --surface3: #e8ebef; --kopf: #f5f7f9; --leiste-bg: #ffffff;
+    --line: #dfe3e8; --rand: #c5ccd5; --rand-stark: #7b8591;
+    --ink: #111418; --ink2: #38414b; --muted: #59636f; --ink-aus: #9aa3ad;
+    --akzent: #1f5fbf; --akzent-voll: #1f5fbf; --akzent-voll-hover: #1a4f9f; --akzent-voll-aktiv: #153f80; --akzent-t: rgba(31, 95, 191, .12);
+    --crit: #c0261d; --crit-t: rgba(192, 38, 29, .12); --ser: #b53d0a; --ser-t: rgba(181, 61, 10, .12);
+    --warn: #8a5a00; --warn-t: rgba(138, 90, 0, .12); --good: #17773d; --good-t: rgba(23, 119, 61, .12);
+    --eingabe: #ffffff;
+    --schatten: 0 0 0 1px var(--line), 0 1px 2px rgba(16, 24, 40, .05); --schatten-ebene: 0 0 0 1px var(--line), 0 8px 24px rgba(16, 24, 40, .14); }
+  :root .ez, :root .gsz-ansicht { --rund: var(--radius-l); }
   :root body:not([data-ansicht="monitor"]) #statusband { background: var(--bar) !important; }
 
   /* ------------------------------------------------------------ Barrierefreiheit (WCAG 2.1 AA, Prüfung 2.5.1)
      Schriftfarben: im Dunkeln helle, im Hellen dunkle Töne – jeweils mindestens 4,5:1 zum Grund.
      Füllfarben unter weißer Schrift: immer die dunklen Töne (--…-voll, ≥ 5:1), Gelb mit dunkler Schrift. */
-  :root { --crit: #f05252; --good: #26a95b; --ser: #f0794a; --akzent: #4c8df0;
-    --crit-voll: #c62828; --good-voll: #1d7a43; --ser-voll: #c2410c; --akzent-voll: #2563c9; --bedingt-voll: #8a6100; --grau-voll: #5f6873; }
-  :root.hell { --crit: #c62828; --good: #1b7f42; --ser: #c2410c; --akzent: #1f62c4; --muted: #5f6873; --akzent-voll: #1f62c4; }
   :root .ez-stufe.gut { --c: var(--good-voll); } :root .ez-stufe.bedingt { --c: var(--bedingt-voll); } :root .ez-stufe.nicht { --c: var(--crit-voll); }
   :root .ez-stufe.gemischt { --c: var(--ser-voll); } :root .ez-stufe.unbekannt, :root .ez-stufe.keine, :root .ez-stufe.offen { --c: var(--grau-voll); }
   :root .ez-signal { background: var(--crit-voll); } :root .ez-signal.achtung { background: var(--ser-voll); }
@@ -158,10 +177,10 @@
   .eb-knoepfe { display: flex; gap: .5rem; flex-wrap: wrap; }
   .eb-knoepfe .knopf { flex: 1 1 9rem; min-height: 3rem !important; font-size: 1rem !important; }
 
-  /* ------------------------------------------------------------ Einsatz-Seite: zwei Spalten auf Tablet und Computer, auf dem Handy eine */
+  /* ------------------------------------------------------------ Einsatz-Seite: zwei Spalten ab iPad hochkant (744 px), auf dem Handy eine */
   :root #einsatz .ez-saeule { display: contents; }
   :root #einsatz .ez-saeule > * { width: 100%; max-width: 62rem; margin-left: auto; margin-right: auto; box-sizing: border-box; }
-  @media (min-width: 1100px) {
+  @media (min-width: 744px) {
     :root #einsatz { --rand-l: max(calc(.9rem + var(--sicher-links)), calc((100vw - 78rem) / 2)); --rand-r: max(calc(.9rem + var(--sicher-rechts)), calc((100vw - 78rem) / 2));
       display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: .8rem 1rem; align-items: start; }
     :root #einsatz > .ez-kopf { grid-column: 1 / -1; }
@@ -169,8 +188,8 @@
     :root #einsatz .ez-saeule > * { max-width: none; }
   }
 
-  /* ------------------------------------------------------------ Stoff-Übersicht: auf Tablet und Computer zwei Spalten (Flächen ungeteilt) */
-  @media (min-width: 1100px) {
+  /* ------------------------------------------------------------ Stoff-Übersicht: ab iPad hochkant zwei Spalten (Flächen ungeteilt) */
+  @media (min-width: 744px) {
     :root #stoffansicht > .ez-stoff-inhalt.uebersicht { display: block !important; columns: 2; column-gap: 1rem; max-width: 78rem; }
     :root #stoffansicht > .ez-stoff-inhalt.uebersicht > * { break-inside: avoid; margin: 0 0 .8rem; }
   }
@@ -242,6 +261,65 @@
   :root .kopfleiste .knopf { background: transparent !important; border: 1px solid rgba(255, 255, 255, .4) !important; color: #fff !important; box-shadow: none !important; }
   :root .kopfleiste img.logo-hell:not(.x):not(.y) { display: none !important; }
   :root .kopfleiste img.logo-dunkel:not(.x):not(.y) { display: block !important; }
+
+  /* ============================================================ Leitstand (2.8.0): Farbrollen, ruhige Köpfe, ein Auswahlstil */
+  /* Blau = Bedienung: Hauptaktionen, Suche, Auswahl, aktiver Reiter. Rot bleibt Titelleiste und Gefahr. */
+  :root .ez .knopf.los, :root .gsz-ansicht .knopf.los, :root .knopf.primaer { background: var(--akzent-voll) !important; border-color: var(--akzent-voll) !important; color: #fff !important; }
+  :root .ez .knopf.los:hover, :root .gsz-ansicht .knopf.los:hover, :root .knopf.primaer:hover { background: var(--akzent-voll-hover) !important; border-color: var(--akzent-voll-hover) !important; }
+  :root .ez-los { background: var(--akzent-voll); }
+  :root .ez-suchfeld { border-color: var(--rand-stark); background: var(--eingabe); }
+  :root .ez-suchfeld:focus-within { border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-t); }
+  :root .ez-un[aria-pressed="true"] { background: var(--akzent-voll); border-color: var(--akzent-voll); color: #fff; }
+  :root .ez-import-knopf .sym { background: var(--surface2); color: var(--ink2); }
+  :root .ez-treffer a { border-left: 1px solid var(--line); }
+  :root .ez-leiste a.an { color: var(--ink); background: var(--akzent-t); border-top-color: var(--akzent); }
+  :root .ez-leiste a.an svg { color: var(--akzent); }
+  :root .ez-leiste a { font-weight: 600; }
+  /* Kategorien bekommen Symbole und Wörter, keine Farben: Unterlagen, Startkarten, Schnellzugriff, Erste Hilfe/Dekon */
+  :root #ez-ordner .ez-ok { border-left: 0; }
+  :root #ez-ordner .ez-ok .sym { background: var(--surface2) !important; color: var(--ink2) !important; box-shadow: inset 0 0 0 1px var(--line); }
+  :root #ez-ordner .ez-ok .sym svg { color: var(--ink2) !important; }
+  :root #startseite .st-kachel { border-left: 0; box-shadow: var(--schatten); }
+  :root #startseite .st-kachel > svg { color: var(--ink2); }
+  .st-modul svg, .st-modul.grau svg { color: var(--ink2); }
+  .st-modul { font-weight: 600; font-size: var(--schrift-s); }
+  :root .ez-eh h3 svg { color: var(--ink2); }
+  /* Abschnittsköpfe: Satzschreibung, halbfett, Text 1 – keine gesperrten Großbuchstaben, keine getönte Kopffläche */
+  :root .ez h2, :root .gsz-ansicht h2 { text-transform: none; letter-spacing: 0; font-weight: 600; }
+  :root .ez-karte > h2:first-child { font-size: var(--schrift-m); color: var(--ink); background: var(--surface); line-height: 1.35; min-height: 44px; box-sizing: border-box;
+    padding-top: .7rem; padding-bottom: .65rem; }
+  :root .ez-bereich > h2, .st-schnell h2 { font-size: var(--schrift-s); color: var(--ink2); }
+  :root .eb-titel { font-weight: 700; letter-spacing: 0; text-transform: none; }
+  :root .eb-status:not(.laeuft) .eb-titel { letter-spacing: 0; font-weight: 600; }
+  :root .eb-status.laeuft { border-left-color: var(--crit); } :root .eb-status.laeuft .eb-titel { color: var(--crit); }
+  /* Mindestschrift 13 px */
+  :root .ez-klein, :root .lg-klein, :root .ez-gepr, :root .ez-ungeprueft, :root .st-ueber, :root .eb-zeiten small, :root .eb-zeiten span,
+  :root .ez-chip, :root .ez-hinweis, :root .ms-hinweis, :root .ez-dateien small, :root .ez-geraete .zeile { font-size: max(13px, .8125rem); }
+  /* Ein Auswahlstil für Segmente und Filter: Blau gefüllt, sonst still; kein Lila, keine Pillen */
+  :root .lg-seg button[aria-checked="true"], :root .lg-seg button.an { background: var(--akzent-voll); border-color: var(--akzent-voll); color: #fff; }
+  :root .lg-seg button, :root .ez-filter button, :root .ez-anordnung button, :root .aw-filter button, :root .ms-seg button { border-radius: var(--radius-m); font-weight: 600; }
+  :root .ez-filter button:not(.an), :root .lg-seg button:not([aria-checked="true"]):not(.an) { background: var(--surface2); border-color: var(--rand); color: var(--ink2); }
+  /* Eingabefelder: ein Stil (eingelassene Fläche, Rand ≥ 3:1) */
+  :root .eb-feld input, :root .eb-feld select, :root .eb-feld textarea, :root .ms-feld input, :root .ez-formular input, :root .ez-formular select, :root .ez-formular textarea {
+    background: var(--eingabe); border-color: var(--rand-stark); }
+  /* Fokus deutlich sichtbar (WCAG 2.4.7) */
+  :root .gsz-ansicht :is(a, button, input, select, textarea, summary):focus-visible { outline: 3px solid var(--akzent); outline-offset: 2px; }
+  :root .ez > .ez-kopf :is(a, button):focus-visible { outline-color: #fff; }
+  /* Ziffern in Tabellenbreite für Werte, Zeiten und Abstände */
+  :root .ez-kw b, :root .lg-abstand b, :root .eb-zeiten b, :root .ez-tabelle td, :root .ms-werte dd { font-variant-numeric: tabular-nums; }
+  /* Satzschreibung statt gesperrter Großbuchstaben (Ausnahmen: GHS-Signalwort, Einheiten im Band an den Geräten) */
+  :root .ez-ausbr .ueber, :root .ez-kw > div:not(.ez-ausbr) > span, :root .ez-aegl .kopfzeile > span, :root .ez-db h3, :root details.ez-mehr .inhalt b,
+  :root .st-ueber, :root .st-neu h2, :root .st-zuletzt h2, :root .lg-ergaenzend, :root .karte > h2, :root .liste h3, :root .pg-kopf h3 {
+    text-transform: none; letter-spacing: 0; }
+  :root .ez-kw > div:not(.ez-ausbr) > span, :root .ez-aegl .kopfzeile > span, :root .ez-ausbr .ueber { font-size: var(--schrift-xs); }
+  :root .lg-ergaenzend, :root .ez-db h3, :root .st-neu h2, :root .st-zuletzt h2 { font-size: var(--schrift-s); font-weight: 600; }
+  :root .st-ueber { font-size: var(--schrift-xs); font-weight: 600; color: var(--bar-ink2); }
+  /* Kennzahl-Kacheln (Abstände): Fläche 2 ohne bunte Kante – die Bedeutung trägt ein Farbfeld vor der Bezeichnung */
+  :root .lg-abstand { border-left: 0; border-radius: var(--radius-m); background: var(--surface2); box-shadow: inset 0 0 0 1px var(--line); padding: .7rem .8rem; }
+  :root .lg-abstand b { font-size: var(--schrift-2xl); font-weight: 700; line-height: 1.1; }
+  :root .lg-abstand > span:first-of-type::before { content: ""; display: inline-block; width: .75rem; height: .75rem; border-radius: 2px; background: var(--c, var(--akzent));
+    margin-right: .4rem; vertical-align: -.05rem; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
+  :root .lg-abstand span { font-size: var(--schrift-s); overflow-wrap: anywhere; -webkit-hyphens: auto; hyphens: auto; }
   `;
   // WCAG 2.2 · 2.4.11 (Fokus nicht verdeckt): Ein Element, das den Tastaturfokus bekommt, wird unter feststehenden Leisten
   // hervorgeholt – Reiterleiste der Stoffseite unten, Leiste der Anwesenheit unten, Anordnen-Leiste oben
