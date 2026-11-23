@@ -272,7 +272,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') (() => {
     try {
       const L = await leaflet();
       const k = L.map(el.querySelector('[data-nv-karte]'), { zoomControl: false, attributionControl: true, zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false, inertia: false });
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap-Mitwirkende' }).addTo(k);
+      // Kartenebene wie in der Anfahrt gewählt (Straße bzw. Hybrid)
+      for (const e of (window.GSZKarte && GSZKarte.ebenenErzeugen ? GSZKarte.ebenenErzeugen(L, GSZKarte.ebeneGewaehlt()) : [L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap-Mitwirkende' })])) e.addTo(k);
       N.L = L; N.karte = k;
       k.on('dragstart', () => { if (!N) return; N.folgen = false; N.el.querySelector('[data-nv="folgen"]').hidden = false; folgenKnopfLage(); });
       zeichnen();

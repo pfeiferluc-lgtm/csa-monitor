@@ -66,6 +66,7 @@
   const oliveDa = opts => !!(opts.olive && opts.olive.laenge_m > 0 && hatZug(opts) && window.GSZGefahrgut);
   // Ausschnitt, der alles Gezeichnete umfasst
   function grenzen(o, opts) {
+    if (opts.keinUnfallort) return [ziel(o.lat, o.lon, 0, 700), ziel(o.lat, o.lon, 90, 700), ziel(o.lat, o.lon, 180, 700), ziel(o.lat, o.lon, 270, 700)];
     const r = Math.max(opts.gefahr_m || 0, opts.absperr_m || 0, opts.ergAbs_m || 0, opts.still ? opts.still.m : 0, 60);
     const pkte = [ziel(o.lat, o.lon, 0, r), ziel(o.lat, o.lon, 90, r), ziel(o.lat, o.lon, 180, r), ziel(o.lat, o.lon, 270, r)];
     if (opts.zone && opts.zone.m && hatZug(opts)) pkte.push(...zonenPunkte(o, opts.zugGrad, opts.zone.m));
@@ -123,6 +124,23 @@
     return aus;
   }
 
+  // ---------------------------------------------------------------- Kartenebenen: Straße (OpenStreetMap) bzw. Hybrid (Luftbild mit Beschriftung)
+  // Hybrid = Esri World Imagery (lückenlos, auch außerhalb von Rheinland-Pfalz) + DOP20 Rheinland-Pfalz darüber (amtliches Luftbild,
+  // Datenlizenz Deutschland – Namensnennung 2.0, erst ab Zoom 13) + Straßen- und Ortsnamen (CARTO Voyager, nur Beschriftung).
+  // Gewählt je Gerät (gsz-karte-ebene); mit Google-Schlüssel stattdessen Google „Karte“ bzw. „Hybrid“.
+  const ebeneGewaehlt = () => LS.get('gsz-karte-ebene') === 'hybrid' ? 'hybrid' : 'strasse';
+  function ebenenErzeugen(L, art) {
+    if (art !== 'hybrid') return [L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap-Mitwirkende' })];
+    return [
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, maxNativeZoom: 19,
+        attribution: '© Esri, Maxar' }),
+      L.tileLayer.wms('https://geo4.service24.rlp.de/wms/rp_dop20.fcgi', { layers: 'rp_dop20', format: 'image/jpgpng', transparent: true, version: '1.1.1', minZoom: 13, maxZoom: 20,
+        attribution: `©GeoBasis-DE / LVermGeoRP (${new Date().getFullYear()}), dl-de/by-2-0` }),
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 20,
+        attribution: '© CARTO, © OpenStreetMap' }),
+    ];
+  }
+
   // ---------------------------------------------------------------- OpenStreetMap (Leaflet)
   async function leaflet() {
     await stil('karte/leaflet.css');
@@ -130,11 +148,15 @@
     if (!window.L) throw new Error('Kartenbaustein fehlt.');
     return window.L;
   }
-  function osmKarte(L, el, o) {
+  function osmKarte(L, el, o, opts0 = {}) {
     // ohne Animationen: im Einsatz unnötig, und eine hängende Zoom-Animation blendet Kacheln und Zeichnung aus
-    const karte = L.map(el, { zoomControl: true, attributionControl: true, zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false, inertia: false });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap-Mitwirkende' }).addTo(karte);
-    L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(karte);
+    const karte = L.map(el, { zoomControl: false, attributionControl: true, zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false, inertia: false });
+    if (opts0.zoomPos !== false) L.control.zoom({ position: opts0.zoomPos || 'topleft' }).addTo(karte);
+    let grund = [];
+    const ebeneSetzen = art => { for (const e of grund) karte.removeLayer(e); grund = ebenenErzeugen(L, art); for (const e of grund) { e.addTo(karte); if (e.bringToBack && e === grund[0]) e.bringToBack(); } };
+    ebeneSetzen(opts0.ebene || 'strasse');
+    if (opts0.beiTippen) karte.on('click', e => opts0.beiTippen({ lat: e.latlng.lat, lon: e.latlng.lng }));
+    L.control.scale({ metric: true, imperial: false, position: opts0.massstabPos || 'bottomleft' }).addTo(karte);
     karte.setView([o.lat, o.lon], 17);
     // Größe nachführen (Seite baut sich auf, „Karte groß“, Drehen des Geräts)
     if (window.ResizeObserver) { const ro = new ResizeObserver(() => karte.invalidateSize()); ro.observe(el); karte.on('unload', () => ro.disconnect()); }
@@ -155,8 +177,14 @@
       art: 'osm',
       zeichnen(o2, opts, beiZug) {
         weg();
-        stand = { o: o2, opts };
+        stand = opts.keinUnfallort ? null : { o: o2, opts };
         const p = [o2.lat, o2.lon];
+        if (opts.keinUnfallort) {
+          if (opts.standort) ebenen.push(L.circleMarker([opts.standort.lat, opts.standort.lon], { radius: 7, color: '#fff', weight: 2.5, fillColor: FARBE.ich, fillOpacity: 1, interactive: false }).addTo(karte));
+          if (opts.vorschlag) ebenen.push(L.circleMarker([opts.vorschlag.lat, opts.vorschlag.lon], { radius: 13, color: '#e5484d', weight: 3, dashArray: '4 4', fillColor: '#ffffff', fillOpacity: .55, interactive: false, className: 'gk-vorschlag' }).addTo(karte));
+          schilder();
+          return;
+        }
         if (opts.zone && opts.zone.m && hatZug(opts))
           ebenen.push(L.polygon(zonenPunkte(o2, opts.zugGrad, opts.zone.m).map(x => [x.lat, x.lon]), { color: FARBE.zone, weight: 2, fillOpacity: .18 }).bindTooltip(opts.zone.text || 'Zone in Windrichtung').addTo(karte));
         if (oliveDa(opts))
@@ -166,7 +194,8 @@
           ebenen.push(L.polygon(anfahrtPunkte(o2, opts.anfahrt).map(x => [x.lat, x.lon]), { color: FARBE.anfahrt, weight: 2, dashArray: '6 5', fillColor: FARBE.anfahrt, fillOpacity: .18, className: 'gk-anfahrt' })
             .bindTooltip(opts.anfahrt.text || 'Anfahrt').addTo(karte));
         if (opts.routeAlt && opts.routeAlt.length > 1)
-          ebenen.push(L.polyline(opts.routeAlt.map(x => [x.lat, x.lon]), { color: FARBE.anfahrt, weight: 5, opacity: .95, dashArray: '10 8', className: 'gk-route-alt' }).bindTooltip('Andere Route mit Anfahrt gegen den Wind').addTo(karte));
+          ebenen.push(L.polyline(opts.routeAlt.map(x => [x.lat, x.lon]), { color: opts.routeAltFarbe || FARBE.anfahrt, weight: 5, opacity: .95, dashArray: '10 8', className: 'gk-route-alt' })
+            .bindTooltip(opts.routeAltFarbe && opts.routeAltFarbe !== FARBE.anfahrt ? 'Andere Route' : 'Andere Route mit Anfahrt gegen den Wind').addTo(karte));
         if (opts.route && opts.route.length > 1) {
           ebenen.push(L.polyline(opts.route.map(x => [x.lat, x.lon]), { color: '#fff', weight: 8, opacity: .85, interactive: false }).addTo(karte));
           ebenen.push(L.polyline(opts.route.map(x => [x.lat, x.lon]), { color: FARBE.route, weight: 5, opacity: .95, className: 'gk-route' }).bindTooltip('Route des Navis (Vorschau)').addTo(karte));
@@ -182,14 +211,19 @@
           if (opts.standort.genau) ebenen.push(L.circle([opts.standort.lat, opts.standort.lon], { radius: opts.standort.genau, color: FARBE.ich, weight: 1, fillOpacity: .08 }).addTo(karte));
           ebenen.push(L.circleMarker([opts.standort.lat, opts.standort.lon], { radius: 7, color: '#fff', weight: 2.5, fillColor: FARBE.ich, fillOpacity: 1 }).bindTooltip('Mein Standort').addTo(karte));
         }
-        unfall = L.marker(p, { draggable: true, autoPan: true, title: 'Unfallort – zum Verschieben ziehen',
+        const ziehbar = opts.ziehbar !== false;
+        unfall = L.marker(p, { draggable: ziehbar, autoPan: ziehbar, interactive: ziehbar, keyboard: false, title: ziehbar ? 'Unfallort – zum Verschieben ziehen' : opts.unfallText || 'Einsatzstelle',
           icon: L.divIcon({ className: 'gk-unfall', html: '<span></span>', iconSize: [30, 30], iconAnchor: [15, 15] }) }).addTo(karte);
-        unfall.on('dragend', () => { const ll = unfall.getLatLng(); beiZug({ lat: ll.lat, lon: ll.lng }); });
+        if (ziehbar) unfall.on('dragend', () => { const ll = unfall.getLatLng(); beiZug({ lat: ll.lat, lon: ll.lng }); });
         ebenen.push(unfall);
+        // Vorschlag (angetippter Punkt, noch nicht übernommen)
+        if (opts.vorschlag) ebenen.push(L.circleMarker([opts.vorschlag.lat, opts.vorschlag.lon], { radius: 13, color: '#e5484d', weight: 3, dashArray: '4 4', fillColor: '#ffffff', fillOpacity: .55, interactive: false, className: 'gk-vorschlag' }).addTo(karte));
         schilder();
       },
-      einpassen(pkte) { const r = rand(el);
-        karte.fitBounds(L.latLngBounds(pkte.map(x => [x.lat, x.lon])), { paddingTopLeft: [r.seite, r.oben], paddingBottomRight: [r.seite, r.seite], maxZoom: 18, animate: false }); },
+      einpassen(pkte) { const r = rand(el, opts0);
+        karte.fitBounds(L.latLngBounds(pkte.map(x => [x.lat, x.lon])), { paddingTopLeft: [r.links, r.oben], paddingBottomRight: [r.rechts, r.unten], maxZoom: 18, animate: false }); },
+      ebeneSetzen,
+      zoomen(d) { karte.setZoom(karte.getZoom() + d, { animate: false }); },
       mitte() { const c = karte.getCenter(); return { lat: c.lat, lon: c.lng }; },
       verschieben(x) { karte.setView([x.lat, x.lon], karte.getZoom(), { animate: false }); },
       groesse() { karte.invalidateSize(); },
@@ -213,16 +247,18 @@
   }
   let googleKaputt = false;
   // Rand beim Einpassen: oben Platz unter der Windanzeige der Karte (sonst lägen Unfallort und Beschriftung darunter, v. a. im Querformat)
-  function rand(el) {
+  function rand(el, opts0 = {}) {
+    if (opts0.polster) { const p = opts0.polster(); return { oben: p.oben ?? 24, unten: p.unten ?? 24, links: p.links ?? 24, rechts: p.rechts ?? 24 }; }
     const w = el.parentElement && el.parentElement.querySelector('.lg-karte-wind');
     const r = w && w.getBoundingClientRect(), k = el.getBoundingClientRect();
     const oben = r && r.height ? Math.min(Math.round(r.bottom - k.top + 30), Math.round(k.height * 0.4)) : 24;
-    return { oben: Math.max(24, oben), seite: 24 };
+    return { oben: Math.max(24, oben), unten: 24, links: 24, rechts: 24 };
   }
-  function googleKarte(g, el, o) {
-    const karte = new g.Map(el, { center: { lat: o.lat, lng: o.lon }, zoom: 17, mapTypeId: 'hybrid', scaleControl: true, streetViewControl: false, fullscreenControl: false,
+  function googleKarte(g, el, o, opts0 = {}) {
+    const karte = new g.Map(el, { center: { lat: o.lat, lng: o.lon }, zoom: 17, mapTypeId: opts0.ebene === 'strasse' ? 'roadmap' : 'hybrid', mapTypeControl: !opts0.ebene, scaleControl: true, streetViewControl: false, fullscreenControl: false,
       rotateControl: false, gestureHandling: 'greedy', clickableIcons: false, mapTypeControlOptions: { mapTypeIds: ['roadmap', 'hybrid'] } });
     const ebenen = [], schildEbenen = [];
+    if (opts0.beiTippen) karte.addListener('click', e => opts0.beiTippen({ lat: e.latLng.lat(), lon: e.latLng.lng() }));
     const weg = () => { for (const e of ebenen.splice(0)) e.setMap(null); };
     const ll = x => ({ lat: x.lat, lng: x.lon });
     let stand = null;
@@ -240,8 +276,14 @@
       art: 'google',
       zeichnen(o2, opts, beiZug) {
         weg();
-        stand = { o: o2, opts };
+        stand = opts.keinUnfallort ? null : { o: o2, opts };
         const p = ll(o2);
+        if (opts.keinUnfallort) {
+          if (opts.standort) ebenen.push(new g.Marker({ map: karte, position: ll(opts.standort), clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 7, fillColor: FARBE.ich, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2.5 } }));
+          if (opts.vorschlag) ebenen.push(new g.Circle({ map: karte, center: ll(opts.vorschlag), radius: 6, strokeColor: '#e5484d', strokeWeight: 3, fillColor: '#ffffff', fillOpacity: .55, clickable: false }));
+          schilder();
+          return;
+        }
         if (opts.zone && opts.zone.m && hatZug(opts))
           ebenen.push(new g.Polygon({ map: karte, paths: zonenPunkte(o2, opts.zugGrad, opts.zone.m).map(ll), strokeColor: FARBE.zone, strokeWeight: 2, fillColor: FARBE.zone, fillOpacity: .2, clickable: false }));
         if (oliveDa(opts))
@@ -251,7 +293,7 @@
           ebenen.push(new g.Polygon({ map: karte, paths: anfahrtPunkte(o2, opts.anfahrt).map(ll), strokeColor: FARBE.anfahrt, strokeWeight: 2, fillColor: FARBE.anfahrt, fillOpacity: .22, clickable: false }));
         if (opts.routeAlt && opts.routeAlt.length > 1)
           ebenen.push(new g.Polyline({ map: karte, path: opts.routeAlt.map(ll), strokeOpacity: 0, clickable: false,
-            icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: FARBE.anfahrt, strokeWeight: 5, scale: 3 }, offset: '0', repeat: '16px' }] }));
+            icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: opts.routeAltFarbe || FARBE.anfahrt, strokeWeight: 5, scale: 3 }, offset: '0', repeat: '16px' }] }));
         if (opts.route && opts.route.length > 1) {
           ebenen.push(new g.Polyline({ map: karte, path: opts.route.map(ll), strokeColor: '#ffffff', strokeWeight: 8, strokeOpacity: .85, clickable: false }));
           ebenen.push(new g.Polyline({ map: karte, path: opts.route.map(ll), strokeColor: FARBE.route, strokeWeight: 5, strokeOpacity: .95, clickable: false }));
@@ -265,13 +307,16 @@
         if (opts.gefahr_m) ebenen.push(new g.Circle({ map: karte, center: p, radius: opts.gefahr_m, strokeColor: FARBE.gefahr, strokeWeight: 2.5, fillColor: FARBE.gefahr, fillOpacity: .18, clickable: false }));
         if (opts.standort) ebenen.push(new g.Marker({ map: karte, position: ll(opts.standort), title: 'Mein Standort', clickable: false,
           icon: { path: g.SymbolPath.CIRCLE, scale: 7, fillColor: FARBE.ich, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2.5 } }));
-        const m = new g.Marker({ map: karte, position: p, draggable: true, title: 'Unfallort – zum Verschieben ziehen',
+        const m = new g.Marker({ map: karte, position: p, draggable: opts.ziehbar !== false, clickable: opts.ziehbar !== false, title: opts.ziehbar === false ? opts.unfallText || 'Einsatzstelle' : 'Unfallort – zum Verschieben ziehen',
           icon: { path: g.SymbolPath.CIRCLE, scale: 11, fillColor: FARBE.gefahr, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 } });
         m.addListener('dragend', () => { const q = m.getPosition(); beiZug({ lat: q.lat(), lon: q.lng() }); });
         ebenen.push(m);
+        if (opts.vorschlag) ebenen.push(new g.Circle({ map: karte, center: ll(opts.vorschlag), radius: 6, strokeColor: '#e5484d', strokeWeight: 3, fillColor: '#ffffff', fillOpacity: .55, clickable: false }));
         schilder();
       },
-      einpassen(pkte) { const b = new g.LatLngBounds(), r = rand(el); for (const x of pkte) b.extend(ll(x)); karte.fitBounds(b, { top: r.oben, right: r.seite, bottom: r.seite, left: r.seite });
+      ebeneSetzen(art) { karte.setMapTypeId(art === 'strasse' ? 'roadmap' : 'hybrid'); },
+      zoomen(d) { karte.setZoom((karte.getZoom() || 15) + d); },
+      einpassen(pkte) { const b = new g.LatLngBounds(), r = rand(el, opts0); for (const x of pkte) b.extend(ll(x)); karte.fitBounds(b, { top: r.oben, right: r.rechts, bottom: r.unten, left: r.links });
         g.event.addListenerOnce(karte, 'idle', () => { if (karte.getZoom() > 18) karte.setZoom(18); }); },
       mitte() { const c = karte.getCenter(); return { lat: c.lat(), lon: c.lng() }; },
       verschieben(x) { karte.setCenter(ll(x)); },
@@ -282,17 +327,20 @@
 
   // ---------------------------------------------------------------- Karte zeigen
   // opts: { unfallort, standort, gefahr_m, absperr_m, ergAbs_m, zone: { m, text, kurz }, olive: { laenge_m, winkel, text, kurz }, still: { m, text, kurz },
-  //         zugGrad, google: Schlüssel | '', beiVerschieben(ort) }
+  //         zugGrad, google: Schlüssel | '', beiVerschieben(ort),
+  //         ebene: 'strasse' | 'hybrid' (ohne Angabe: Straße bzw. Google wie bisher), zoomPos: Leaflet-Ecke | false, massstabPos: Leaflet-Ecke, ziehbar: false (Markierung fest),
+  //         keinUnfallort: true (noch keine Einsatzstelle – nur Standort bzw. Vorschlag), mitte: { lat, lon } (Kartenmitte ohne Einsatzstelle),
+  //         beiTippen(ort) (Tippen auf die Karte), vorschlag: { lat, lon } (angetippter Punkt), polster() → { oben, unten, links, rechts } (Freiraum beim Einpassen) }
   async function zeigen(el, opts) {
     el.innerHTML = '';
     el.classList.add('gk-karte');
-    let o = opts.unfallort || opts.standort;
+    let o = opts.unfallort || opts.standort || opts.mitte;
     let k = null;
     if (opts.google && !googleKaputt) {
-      try { k = googleKarte(await googleLaden(opts.google), el, o); }
+      try { k = googleKarte(await googleLaden(opts.google), el, o, opts); }
       catch (e) { opts.fehler = e.message; k = null; el.innerHTML = ''; }
     }
-    if (!k) k = osmKarte(await leaflet(), el, o);
+    if (!k) k = osmKarte(await leaflet(), el, o, opts);
     const zeichnen = () => k.zeichnen(o, opts, neu => { o = neu; unfallortSetzen(neu, 'hand'); zeichnen(); if (opts.beiVerschieben) opts.beiVerschieben(neu); });
     zeichnen();
     await new Promise(r => requestAnimationFrame(() => r()));
@@ -303,6 +351,8 @@
       setzen(neu) { Object.assign(opts, neu); if (neu.unfallort) o = neu.unfallort; zeichnen(); },
       zentrieren() { k.einpassen(grenzen(o, opts)); },
       zeigeBereich(pkte) { if (pkte && pkte.length) k.einpassen(pkte); },
+      ebeneSetzen(art) { opts.ebene = art; if (k.ebeneSetzen) k.ebeneSetzen(art); },
+      zoomen: d => { if (k.zoomen) k.zoomen(d); },
       mitte: () => k.mitte(),
       unfallort: () => o,
       zerstoeren: () => k.zerstoeren(),
@@ -310,5 +360,5 @@
     });
   }
 
-  window.GSZKarte = { zeigen, unfallort, unfallortSetzen, ziel, zonenPunkte, olivenPunkte, sektorPunkte, schilderPlanen, meterJePunkt, leaflet };
+  window.GSZKarte = { zeigen, unfallort, unfallortSetzen, ziel, zonenPunkte, olivenPunkte, sektorPunkte, schilderPlanen, meterJePunkt, leaflet, ebenenErzeugen, ebeneGewaehlt };
 })();

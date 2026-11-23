@@ -5,6 +5,13 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.13.0', datum: '2026-11-24', punkte: [
+    'Anfahrt neu aufgebaut: Die Karte füllt den ganzen Bildschirm. Einsatzort, Stoff, Anfahrt und Hinweise sind Fenster darüber – oben antippen zum Ein- und Ausblenden, × schließt. Die Wahl merkt sich das Gerät.',
+    'Einsatzstelle per Tippen auf die Karte setzen – kein Ziehen mehr. Steht schon eine Einsatzstelle, fragt die App kurz nach („Einsatzstelle hierher setzen?“), damit beim Wischen nichts verrutscht.',
+    'Unten immer sichtbar: „Eintreffen in … min · Uhrzeit“ (bis zur Absperrgrenze, ohne Sonderrechte), die Anfahrtsrichtung und „Navigation starten“.',
+    'Kartenart rechts oben umschaltbar: Straße (OpenStreetMap) oder Hybrid – Luftbild mit Straßen- und Ortsnamen (in Rheinland-Pfalz das amtliche Luftbild DOP20). Die Navigation übernimmt die gewählte Kartenart.',
+    'Auf der Karte ist blau die Route der Navigation; eine bessere Route steht grün gestrichelt daneben, eine schlechtere grau – rot, wo sie durch den Bereich in Windrichtung führt.',
+  ] },
   { version: '2.12.0', datum: '2026-11-23', punkte: [
     'Neu: Navigation in der App – Anfahrt › „Navigation starten“. Führt mit GPS über die gewählte Route, mit Abbiegehinweisen, „Danach“, Sprachansage, Restweg und Ankunftszeit – und hält an der Absperrgrenze statt an der Adresse („Absperrgrenze erreicht – hier halten“).',
     'Ist die schnellste Route ungünstig (gegen den Wind, durch den Bereich in Windrichtung), fährt die Navigation die empfohlene Ausweichroute; umschaltbar „Aus West · empfohlen“ / „Schnellste“. Abseits der Route rechnet sie neu, vor dem Bereich in Windrichtung warnt sie.',
