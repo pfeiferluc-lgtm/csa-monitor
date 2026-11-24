@@ -14,6 +14,8 @@
     set(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch { /* privat */ } },
   };
   const UNFALL_GUELTIG_MS = 12 * 3600 * 1000;
+  // Stecknadel für eine noch nicht bestätigte Einsatzstelle (Spitze unten mittig)
+  const NADEL = '<svg viewBox="0 0 34 46" width="34" height="46" aria-hidden="true"><path d="M17 44C17 44 3 27.5 3 17a14 14 0 0 1 28 0c0 10.5-14 27-14 27z" fill="#e5484d" stroke="#fff" stroke-width="2.5"/><circle cx="17" cy="17" r="5.5" fill="#fff"/></svg>';
   const FARBE = { gefahr: '#e5484d', absperr: '#26a95b', erg: '#f0794a', zone: '#f2b01e', ich: '#4c8df0', olive: '#8e4ec6', still: '#8e4ec6',
     anfahrt: '#1f9d55', route: '#2f6fe0', kritisch: '#e5484d' };
   const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -181,7 +183,8 @@
         const p = [o2.lat, o2.lon];
         if (opts.keinUnfallort) {
           if (opts.standort) ebenen.push(L.circleMarker([opts.standort.lat, opts.standort.lon], { radius: 7, color: '#fff', weight: 2.5, fillColor: FARBE.ich, fillOpacity: 1, interactive: false }).addTo(karte));
-          if (opts.vorschlag) ebenen.push(L.circleMarker([opts.vorschlag.lat, opts.vorschlag.lon], { radius: 13, color: '#e5484d', weight: 3, dashArray: '4 4', fillColor: '#ffffff', fillOpacity: .55, interactive: false, className: 'gk-vorschlag' }).addTo(karte));
+          if (opts.vorschlag) ebenen.push(L.marker([opts.vorschlag.lat, opts.vorschlag.lon], { interactive: false, keyboard: false, zIndexOffset: 1000,
+            icon: L.divIcon({ className: 'gk-vorschlag', html: NADEL, iconSize: [34, 46], iconAnchor: [17, 44] }) }).addTo(karte));
           // Suchtreffer: nummerierte Punkte, Tipp wählt aus (Markierungen geben den Klick nicht an die Karte weiter)
           for (const [i, t] of (opts.treffer || []).entries()) {
             const m = L.marker([t.lat, t.lon], { title: t.titel, keyboard: true, zIndexOffset: 800 - i,
@@ -224,7 +227,8 @@
         if (ziehbar) unfall.on('dragend', () => { const ll = unfall.getLatLng(); beiZug({ lat: ll.lat, lon: ll.lng }); });
         ebenen.push(unfall);
         // Vorschlag (angetippter Punkt, noch nicht übernommen)
-        if (opts.vorschlag) ebenen.push(L.circleMarker([opts.vorschlag.lat, opts.vorschlag.lon], { radius: 13, color: '#e5484d', weight: 3, dashArray: '4 4', fillColor: '#ffffff', fillOpacity: .55, interactive: false, className: 'gk-vorschlag' }).addTo(karte));
+        if (opts.vorschlag) ebenen.push(L.marker([opts.vorschlag.lat, opts.vorschlag.lon], { interactive: false, keyboard: false, zIndexOffset: 1000,
+            icon: L.divIcon({ className: 'gk-vorschlag', html: NADEL, iconSize: [34, 46], iconAnchor: [17, 44] }) }).addTo(karte));
         schilder();
       },
       einpassen(pkte) { const r = rand(el, opts0);
@@ -287,7 +291,7 @@
         const p = ll(o2);
         if (opts.keinUnfallort) {
           if (opts.standort) ebenen.push(new g.Marker({ map: karte, position: ll(opts.standort), clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 7, fillColor: FARBE.ich, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2.5 } }));
-          if (opts.vorschlag) ebenen.push(new g.Circle({ map: karte, center: ll(opts.vorschlag), radius: 6, strokeColor: '#e5484d', strokeWeight: 3, fillColor: '#ffffff', fillOpacity: .55, clickable: false }));
+          if (opts.vorschlag) ebenen.push(new g.Marker({ map: karte, position: ll(opts.vorschlag), clickable: false, zIndex: 2000, title: 'Einsatzstelle (noch nicht bestätigt)' }));
           for (const [i, t] of (opts.treffer || []).entries()) {
             const m = new g.Marker({ map: karte, position: ll(t), title: t.titel, label: { text: String(t.nr), color: '#ffffff', fontWeight: '700', fontSize: '12px' },
               icon: { path: g.SymbolPath.CIRCLE, scale: 12, fillColor: '#2563c9', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 } });
@@ -324,7 +328,7 @@
           icon: { path: g.SymbolPath.CIRCLE, scale: 11, fillColor: FARBE.gefahr, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 } });
         m.addListener('dragend', () => { const q = m.getPosition(); beiZug({ lat: q.lat(), lon: q.lng() }); });
         ebenen.push(m);
-        if (opts.vorschlag) ebenen.push(new g.Circle({ map: karte, center: ll(opts.vorschlag), radius: 6, strokeColor: '#e5484d', strokeWeight: 3, fillColor: '#ffffff', fillOpacity: .55, clickable: false }));
+        if (opts.vorschlag) ebenen.push(new g.Marker({ map: karte, position: ll(opts.vorschlag), clickable: false, zIndex: 2000, title: 'Einsatzstelle (noch nicht bestätigt)' }));
         schilder();
       },
       ebeneSetzen(art) { karte.setMapTypeId(art === 'strasse' ? 'roadmap' : 'hybrid'); },

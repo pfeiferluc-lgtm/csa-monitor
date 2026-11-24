@@ -5,6 +5,12 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.15.0', datum: '2026-11-24', punkte: [
+    'Anfahrt: Die Fenster bleiben immer ganz im Bild. Jedes scrollt in sich, die Kopfzeile mit × bleibt stehen; kleine Fenster (z. B. Stoff) bekommen ihre volle Höhe, große teilen sich den Rest.',
+    'Passen nicht alle geöffneten Fenster hin, schließt sich beim Öffnen eines weiteren das zuerst geöffnete – auch beim Drehen des Geräts. Auf dem Handy quer ist die untere Leiste einzeilig.',
+    'Einsatzstelle wählen: Suchtreffer, Tippen auf die Karte, Koordinaten und „Mein Standort“ setzen erst nur eine Stecknadel – ohne Ausbreitung, Wind und Route. Unten „Einsatzstelle hier?“ mit Ortsname: „Bestätigen“ oder „Verwerfen“, ein weiterer Tipp verschiebt die Nadel.',
+    'Behoben: Ein offenes Fenster ließ sich über seinen Knopf oben nicht schließen.',
+  ] },
   { version: '2.14.0', datum: '2026-11-24', punkte: [
     'Anfahrt › Einsatzort: Die Suche findet jetzt auch Orte von Interesse – Firmen, Schulen, Kitas, Krankenhäuser, Pflegeheime, Tankstellen, Geschäfte usw. („Kapp Chemie“, „Paulinenstift“), gewichtet auf den Kartenausschnitt.',
     'Suche nach Art: „Kita Nastätten“, „Schule“, „Tankstelle“, „Pflegeheim“ … zeigt alle benannten Orte dieser Art im Umkreis des genannten Orts bzw. der Kartenmitte, nach Entfernung.',

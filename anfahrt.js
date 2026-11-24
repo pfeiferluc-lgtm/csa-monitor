@@ -248,19 +248,28 @@
   .af-werkzeuge .zoom { font-size: 1.45rem; font-weight: 500; min-height: 2.7rem; }
   .af-werkzeuge .af-ebene-an { background: var(--akzent-voll); border-color: var(--akzent-voll); color: #fff; }
   .af-fenster { top: 3.7rem; left: calc(.5rem + var(--sicher-links, 0px)); width: min(26rem, calc(100% - 5.1rem - var(--sicher-links, 0px) - var(--sicher-rechts, 0px)));
-    bottom: calc(var(--af-unten-h, 4rem) + 1rem + var(--sicher-unten, 0px)); overflow-y: auto; overscroll-behavior: contain; pointer-events: none; display: flex; flex-direction: column; gap: .5rem; }
-  .af-panel { pointer-events: auto; flex: none; background: var(--surface); border: 1px solid var(--rand); border-radius: .9rem; box-shadow: 0 6px 22px rgba(0, 0, 0, .32); }
+    bottom: calc(var(--af-unten-h, 4rem) + 1rem + var(--sicher-unten, 0px)); overflow: hidden; pointer-events: none; display: flex; flex-direction: column; gap: .5rem; }
+  /* Fenster teilen sich die Höhe der Spalte und scrollen jeweils in sich (Kopf mit × bleibt stehen); die Spalte selbst scrollt nicht –
+     sie lässt Berührungen zur Karte durch und ließe sich auf dem Gerät nicht wischen */
+  .af-panel { pointer-events: auto; display: flex; flex-direction: column; flex: none; min-height: 0; max-height: 100%; overflow: hidden; box-sizing: border-box;
+    background: var(--surface); border: 1px solid var(--rand); border-radius: .9rem; box-shadow: 0 6px 22px rgba(0, 0, 0, .32); }
   .af-panel[hidden] { display: none; }
-  .af-panel-kopf { display: flex; align-items: center; gap: .5rem; padding: .35rem .4rem .35rem .85rem; border-bottom: 1px solid var(--line); }
+  .af-panel-kopf { flex: none; display: flex; align-items: center; gap: .5rem; padding: .35rem .4rem .35rem .85rem; border-bottom: 1px solid var(--line); }
   #anfahrtansicht .af-panel-kopf h2 { margin: 0; flex: 1; font-size: 1.05rem; font-weight: 650; color: var(--ink); text-transform: none; letter-spacing: 0; }
   .af-panel-kopf h2 small { font-weight: 500; color: var(--muted); font-size: max(13px, .8rem); }
   .af-panel-kopf button { flex: none; width: 44px; height: 44px; border: 0; border-radius: .55rem; background: transparent; color: var(--ink2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .af-panel-kopf button svg { width: 1.2rem; height: 1.2rem; }
-  .af-panel-inhalt { padding: .75rem .85rem .85rem; }
+  .af-panel-inhalt { padding: .75rem .85rem .85rem; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
   .af-unten { left: calc(.5rem + var(--sicher-links, 0px)); right: calc(.5rem + var(--sicher-rechts, 0px)); bottom: calc(.5rem + var(--sicher-unten, 0px)); z-index: 6;
     background: var(--surface); border: 1px solid var(--rand); border-radius: .9rem; box-shadow: 0 6px 22px rgba(0, 0, 0, .35); padding: .6rem .7rem;
     display: flex; flex-wrap: wrap; align-items: center; gap: .55rem .8rem; }
   @media (min-width: 760px) { .af-unten { right: auto; width: min(26rem, calc(100% - 5.1rem)); box-sizing: border-box; } }
+  /* niedrige Bildschirme (Handy quer): untere Leiste einzeilig und breiter – Text links, Knöpfe rechts –, damit Fenster Platz haben */
+  @media (max-height: 500px) and (min-width: 600px) {
+    .af-unten { width: min(44rem, calc(100% - 9rem - var(--sicher-links, 0px) - var(--sicher-rechts, 0px))); flex-wrap: nowrap; padding: .4rem .55rem; gap: .6rem; }
+    .af-unten-zeile { flex: 1 1 auto; } .af-unten-zeile > svg { width: 2rem; height: 2rem; }
+    .af-unten-text b { font-size: 1rem; } .af-unten-text small { font-size: 13px; }
+    .af-unten-knoepfe { flex: 0 0 auto; } .af-unten-knoepfe .knopf { min-height: 2.75rem !important; padding: .3rem .8rem; } }
   .af-unten-zeile { display: flex; align-items: center; gap: .6rem; flex: 1 1 14rem; min-width: 0; }
   .af-unten-zeile > svg { width: 2.5rem; height: 2.5rem; flex: none; }
   .af-unten-zeile > svg.af-unten-ort { color: var(--crit); width: 1.8rem; height: 1.8rem; }
@@ -285,6 +294,8 @@
   .af-nr { flex: none; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--akzent-voll); color: #fff; font-weight: 700; font-size: .85rem; display: flex; align-items: center; justify-content: center; }
   .af-km { white-space: nowrap; font-variant-numeric: tabular-nums; }
   .gk-treffer { background: none; border: 0; }
+  .gk-vorschlag { background: none; border: 0; } .gk-vorschlag svg { display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .45)); }
+  .af-unten-text small[data-af-vorschlag-name] { color: var(--ink); font-weight: 600; }
   .gk-treffer span { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; background: #2563c9; color: #fff;
     border: 2px solid #fff; font: 700 13px/1 system-ui, -apple-system, sans-serif; box-shadow: 0 1px 4px rgba(0, 0, 0, .5); }
   .af-gewaehlt { display: flex; align-items: flex-start; gap: .6rem; }
@@ -428,14 +439,28 @@
       </div>
       <div class="af-ueber af-unten" data-af-unten aria-live="polite"></div>
     </div>`);
-    for (const b of el.querySelectorAll('[data-af-auf]')) b.addEventListener('click', () => { const id = b.dataset.afAuf; if (offen.has(id)) offen.delete(id); else offen.add(id); offenSichern(); fensterZeigen(); });
+    for (const b of el.querySelectorAll('[data-af-auf]')) b.addEventListener('click', () => {
+      const id = b.dataset.afAuf, auf = !offen.has(id);
+      if (auf) offen.add(id); else offen.delete(id);
+      offenSichern(); fensterZeigen(auf ? id : undefined);   // nur beim Öffnen als „zuletzt geöffnet“ nach hinten
+    });
     for (const b of el.querySelectorAll('[data-af-zu]')) b.addEventListener('click', () => { offen.delete(b.dataset.afZu); offenSichern(); fensterZeigen(); });
     for (const b of el.querySelectorAll('[data-af-k]')) b.addEventListener('click', () => kartenKnopf(b.dataset.afK));
     // Höhe der unteren Leiste → Freiraum für Fenster und Kartenränder
     const unten = el.querySelector('[data-af-unten]'), buehne = el.querySelector('[data-af-buehne]');
-    if (window.ResizeObserver) new ResizeObserver(() => buehne.style.setProperty('--af-unten-h', unten.offsetHeight + 'px')).observe(unten);
+    if (window.ResizeObserver) {
+      // untere Leiste: Freiraum setzen und (im nächsten Bild) die Fenster neu verteilen
+      new ResizeObserver(() => { buehne.style.setProperty('--af-unten-h', unten.offsetHeight + 'px'); layoutPlanen(); }).observe(unten);
+      // Inhalt eines Fensters ändert sich (Treffer, Ergebnis, Stoff …): neu verteilen. Beobachtet werden nur die Inhalte selbst, nicht die
+      // Fenster – deren Höhe setzt fensterLayout, das gäbe sonst eine Schleife der Beobachter.
+      const inhaltRo = new ResizeObserver(() => layoutPlanen());
+      const beobachten = () => { for (const i of el.querySelectorAll('.af-panel-inhalt > *')) inhaltRo.observe(i); };
+      beobachten();
+      new MutationObserver(() => { beobachten(); layoutPlanen(); }).observe(el.querySelector('[data-af-fenster]'), { childList: true, subtree: true });
+    }
     ebeneKnopf();
     fensterZeigen();
+    requestAnimationFrame(() => { if (begrenzen()) fensterZeigen(); });
     ortZeigen(); stoffZeigen(); ergebnisZeigen();
     karteZeigen();
     if (z.ziel) zielGesetzt({ neu: false });
@@ -444,14 +469,50 @@
     clearInterval(takt);
     takt = setInterval(() => { if (!el.isConnected || !el.classList.contains('aktiv')) return; if (!document.hidden) untenZeigen(); }, 30000);
   }
-  function fensterZeigen() {
+  // Jedes offene Fenster braucht Platz für Kopf und etwas Inhalt (ca. 150 px). Passen nicht alle in die Spalte, gehen die zuerst
+  // geöffneten zu (die Reihenfolge der Menge ist die Reihenfolge des Öffnens); „neu“ bleibt in jedem Fall offen.
+  const FENSTER_MIN_PX = 150;
+  function begrenzen(neu) {
+    const f = el.querySelector('[data-af-fenster]');
+    const h = f ? f.clientHeight : 0;
+    if (!h) return false;
+    const max = Math.max(1, Math.floor((h + 8) / (FENSTER_MIN_PX + 8)));
+    let geaendert = false;
+    while (offen.size > max) { const alt = [...offen].find(x => x !== neu); if (!alt) break; offen.delete(alt); geaendert = true; }
+    if (geaendert) offenSichern();
+    return geaendert;
+  }
+  function fensterZeigen(neu) {
+    if (neu && offen.has(neu)) { offen.delete(neu); offen.add(neu); }      // zuletzt geöffnet = zuletzt in der Menge
+    begrenzen(neu);
     for (const [id] of FENSTER) {
       const p = el.querySelector(`[data-panel="${id}"]`), b = el.querySelector(`[data-af-auf="${id}"]`);
       if (p) p.hidden = !offen.has(id);
       if (b) b.setAttribute('aria-pressed', String(offen.has(id)));
     }
+    layoutPlanen();
   }
-  function fensterAuf(id, auf = true) { if (auf) offen.add(id); else offen.delete(id); offenSichern(); fensterZeigen(); }
+  function fensterAuf(id, auf = true) { if (auf) offen.add(id); else offen.delete(id); offenSichern(); fensterZeigen(auf ? id : undefined); }
+  // Höhe gerecht verteilen: Fenster, die mit weniger als ihrem Anteil auskommen, bekommen ihre volle Höhe; der Rest geht zu gleichen
+  // Teilen an die großen, die dann in sich scrollen. (Das Schrumpfen des Browsers nach Größe drückte kleine Fenster bis auf den Kopf zusammen.)
+  function fensterLayout() {
+    const f = el.querySelector('[data-af-fenster]');
+    if (!f) return;
+    const offenP = [...f.querySelectorAll('.af-panel:not([hidden])')];
+    for (const p of f.querySelectorAll('.af-panel')) p.style.maxHeight = '';
+    if (!offenP.length) return;
+    const H = f.clientHeight - 8 * (offenP.length - 1);
+    if (H <= 0) return;
+    const bedarf = offenP.map(p => { const k = p.querySelector('.af-panel-kopf'), i = p.querySelector('.af-panel-inhalt'); return (k ? k.offsetHeight : 0) + (i ? i.scrollHeight : 0) + 2; });
+    const zu = [];
+    let rest = H, n = offenP.length;
+    for (const x of bedarf.map((b, i) => ({ b, i })).sort((a, b) => a.b - b.b)) { const h = Math.min(x.b, rest / n); zu[x.i] = h; rest -= h; n--; }
+    offenP.forEach((p, i) => { p.style.maxHeight = Math.floor(zu[i]) + 'px'; });
+  }
+  let layoutGeplant = false;
+  const layoutPlanen = () => { if (layoutGeplant) return; layoutGeplant = true; requestAnimationFrame(() => { layoutGeplant = false; fensterLayout(); }); };
+  // Drehen bzw. Größe ändern: wieder begrenzen und verteilen
+  addEventListener('resize', () => { if (el.isConnected && el.classList.contains('aktiv')) { if (begrenzen()) fensterZeigen(); else layoutPlanen(); } });
   // Marken an den Leistenknöpfen: Anfahrt rot/gelb bei ungünstiger Route, Stoff blau, wenn gesetzt
   function markenZeigen(art) {
     const m = (id, farbe) => { const i = el.querySelector(`[data-af-marke="${id}"]`); if (!i) return; i.hidden = !farbe; if (farbe) i.style.setProperty('--c', farbe); };
@@ -486,7 +547,7 @@
     // Vorschläge beim Tippen (Photon und eigene Objekte, nicht Nominatim – dessen Regeln verbieten Suchen beim Tippen)
     f.addEventListener('input', () => { clearTimeout(suchTakt); const t = f.value; suchTakt = setTimeout(() => suchen(t, { voll: false }), 450); });
     ziel.querySelector('[data-af="gps"]').addEventListener('click', async () => {
-      try { const s = await LG.standortHolen({ gps: true }); zielSetzen({ lat: s.lat, lon: s.lon, name: '', quelle: 'gps' }); }
+      try { const s = await LG.standortHolen({ gps: true }); vorschlagen({ lat: s.lat, lon: s.lon, name: '', quelle: 'gps' }); }
       catch (e) { meldung(e.message, 7000); }
     });
     trefferBeleben();
@@ -508,7 +569,7 @@
     box.innerHTML = trefferHtml();
     for (const b of box.querySelectorAll('[data-af-treffer]')) b.addEventListener('click', () => waehlen(treffer[Number(b.dataset.afTreffer)]));
   }
-  const waehlen = t => { if (t) zielSetzen({ lat: t.lat, lon: t.lon, name: t.name || t.titel, quelle: t.quelle === 'objekt' || t.quelle === 'poi' ? t.quelle : 'adresse' }); };
+  const waehlen = t => { if (t) vorschlagen({ lat: t.lat, lon: t.lon, name: t.name || t.titel, quelle: t.quelle === 'objekt' || t.quelle === 'poi' ? t.quelle : 'adresse', ausSuche: true }); };
   // Mitte für die Gewichtung: Kartenmitte, sonst eigener Standort, sonst Miehlen
   function suchMitte() {
     try { if (karte) { const m = karte.mitte(); if (m && isFinite(m.lat)) return m; } } catch { /* unten */ }
@@ -530,7 +591,7 @@
     if (!text) { treffer = null; sucht = false; trefferBeleben(); trefferAufKarte(false); return; }
     const k = GG.koordinatenLesen(text);
     if (k) {
-      if (voll) { zielSetzen({ ...k, name: '', quelle: 'koordinaten' }); return; }
+      if (voll) { vorschlagen({ ...k, name: '', quelle: 'koordinaten', ausSuche: true }); return; }
       treffer = [{ ...k, titel: `${k.lat.toFixed(5)}, ${k.lon.toFixed(5)}`, art: 'Koordinaten', unter: 'Suchen tippen zum Übernehmen', quelle: 'koordinaten', km: null }];
       trefferBeleben(); return;
     }
@@ -883,20 +944,33 @@
     const st = z.ziel ? [z.ziel.lat, z.ziel.lon, o.gefahr_m, o.absperr_m, o.zugGrad, o.olive && o.olive.laenge_m, o.still && o.still.m].join('|') : 'leer';
     if (einpassen || st !== kartenStand) { const neu = kartenStand !== st; kartenStand = st; if (z.ziel || einpassen || neu && st !== 'leer') karte.zentrieren(); }
   }
-  // Tippen auf die Karte: ohne Einsatzstelle sofort setzen, sonst erst nachfragen (kein versehentliches Verschieben beim Wischen)
+  // Auswahl der Einsatzstelle (Tippen, Suchtreffer, Koordinaten, Standort): erst nur eine Markierung – Wind, Bereiche, Ausbreitung
+  // und Route erst nach „Bestätigen“ (Wunsch Lucas 24.11.2026). Ein weiterer Tipp auf die Karte verschiebt die Markierung.
+  let vorschlagNr = 0;
+  function vorschlagen(ort, { zentrieren = true } = {}) {
+    const nr = ++vorschlagNr;
+    vorschlag = { lat: ort.lat, lon: ort.lon, name: ort.name || '', quelle: ort.quelle || 'karte', ausSuche: !!ort.ausSuche || !!(vorschlag && vorschlag.ausSuche) };
+    if (karte) {
+      karte.setzen({ vorschlag });
+      if (zentrieren && GSZKarte.ziel) karte.zeigeBereich([0, 90, 180, 270].map(g => GSZKarte.ziel(ort.lat, ort.lon, g, 180)));
+    }
+    // auf dem Handy das Suchfenster zu, damit die Markierung zu sehen ist (unten steht die Rückfrage)
+    if (schmal() && offen.has('ort')) { offen.delete('ort'); fensterZeigen(); }
+    untenZeigen();
+    if (!vorschlag.name) LG.ortName(vorschlag).then(n => { if (n && nr === vorschlagNr && vorschlag) { vorschlag.name = n; untenZeigen(); } }).catch(() => {});
+  }
   function tippen(ort) {
     if (window.GSZNavigation && GSZNavigation.laeuft() && !document.querySelector('.nv[hidden]')) return;
-    if (!z.ziel) { zielSetzen({ lat: ort.lat, lon: ort.lon, name: '', quelle: 'karte' }); return; }
-    vorschlag = { lat: ort.lat, lon: ort.lon };
-    if (karte) karte.setzen({ vorschlag });
-    untenZeigen();
+    vorschlagen({ lat: ort.lat, lon: ort.lon, name: '', quelle: 'karte' }, { zentrieren: false });
   }
   function vorschlagFertig(uebernehmen) {
     const v = vorschlag;
-    vorschlag = null;
+    vorschlag = null; vorschlagNr++;
     if (karte) karte.setzen({ vorschlag: null });
-    if (uebernehmen && v) zielSetzen({ lat: v.lat, lon: v.lon, name: '', quelle: 'karte' });
-    else untenZeigen();
+    if (uebernehmen && v) { zielSetzen({ lat: v.lat, lon: v.lon, name: v.name || '', quelle: v.quelle || 'karte' }); return; }
+    // verworfen: aus der Suche zurück zur Trefferliste
+    if (v && v.ausSuche && !z.ziel) fensterAuf('ort');
+    untenZeigen();
   }
   function ebeneKnopf() {
     const b = el.querySelector('[data-af-k="ebene"]');
@@ -941,16 +1015,16 @@
     if (!box) return;
     const knopf = (attr, text, haupt = false, ic = '') => `<button type="button" class="knopf${haupt ? ' los' : ''}" ${attr}>${ic}${text}</button>`;
     if (vorschlag) {
-      box.innerHTML = `<div class="af-unten-zeile">${ICON.ort.replace('<svg', '<svg class="af-unten-ort"')}<div class="af-unten-text"><b>Einsatzstelle hierher setzen?</b>
-          <small>${vorschlag.lat.toFixed(5)}, ${vorschlag.lon.toFixed(5)}</small></div></div>
-        <div class="af-unten-knoepfe">${knopf('data-af-v="ja"', 'Setzen', true)}${knopf('data-af-v="nein"', 'Abbrechen')}</div>`;
+      box.innerHTML = `<div class="af-unten-zeile">${ICON.ort.replace('<svg', '<svg class="af-unten-ort"')}<div class="af-unten-text"><b>${z.ziel ? 'Einsatzstelle hierher verschieben?' : 'Einsatzstelle hier?'}</b>
+          <small data-af-vorschlag-name>${esc(vorschlag.name || 'Ort wird ermittelt …')}</small><small>${vorschlag.lat.toFixed(5)}, ${vorschlag.lon.toFixed(5)} · zum Verschieben auf die Karte tippen</small></div></div>
+        <div class="af-unten-knoepfe">${knopf('data-af-v="ja"', 'Bestätigen', true, ICON.ok)}${knopf('data-af-v="nein"', 'Verwerfen')}</div>`;
       box.querySelector('[data-af-v="ja"]').addEventListener('click', () => vorschlagFertig(true));
       box.querySelector('[data-af-v="nein"]').addEventListener('click', () => vorschlagFertig(false));
       return;
     }
     if (!z.ziel) {
       box.innerHTML = `<div class="af-unten-zeile">${ICON.ort.replace('<svg', '<svg class="af-unten-ort"')}<div class="af-unten-text"><b>Einsatzstelle setzen</b>
-          <small>Auf die Karte tippen – oder suchen: Adresse, Firma, Einrichtung, Koordinaten.</small></div></div>
+          <small>Auf die Karte tippen – oder suchen: Adresse, Firma, Einrichtung, Koordinaten. Danach bestätigen.</small></div></div>
         <div class="af-unten-knoepfe">${knopf('data-af-u="suche"', 'Suchen', false, ICON.lupe)}</div>`;
       box.querySelector('[data-af-u="suche"]').addEventListener('click', () => { fensterAuf('ort'); const f = el.querySelector('#af-adresse'); if (f) setTimeout(() => f.focus(), 50); });
       return;
