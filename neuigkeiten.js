@@ -5,6 +5,11 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.14.0', datum: '2026-11-24', punkte: [
+    'Anfahrt › Einsatzort: Die Suche findet jetzt auch Orte von Interesse – Firmen, Schulen, Kitas, Krankenhäuser, Pflegeheime, Tankstellen, Geschäfte usw. („Kapp Chemie“, „Paulinenstift“), gewichtet auf den Kartenausschnitt.',
+    'Suche nach Art: „Kita Nastätten“, „Schule“, „Tankstelle“, „Pflegeheim“ … zeigt alle benannten Orte dieser Art im Umkreis des genannten Orts bzw. der Kartenmitte, nach Entfernung.',
+    'Vorschläge schon beim Tippen; die Treffer stehen nummeriert in der Liste (mit Art und Entfernung) und auf der Karte – ein Tipp auf Eintrag oder Punkt setzt die Einsatzstelle. Eigene Objekte (Polynt, Feuerwehrhaus Miehlen) auch ohne Netz.',
+  ] },
   { version: '2.13.0', datum: '2026-11-24', punkte: [
     'Anfahrt neu aufgebaut: Die Karte füllt den ganzen Bildschirm. Einsatzort, Stoff, Anfahrt und Hinweise sind Fenster darüber – oben antippen zum Ein- und Ausblenden, × schließt. Die Wahl merkt sich das Gerät.',
     'Einsatzstelle per Tippen auf die Karte setzen – kein Ziehen mehr. Steht schon eine Einsatzstelle, fragt die App kurz nach („Einsatzstelle hierher setzen?“), damit beim Wischen nichts verrutscht.',

@@ -21,6 +21,7 @@
   const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
   const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
   const UMGEBUNG = '7.45,50.48,8.25,50.05';            // Rhein-Lahn-Kreis und Umgebung: Treffer dort zuerst (nicht begrenzt)
+  const PHOTON = 'https://photon.komoot.io';           // Suche mit Orten von Interesse (POI), OpenStreetMap-Daten, Betreiber komoot
   const ZONE_MIN_M = 1000, ZONE_WINKEL = 90;           // Bereich in Windrichtung für die Prüfung der Route (Keule 90°)
   const zahlText = (z, st = 1) => String(Math.round(z * 10 ** st) / 10 ** st).replace('.', ',');
   const meter = m => m >= 1000 ? zahlText(m / 1000, 1) + ' km' : Math.round(m) + ' m';
@@ -80,11 +81,122 @@
     const poi = x.name && x.name !== a.road && x.name !== ort ? x.name : '';
     return [poi, strasse, [a.postcode, ort].filter(Boolean).join(' ')].filter(Boolean).join(', ') || x.display_name || '';
   };
-  async function adresseSuchen(text) {
+  const rund6 = x => Math.round(Number(x) * 1e6) / 1e6;
+  async function adresseSuchen(text, mitte = null) {
     const q = `${NOMINATIM}?format=jsonv2&q=${encodeURIComponent(text)}&countrycodes=de&limit=6&addressdetails=1&accept-language=de&viewbox=${UMGEBUNG}`;
     const l = await json(q);
-    return (Array.isArray(l) ? l : []).map(x => ({ lat: Math.round(Number(x.lat) * 1e6) / 1e6, lon: Math.round(Number(x.lon) * 1e6) / 1e6, name: trefferName(x),
-      unter: [(x.address || {}).municipality, (x.address || {}).county].filter(Boolean).join(', ') })).filter(x => isFinite(x.lat) && isFinite(x.lon));
+    return (Array.isArray(l) ? l : []).map(x => {
+      const a = x.address || {}, n = trefferName(x), poi = x.name && x.name !== a.road ? x.name : '';
+      const t = { lat: rund6(x.lat), lon: rund6(x.lon), name: n, titel: poi || n, unter: poi ? n.replace(poi + ', ', '') : [a.municipality, a.county].filter(Boolean).join(', '),
+        art: artText({ osm_key: x.category, osm_value: x.type, type: x.addresstype }), quelle: 'adresse' };
+      t.km = mitte ? GG.abstandM(mitte, t) / 1000 : null;
+      return t;
+    }).filter(x => isFinite(x.lat) && isFinite(x.lon));
+  }
+
+  // ---------------------------------------------------------------- Suche mit Orten von Interesse (POI, seit 2.14.0)
+  // Photon (OpenStreetMap-Daten, komoot): Namen von Firmen, Schulen, Geschäften, Einrichtungen – gewichtet auf den Kartenausschnitt.
+  // Arten („Schule“, „Kita Nastätten“, „Tankstelle“): alle benannten Orte dieser Art im Umkreis der Kartenmitte bzw. des genannten
+  // Orts, nach Entfernung. Eigene Objekte (Alarm- und Einsatzpläne) auch ohne Netz.
+  const ARTEN = [
+    [/^(grund|real|gesamt|haupt|berufs|förder|foerder)?schulen?$|^gymnasium$/, 'Schulen', ['amenity:school']],
+    [/^(kitas?|kindergärten|kindergarten|kindertagesstätten?)$/, 'Kitas', ['amenity:kindergarten', 'amenity:childcare']],
+    [/^(krankenhaus|krankenhäuser|kliniken?|klinikum)$/, 'Krankenhäuser', ['amenity:hospital', 'amenity:clinic']],
+    [/^(arzt|ärzte|arztpraxis|praxis)$/, 'Arztpraxen', ['amenity:doctors']],
+    [/^apotheken?$/, 'Apotheken', ['amenity:pharmacy']],
+    [/^(pflegeheime?|altenheime?|seniorenheime?|altersheime?|seniorenresidenz)$/, 'Pflege- und Seniorenheime', ['amenity:nursing_home', 'amenity:social_facility']],
+    [/^tankstellen?$/, 'Tankstellen', ['amenity:fuel']],
+    [/^(feuerwehr|feuerwehrhaus|feuerwehrhäuser|gerätehaus|feuerwache)$/, 'Feuerwehren', ['amenity:fire_station']],
+    [/^(polizei|polizeiinspektion|polizeiwache)$/, 'Polizei', ['amenity:police']],
+    [/^(rathaus|rathäuser|verwaltung|verbandsgemeinde)$/, 'Rathäuser', ['amenity:townhall']],
+    [/^(kirchen?|kapellen?)$/, 'Kirchen', ['amenity:place_of_worship']],
+    [/^(supermarkt|supermärkte|discounter)$/, 'Supermärkte', ['shop:supermarket']],
+    [/^baumärkte?$|^baumarkt$/, 'Baumärkte', ['shop:doityourself', 'shop:hardware']],
+    [/^(hotels?|pension|gasthof)$/, 'Hotels', ['tourism:hotel', 'tourism:guest_house']],
+    [/^(campingplatz|campingplätze|camping)$/, 'Campingplätze', ['tourism:camp_site']],
+    [/^(sporthallen?|turnhallen?|sportplatz|sportplätze|stadion)$/, 'Sportstätten', ['leisure:sports_centre', 'leisure:sports_hall', 'leisure:stadium', 'leisure:pitch']],
+    [/^(schwimmbad|hallenbad|freibad)$/, 'Bäder', ['leisure:swimming_pool', 'leisure:water_park', 'amenity:swimming_pool']],
+    [/^(bahnhof|bahnhöfe|haltepunkt)$/, 'Bahnhöfe', ['railway:station', 'railway:halt']],
+    [/^(kläranlagen?|klaeranlage)$/, 'Kläranlagen', ['man_made:wastewater_plant']],
+    [/^(wasserwerk|hochbehälter|hochbehaelter|wasserturm)$/, 'Wasserversorgung', ['man_made:water_works', 'man_made:reservoir_covered', 'man_made:water_tower']],
+    [/^umspannwerke?$/, 'Umspannwerke', ['power:substation']],
+    [/^(firma|firmen|betrieb|betriebe|industrie|industriegebiet|gewerbegebiet|gewerbe)$/, 'Gewerbe und Industrie', ['landuse:industrial', 'man_made:works', 'landuse:commercial']],
+    [/^(parkplatz|parkplätze)$/, 'Parkplätze', ['amenity:parking']],
+    [/^friedhöfe?$|^friedhof$/, 'Friedhöfe', ['landuse:cemetery', 'amenity:grave_yard']],
+    [/^(landeplatz|hubschrauberlandeplatz|helipad)$/, 'Hubschrauberlandeplätze', ['aeroway:helipad', 'aeroway:heliport']],
+  ];
+  const FUELL = /^(in|im|bei|beim|nahe|nähe|am|an|der|die|das|den|dem|um|von|rund|alle)$/;
+  // „Kita Nastätten“ → { name: 'Kitas', tags, ort: 'nastätten' }; keine Art → null
+  function artLesen(text) {
+    const w = String(text).toLowerCase().split(/[\s,;]+/).filter(Boolean);
+    for (let i = 0; i < w.length; i++) for (const [re, name, tags] of ARTEN) if (re.test(w[i])) return { name, tags, ort: w.filter((x, j) => j !== i && !FUELL.test(x)).join(' ') };
+    return null;
+  }
+  // Art eines Treffers (OSM-Schlüssel und -Wert) in Worten
+  const OSM_ART = { 'amenity:school': 'Schule', 'amenity:kindergarten': 'Kita', 'amenity:childcare': 'Kinderbetreuung', 'amenity:hospital': 'Krankenhaus', 'amenity:clinic': 'Klinik',
+    'amenity:doctors': 'Arztpraxis', 'amenity:pharmacy': 'Apotheke', 'amenity:nursing_home': 'Pflegeheim', 'amenity:social_facility': 'Soziale Einrichtung', 'amenity:fuel': 'Tankstelle',
+    'amenity:fire_station': 'Feuerwehr', 'building:fire_station': 'Feuerwehr', 'amenity:police': 'Polizei', 'amenity:townhall': 'Rathaus', 'amenity:place_of_worship': 'Kirche',
+    'amenity:parking': 'Parkplatz', 'amenity:restaurant': 'Gaststätte', 'shop:supermarket': 'Supermarkt', 'shop:doityourself': 'Baumarkt', 'tourism:hotel': 'Hotel',
+    'tourism:guest_house': 'Pension', 'tourism:camp_site': 'Campingplatz', 'leisure:sports_centre': 'Sportstätte', 'leisure:sports_hall': 'Sporthalle', 'leisure:pitch': 'Sportplatz',
+    'leisure:swimming_pool': 'Bad', 'railway:station': 'Bahnhof', 'railway:halt': 'Haltepunkt', 'man_made:wastewater_plant': 'Kläranlage', 'man_made:water_works': 'Wasserwerk',
+    'man_made:reservoir_covered': 'Hochbehälter', 'power:substation': 'Umspannwerk', 'landuse:industrial': 'Gewerbe/Industrie', 'man_made:works': 'Werk', 'landuse:commercial': 'Gewerbe',
+    'landuse:cemetery': 'Friedhof', 'aeroway:helipad': 'Hubschrauberlandeplatz', 'place:city': 'Stadt', 'place:town': 'Stadt', 'place:village': 'Ort', 'place:hamlet': 'Ortsteil',
+    'place:suburb': 'Ortsteil', 'place:isolated_dwelling': 'Einzelgehöft', 'place:farm': 'Hof', 'boundary:administrative': 'Gemeinde' };
+  const OSM_GRUPPE = { shop: 'Geschäft', office: 'Firma/Büro', craft: 'Handwerk', industrial: 'Industrie', tourism: 'Tourismus', leisure: 'Freizeit', amenity: 'Einrichtung',
+    building: 'Gebäude', highway: 'Straße', man_made: 'Anlage', historic: 'Denkmal', natural: 'Natur', landuse: 'Fläche', railway: 'Bahn', waterway: 'Gewässer' };
+  function artText(p) {
+    const k = p.osm_key || '', v = p.osm_value || '';
+    if (p.type === 'house' || (k === 'building' && (v === 'yes' || v === 'house' || v === 'residential')) || (k === 'place' && v === 'house')) return 'Adresse';
+    if (k === 'highway' && !/bus_stop/.test(v)) return 'Straße';
+    if (k === 'highway' && v === 'bus_stop') return 'Haltestelle';
+    return OSM_ART[k + ':' + v] || OSM_GRUPPE[k] || 'Ort';
+  }
+  function photonTreffer(f, mitte) {
+    const p = f.properties || {}, c = (f.geometry && f.geometry.coordinates) || [];
+    const strasse = [p.street, p.housenumber].filter(Boolean).join(' '), ort = p.city || p.town || p.village || p.locality || p.district || '';
+    const name = p.name && p.name !== p.street ? p.name : '';
+    const adresse = [strasse, [p.postcode, ort].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const t = { lat: rund6(c[1]), lon: rund6(c[0]), titel: name || adresse || p.name || '', unter: name ? adresse || [p.county, p.state].filter(Boolean).join(', ') : [p.county].filter(Boolean).join(', '),
+      art: artText(p), quelle: 'poi', land: p.countrycode || '' };
+    t.name = name && adresse ? `${name}, ${adresse}` : t.titel;
+    t.km = mitte ? GG.abstandM(mitte, t) / 1000 : null;
+    return t;
+  }
+  const photonListe = (j, mitte) => ((j && j.features) || []).filter(f => f.geometry && Array.isArray(f.geometry.coordinates)).map(f => photonTreffer(f, mitte)).filter(t => isFinite(t.lat) && isFinite(t.lon) && t.titel);
+  // freie Suche, gewichtet auf die Mitte; erst im Umkreis (ca. 50 km), sonst in Deutschland
+  async function photonSuchen(text, mitte) {
+    const q = `${PHOTON}/api/?q=${encodeURIComponent(text)}&lang=de&limit=10&lat=${mitte.lat.toFixed(5)}&lon=${mitte.lon.toFixed(5)}`;
+    const box = `&bbox=${(mitte.lon - 0.7).toFixed(3)},${(mitte.lat - 0.45).toFixed(3)},${(mitte.lon + 0.7).toFixed(3)},${(mitte.lat + 0.45).toFixed(3)}`;
+    let l = photonListe(await json(q + box), mitte);
+    if (!l.length) l = photonListe(await json(q), mitte).filter(t => !t.land || t.land === 'DE');
+    return l;
+  }
+  // alle benannten Orte einer Art im Umkreis (km), nach Entfernung
+  async function photonUmkreis(mitte, tags, km) {
+    const j = await json(`${PHOTON}/reverse?lat=${mitte.lat.toFixed(5)}&lon=${mitte.lon.toFixed(5)}&lang=de&limit=15&radius=${km}${tags.map(t => '&osm_tag=' + encodeURIComponent(t)).join('')}`);
+    return photonListe(j, mitte).sort((a, b) => a.km - b.km);
+  }
+  // Ortsname → Mittelpunkt (der nächste Ort dieses Namens, höchstens 100 km entfernt)
+  async function photonOrt(name, mitte) {
+    const l = photonListe(await json(`${PHOTON}/api/?q=${encodeURIComponent(name)}&lang=de&limit=5&lat=${mitte.lat.toFixed(5)}&lon=${mitte.lon.toFixed(5)}&osm_tag=place`), mitte);
+    return l.filter(t => t.km <= 100).sort((a, b) => a.km - b.km)[0] || null;
+  }
+  // eigene Objekte (ohne Netz): alle Wörter der Eingabe müssen vorkommen
+  function eigeneSuchen(text, mitte) {
+    const w = String(text).toLowerCase().split(/[\s,;]+/).filter(x => x && !FUELL.test(x));
+    if (!w.length) return [];
+    return EIGENE.filter(o => { const h = (o.titel + ' ' + o.such).toLowerCase(); return w.every(x => h.includes(x)); })
+      .map(o => ({ ...o, name: o.titel, art: 'Eigenes Objekt', quelle: 'objekt', km: mitte ? GG.abstandM(mitte, o) / 1000 : null }));
+  }
+  // doppelte Treffer (gleicher Ort, ähnlicher Name, unter 80 m) zusammenfassen – der erste bleibt
+  function zusammenfuehren(l) {
+    const aus = [];
+    const n = x => String(x || '').toLowerCase().replace(/[^a-z0-9äöüß]+/g, ' ').trim();
+    for (const t of l) {
+      if (aus.some(a => GG.abstandM(a, t) < 80 && (n(a.titel) === n(t.titel) || n(a.titel).includes(n(t.titel)) || n(t.titel).includes(n(a.titel))))) continue;
+      aus.push(t);
+    }
+    return aus;
   }
   // Route vom Standort zur Einsatzstelle (OSRM, mit Ausweichrouten) → [{ punkte, m, s, steps }]
   let routeCache = null;
@@ -167,7 +279,14 @@
   .af-treffer { list-style: none; margin: .55rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
   .af-treffer button { width: 100%; text-align: left; font: inherit; display: flex; flex-direction: column; gap: .1rem; padding: .6rem .75rem; min-height: 44px;
     border-radius: .55rem; border: 1px solid var(--rand); background: var(--surface2); color: var(--ink); cursor: pointer; }
-  .af-treffer button b { font-weight: 600; } .af-treffer button small { color: var(--muted); font-size: max(13px, .8125rem); }
+  .af-treffer button { flex-direction: row; align-items: center; gap: .6rem; }
+  .af-treffer-text { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+  .af-treffer button b { font-weight: 600; overflow-wrap: anywhere; } .af-treffer button small { color: var(--muted); font-size: max(13px, .8125rem); }
+  .af-nr { flex: none; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--akzent-voll); color: #fff; font-weight: 700; font-size: .85rem; display: flex; align-items: center; justify-content: center; }
+  .af-km { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .gk-treffer { background: none; border: 0; }
+  .gk-treffer span { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; background: #2563c9; color: #fff;
+    border: 2px solid #fff; font: 700 13px/1 system-ui, -apple-system, sans-serif; box-shadow: 0 1px 4px rgba(0, 0, 0, .5); }
   .af-gewaehlt { display: flex; align-items: flex-start; gap: .6rem; }
   .af-gewaehlt > svg { width: 1.5rem; height: 1.5rem; color: var(--crit); flex: none; margin-top: .1rem; }
   .af-gewaehlt b { font-size: 1.05rem; line-height: 1.3; display: block; }
@@ -227,6 +346,11 @@
   ];
   // Objekte mit eigener Regel für die Anfahrt (Alarm- und Einsatzpläne): Hinweis, wenn der Einsatzort im Umkreis liegt
   const FW_MIEHLEN = { lat: 50.22629, lon: 7.83449, name: 'Feuerwehrhaus Miehlen' };
+  // eigene Objekte für die Suche (auch ohne Netz)
+  const EIGENE = [
+    { titel: 'Polynt Composites Germany GmbH', unter: 'Kieselstraße 2, 56357 Miehlen · Alarm- und Einsatzplan', lat: 50.21814, lon: 7.83955, such: 'polynt composites kieselstraße aep werk' },
+    { titel: 'Feuerwehrhaus Miehlen', unter: 'Krämergasse 22, 56357 Miehlen · Bereitstellungsraum AEP Polynt', lat: 50.22629, lon: 7.83449, such: 'feuerwehr feuerwehrhaus gerätehaus bahnhofstraße bereitstellungsraum ffw' },
+  ];
   const OBJEKTE = [
     { name: 'Polynt Composites Germany GmbH, Kieselstraße 2, Miehlen', lat: 50.21814, lon: 7.83955, umkreis_m: 500, bereitstellung: FW_MIEHLEN,
       text: 'Bereitstellungsraum ist das Feuerwehrgerätehaus Miehlen (Bahnhofstraße). Nachalarmierte Einheiten fahren nicht eigenständig zur Einsatzstelle – erst nach Registrierung mit Mannschaftsstärke und Einsatzmitteln und erteiltem Einsatzauftrag.',
@@ -341,7 +465,7 @@
     const ziel = el.querySelector('[data-af-ort]');
     if (!ziel) return;
     if (z.ziel) {
-      const quelle = { adresse: 'Adresse', koordinaten: 'Koordinaten', karte: 'auf der Karte gesetzt', gps: 'mein Standort' }[z.ziel.quelle] || '';
+      const quelle = { adresse: 'Adresse', koordinaten: 'Koordinaten', karte: 'auf der Karte gesetzt', gps: 'mein Standort', poi: 'aus der Suche', objekt: 'eigenes Objekt' }[z.ziel.quelle] || '';
       ziel.innerHTML = `<div class="af-gewaehlt">${ICON.ort}<div><b data-af-zielname>${esc(z.ziel.name || 'Einsatzort')}</b>
           <small>${z.ziel.lat.toFixed(5)}, ${z.ziel.lon.toFixed(5)}${quelle ? ' · ' + esc(quelle) : ''}</small></div>
           <button type="button" class="knopf" data-af="anders">${ICON.neu}Ändern</button></div>`;
@@ -350,51 +474,97 @@
       return;
     }
     ziel.innerHTML = `<form class="af-suche" data-af-form role="search" novalidate>
-        <input type="search" id="af-adresse" placeholder="Adresse oder Koordinaten" aria-label="Einsatzort: Adresse, Ort, Koordinaten oder Kartenlink"
+        <input type="search" id="af-adresse" placeholder="Adresse, Firma, Schule …" aria-label="Einsatzort: Adresse, Firma, Einrichtung, Art (z. B. Kita), Koordinaten oder Kartenlink"
           autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" value="${esc(z.eingabe || '')}">
         <button type="submit" class="knopf los">${ICON.lupe}Suchen</button></form>
       <div class="af-knoepfe"><button type="button" class="knopf" data-af="gps">${ICON.gps}Mein Standort</button></div>
-      <div class="lg-klein" style="margin-top:.45rem">Oder einfach auf die Karte tippen – dort wird die Einsatzstelle gesetzt.</div>
+      <div class="lg-klein" style="margin-top:.45rem">Auch Firmen und Einrichtungen („Kapp Chemie“, „Paulinenstift“) oder eine Art – „Kita Nastätten“, „Tankstelle“, „Pflegeheim“ – rund um den Kartenausschnitt. Oder einfach auf die Karte tippen.</div>
       <div data-af-treffer>${trefferHtml()}</div>
-      <div class="af-quelle">Adresssuche: OpenStreetMap (Nominatim). Koordinaten und Kartenlinks aus der Alarmierung gehen auch ohne Netz.</div>`;
+      <div class="af-quelle">Suche: OpenStreetMap (Photon, Nominatim). Koordinaten, Kartenlinks und eigene Objekte gehen auch ohne Netz.</div>`;
     const form = ziel.querySelector('[data-af-form]'), f = ziel.querySelector('#af-adresse');
-    form.addEventListener('submit', e => { e.preventDefault(); f.blur(); suchen(f.value); });
+    form.addEventListener('submit', e => { e.preventDefault(); clearTimeout(suchTakt); f.blur(); suchen(f.value); });
+    // Vorschläge beim Tippen (Photon und eigene Objekte, nicht Nominatim – dessen Regeln verbieten Suchen beim Tippen)
+    f.addEventListener('input', () => { clearTimeout(suchTakt); const t = f.value; suchTakt = setTimeout(() => suchen(t, { voll: false }), 450); });
     ziel.querySelector('[data-af="gps"]').addEventListener('click', async () => {
       try { const s = await LG.standortHolen({ gps: true }); zielSetzen({ lat: s.lat, lon: s.lon, name: '', quelle: 'gps' }); }
       catch (e) { meldung(e.message, 7000); }
     });
     trefferBeleben();
   }
+  const kmText = km => km === null || km === undefined ? '' : km < 1 ? Math.round(km * 1000 / 10) * 10 + ' m' : String(Math.round(km * 10) / 10).replace('.', ',') + ' km';
   function trefferHtml() {
-    if (sucht) return '<div class="lg-klein" style="margin-top:.55rem">Suche …</div>';
     if (suchFehler) return `<div class="ez-warn" style="margin-top:.55rem">${esc(suchFehler)}</div>`;
-    if (!treffer) return '';
-    if (!treffer.length) return '<div class="ez-warn" style="margin-top:.55rem">Nichts gefunden. Ort ergänzen (z. B. „Hauptstraße 5, Nastätten“), Koordinaten eingeben oder auf die Karte tippen.</div>';
-    return `<ul class="af-treffer">${treffer.map((t, i) => `<li><button type="button" data-af-treffer="${i}"><b>${esc(t.name)}</b>${t.unter ? `<small>${esc(t.unter)}</small>` : ''}</button></li>`).join('')}</ul>`;
+    if (!treffer) return sucht ? '<div class="lg-klein" style="margin-top:.55rem">Suche …</div>' : '';
+    if (!treffer.length) return sucht ? '<div class="lg-klein" style="margin-top:.55rem">Suche …</div>' :
+      '<div class="ez-warn" style="margin-top:.55rem">Nichts gefunden. Ort ergänzen (z. B. „Hauptstraße 5, Nastätten“), Koordinaten eingeben oder auf die Karte tippen.</div>';
+    return (trefferKopf ? `<div class="lg-klein" style="margin:.6rem 0 0"><b>${esc(trefferKopf)}</b></div>` : '') +
+      `<ul class="af-treffer">${treffer.map((t, i) => `<li><button type="button" data-af-treffer="${i}"><span class="af-nr">${i + 1}</span><span class="af-treffer-text"><b>${esc(t.titel)}</b>
+        <small>${esc([t.art, t.unter].filter(Boolean).join(' · '))}${t.km !== null && t.km !== undefined ? ` · <span class="af-km">${kmText(t.km)}</span>` : ''}</small></span></button></li>`).join('')}</ul>` +
+      (sucht ? '<div class="lg-klein" style="margin-top:.45rem">weitere Treffer werden gesucht …</div>' : '');
   }
   function trefferBeleben() {
     const box = el.querySelector('[data-af-treffer]');
     if (!box) return;
     box.innerHTML = trefferHtml();
-    for (const b of box.querySelectorAll('[data-af-treffer]')) b.addEventListener('click', () => { const t = treffer[Number(b.dataset.afTreffer)]; zielSetzen({ ...t, quelle: 'adresse' }); });
+    for (const b of box.querySelectorAll('[data-af-treffer]')) b.addEventListener('click', () => waehlen(treffer[Number(b.dataset.afTreffer)]));
   }
-  async function suchen(text) {
+  const waehlen = t => { if (t) zielSetzen({ lat: t.lat, lon: t.lon, name: t.name || t.titel, quelle: t.quelle === 'objekt' || t.quelle === 'poi' ? t.quelle : 'adresse' }); };
+  // Mitte für die Gewichtung: Kartenmitte, sonst eigener Standort, sonst Miehlen
+  function suchMitte() {
+    try { if (karte) { const m = karte.mitte(); if (m && isFinite(m.lat)) return m; } } catch { /* unten */ }
+    const st = LS.get('gsz-ort');
+    return st && isFinite(st.lat) ? st : MIEHLEN;
+  }
+  // Treffer als nummerierte Punkte auf die Karte; nach der vollen Suche den Ausschnitt darauf einpassen
+  function trefferAufKarte(einpassen) {
+    if (!karte || z.ziel) return;
+    karte.setzen({ treffer: treffer && treffer.length ? treffer.map((t, i) => ({ lat: t.lat, lon: t.lon, nr: i + 1, titel: t.titel })) : null });
+    if (einpassen && treffer && treffer.length) karte.zeigeBereich(treffer.slice(0, 10).map(t => ({ lat: t.lat, lon: t.lon })));
+  }
+  let suchLauf = 0, suchTakt = null, trefferKopf = '';
+  async function suchen(text, { voll = true } = {}) {
     text = String(text || '').trim();
-    z.eingabe = text; sichern();
-    if (!text) return;
+    if (voll) { z.eingabe = text; sichern(); }
+    const mein = ++suchLauf;
+    suchFehler = ''; trefferKopf = '';
+    if (!text) { treffer = null; sucht = false; trefferBeleben(); trefferAufKarte(false); return; }
     const k = GG.koordinatenLesen(text);
-    if (k) { zielSetzen({ ...k, name: '', quelle: 'koordinaten' }); return; }
-    if (/^https?:\/\//i.test(text)) { suchFehler = 'In diesem Link stehen keine Koordinaten. Adresse eintippen oder auf die Karte tippen.'; treffer = null; trefferBeleben(); return; }
-    sucht = true; suchFehler = ''; treffer = null; trefferBeleben();
-    try { treffer = await adresseSuchen(text); }
-    catch (e) { suchFehler = `Adresssuche ${e.message}. Koordinaten eingeben oder auf die Karte tippen.`; treffer = null; }
-    sucht = false;
-    if (treffer && treffer.length === 1) { zielSetzen({ ...treffer[0], quelle: 'adresse' }); return; }
+    if (k) {
+      if (voll) { zielSetzen({ ...k, name: '', quelle: 'koordinaten' }); return; }
+      treffer = [{ ...k, titel: `${k.lat.toFixed(5)}, ${k.lon.toFixed(5)}`, art: 'Koordinaten', unter: 'Suchen tippen zum Übernehmen', quelle: 'koordinaten', km: null }];
+      trefferBeleben(); return;
+    }
+    if (/^https?:\/\//i.test(text)) { if (voll) { suchFehler = 'In diesem Link stehen keine Koordinaten. Adresse eintippen oder auf die Karte tippen.'; treffer = null; trefferBeleben(); } return; }
+    if (!voll && text.length < 3) return;
+    const mitte = suchMitte(), art = artLesen(text);
+    const eigene = eigeneSuchen(text, mitte);
+    sucht = true;
+    treffer = eigene.length ? eigene : (voll ? [] : treffer);
     trefferBeleben();
+    let um = mitte, umName = 'der Kartenmitte';
+    const auftraege = [];
+    if (art) auftraege.push((async () => {
+      if (art.ort) { const o = await photonOrt(art.ort, mitte); if (o) { um = o; umName = o.titel; } }
+      return photonUmkreis(um, art.tags, art.ort ? 6 : 8).then(l => l.map(t => ({ ...t, km: GG.abstandM(um, t) / 1000, kmUm: GG.abstandM(um, t) / 1000 })));
+    })());
+    else auftraege.push(photonSuchen(text, mitte));
+    if (voll && !art) auftraege.push(adresseSuchen(text, mitte));
+    const erg = await Promise.allSettled(auftraege);
+    if (mein !== suchLauf) return;
+    const online = erg.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+    let l = zusammenfuehren([...eigene, ...online]);
+    if (art) { const rest = l.filter(t => t.quelle !== 'objekt').sort((a, b) => (a.kmUm ?? a.km) - (b.kmUm ?? b.km)); l = [...l.filter(t => t.quelle === 'objekt'), ...rest]; trefferKopf = `${art.name} im Umkreis von ${umName} (Entfernung ab ${um === mitte ? 'Kartenmitte' : umName})`; }
+    treffer = l.slice(0, 15);
+    sucht = false;
+    const fehl = erg.find(r => r.status === 'rejected');
+    if (!treffer.length && fehl) suchFehler = `Suche ${fehl.reason && fehl.reason.message ? fehl.reason.message : 'nicht möglich'}. Koordinaten eingeben oder auf die Karte tippen.`;
+    if (voll && treffer.length === 1 && !art) { waehlen(treffer[0]); return; }
+    trefferBeleben();
+    trefferAufKarte(voll);
   }
   function zielSetzen(ziel) {
     z.ziel = { lat: ziel.lat, lon: ziel.lon, name: ziel.name || '', quelle: ziel.quelle || 'adresse' };
-    treffer = null; suchFehler = '';
+    treffer = null; suchFehler = ''; suchLauf++; clearTimeout(suchTakt);
     sichern();
     zielGesetzt({ neu: true });
   }
@@ -666,7 +836,9 @@
     const st = LS.get('gsz-ort');
     const ich = st && st.gps && !st.standard ? st : null;
     const basis = { ebene: GSZKarte.ebeneGewaehlt ? GSZKarte.ebeneGewaehlt() : 'strasse', zoomPos: false, massstabPos: 'bottomright', ziehbar: false, unfallText: 'Einsatzstelle', beiTippen: tippen, vorschlag, polster,
-      standort: ich, ohneStandortEinpassen: true, google: LG.googleSchluessel ? LG.googleSchluessel() : '', mitte: ich || st || MIEHLEN };
+      standort: ich, ohneStandortEinpassen: true, google: LG.googleSchluessel ? LG.googleSchluessel() : '', mitte: ich || st || MIEHLEN,
+      treffer: !z.ziel && Array.isArray(treffer) && treffer.length ? treffer.map((t, i) => ({ lat: t.lat, lon: t.lon, nr: i + 1, titel: t.titel })) : null,
+      beiTreffer: i => waehlen(treffer && treffer[i]) };
     if (!z.ziel) return { ...basis, keinUnfallort: true, unfallort: null, gefahr_m: null, absperr_m: null, ergAbs_m: null, zone: null, olive: null, still: null, zugGrad: null, anfahrt: null,
       route: null, routeKritisch: [], routeAlt: null };
     const ab = abstaende(), von = windVon(), still = windStill(), kmh = windKmh();
@@ -778,8 +950,8 @@
     }
     if (!z.ziel) {
       box.innerHTML = `<div class="af-unten-zeile">${ICON.ort.replace('<svg', '<svg class="af-unten-ort"')}<div class="af-unten-text"><b>Einsatzstelle setzen</b>
-          <small>Auf die Karte tippen – oder Adresse bzw. Koordinaten suchen.</small></div></div>
-        <div class="af-unten-knoepfe">${knopf('data-af-u="suche"', 'Adresse suchen', false, ICON.lupe)}</div>`;
+          <small>Auf die Karte tippen – oder suchen: Adresse, Firma, Einrichtung, Koordinaten.</small></div></div>
+        <div class="af-unten-knoepfe">${knopf('data-af-u="suche"', 'Suchen', false, ICON.lupe)}</div>`;
       box.querySelector('[data-af-u="suche"]').addEventListener('click', () => { fensterAuf('ort'); const f = el.querySelector('#af-adresse'); if (f) setTimeout(() => f.focus(), 50); });
       return;
     }

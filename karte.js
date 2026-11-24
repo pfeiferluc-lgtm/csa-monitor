@@ -182,6 +182,13 @@
         if (opts.keinUnfallort) {
           if (opts.standort) ebenen.push(L.circleMarker([opts.standort.lat, opts.standort.lon], { radius: 7, color: '#fff', weight: 2.5, fillColor: FARBE.ich, fillOpacity: 1, interactive: false }).addTo(karte));
           if (opts.vorschlag) ebenen.push(L.circleMarker([opts.vorschlag.lat, opts.vorschlag.lon], { radius: 13, color: '#e5484d', weight: 3, dashArray: '4 4', fillColor: '#ffffff', fillOpacity: .55, interactive: false, className: 'gk-vorschlag' }).addTo(karte));
+          // Suchtreffer: nummerierte Punkte, Tipp wählt aus (Markierungen geben den Klick nicht an die Karte weiter)
+          for (const [i, t] of (opts.treffer || []).entries()) {
+            const m = L.marker([t.lat, t.lon], { title: t.titel, keyboard: true, zIndexOffset: 800 - i,
+              icon: L.divIcon({ className: 'gk-treffer', html: `<span>${t.nr}</span>`, iconSize: [26, 26], iconAnchor: [13, 13] }) }).addTo(karte);
+            if (opts.beiTreffer) m.on('click', () => opts.beiTreffer(i));
+            ebenen.push(m);
+          }
           schilder();
           return;
         }
@@ -281,6 +288,12 @@
         if (opts.keinUnfallort) {
           if (opts.standort) ebenen.push(new g.Marker({ map: karte, position: ll(opts.standort), clickable: false, icon: { path: g.SymbolPath.CIRCLE, scale: 7, fillColor: FARBE.ich, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2.5 } }));
           if (opts.vorschlag) ebenen.push(new g.Circle({ map: karte, center: ll(opts.vorschlag), radius: 6, strokeColor: '#e5484d', strokeWeight: 3, fillColor: '#ffffff', fillOpacity: .55, clickable: false }));
+          for (const [i, t] of (opts.treffer || []).entries()) {
+            const m = new g.Marker({ map: karte, position: ll(t), title: t.titel, label: { text: String(t.nr), color: '#ffffff', fontWeight: '700', fontSize: '12px' },
+              icon: { path: g.SymbolPath.CIRCLE, scale: 12, fillColor: '#2563c9', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 } });
+            if (opts.beiTreffer) m.addListener('click', () => opts.beiTreffer(i));
+            ebenen.push(m);
+          }
           schilder();
           return;
         }
@@ -329,7 +342,8 @@
   // opts: { unfallort, standort, gefahr_m, absperr_m, ergAbs_m, zone: { m, text, kurz }, olive: { laenge_m, winkel, text, kurz }, still: { m, text, kurz },
   //         zugGrad, google: Schlüssel | '', beiVerschieben(ort),
   //         ebene: 'strasse' | 'hybrid' (ohne Angabe: Straße bzw. Google wie bisher), zoomPos: Leaflet-Ecke | false, massstabPos: Leaflet-Ecke, ziehbar: false (Markierung fest),
-  //         keinUnfallort: true (noch keine Einsatzstelle – nur Standort bzw. Vorschlag), mitte: { lat, lon } (Kartenmitte ohne Einsatzstelle),
+  //         keinUnfallort: true (noch keine Einsatzstelle – nur Standort, Vorschlag und Suchtreffer), mitte: { lat, lon } (Kartenmitte ohne Einsatzstelle),
+  //         treffer: [{ lat, lon, nr, titel }] (Suchtreffer, nur ohne Einsatzstelle), beiTreffer(i) (Tipp auf einen Treffer),
   //         beiTippen(ort) (Tippen auf die Karte), vorschlag: { lat, lon } (angetippter Punkt), polster() → { oben, unten, links, rechts } (Freiraum beim Einpassen) }
   async function zeigen(el, opts) {
     el.innerHTML = '';
