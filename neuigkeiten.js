@@ -5,6 +5,9 @@
   if (typeof module === 'object' && module.exports) module.exports = daten;
   else wurzel.GSZNeuigkeiten = daten;
 })(typeof self !== 'undefined' ? self : this, [
+  { version: '2.16.0', datum: '2026-11-25', punkte: [
+    'CSA-Monitor: Hinter dem Namen stehen kleine Felder aus „Personal aktiv“ – ABC-B bzw. ABC1 (ABC-Basis, ABC 1) sowie GF, ZF und VF (Gruppen-, Zug-, Verbandsführer). Zur Information für die Planung. Im Zeitstrahl stehen sie am Bildschirm im Hinweis, wenn man mit der Maus auf einen Punkt zeigt.',
+  ] },
   { version: '2.15.0', datum: '2026-11-24', punkte: [
     'Anfahrt: Die Fenster bleiben immer ganz im Bild. Jedes scrollt in sich, die Kopfzeile mit × bleibt stehen; kleine Fenster (z. B. Stoff) bekommen ihre volle Höhe, große teilen sich den Rest.',
     'Passen nicht alle geöffneten Fenster hin, schließt sich beim Öffnen eines weiteren das zuerst geöffnete – auch beim Drehen des Geräts. Auf dem Handy quer ist die untere Leiste einzeilig.',

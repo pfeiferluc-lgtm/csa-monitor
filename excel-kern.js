@@ -1,6 +1,7 @@
 // Gemeinsamer Kern für das Desktop-Programm (Node) und die Web-App (Browser, iPhone):
 //   Personaltabelle (.xlsm, auch mit Kennwort zum Öffnen) lesen:
-//     - CSA-Träger (Name, Vorname, letzte Übung, fällig bis) aus „CSA-Träger aktiv“
+//     - CSA-Träger (Name, Vorname, letzte Übung, fällig bis) aus „CSA-Träger aktiv“, dazu je Person die Qualifikationen
+//       ABC-Basis, ABC1, Gruppen-, Zug- und Verbandsführer aus „Personal aktiv“ (seit 2.16.0, nur Anzeige im CSA-Monitor)
 //     - Übungsanwesenheit (Personen, Übungen, wer war da) aus „Übungsanwesenheit 2026“, „… 2027“ usw. (ein Reiter je
 //       Jahr seit 14.11.2026, zusammengeführt) bzw. aus „Übungsanwesenheit“ (ältere Mappen)
 //     - Übertragungsschlüssel (Name GSZ_Uebertragung), mit dem die App ihre Meldungen verschlüsselt
@@ -31,6 +32,9 @@
   const ERSTE_ZEILE = 7;          // erste Person
   const SPALTE_NAME = 2, SPALTE_VORNAME = 3;   // B, C
   const KOPF_LETZTE = 'Letzte Übung', KOPF_FAELLIG = 'Fällig bis';
+  // Qualifikationen hinter dem Namen im CSA-Monitor: [Feld, Überschrift in „Personal aktiv“], in dieser Reihenfolge.
+  // Gezeigt wird jedes Kreuz (X), ohne eigene Logik (kein ABC2 ⇒ ABC 1, kein ZF ⇒ GF).
+  const QUALI = [['ABC-B', 'ABC-Basis'], ['ABC1', 'ABC1'], ['GF', 'Gruppenführer'], ['ZF', 'Zugführer'], ['VF', 'Verbandsführer']];
 
   // Blockschlüssel aus ECMA-376 (Agile Encryption)
   const BLOCK_PRUEF_EINGABE = new Uint8Array([0xfe, 0xa7, 0xd2, 0x76, 0x3b, 0x4b, 0x9e, 0x79]);
@@ -263,6 +267,26 @@
     return { ws, zelle, text, zeilen: bereich.e.r + 1, spalten: bereich.e.c + 1 };
   }
 
+  // Qualifikationen aus „Personal aktiv“: Namensschlüssel -> ['ABC-B', 'GF', …]. Spalten über die Überschrift in Zeile 6,
+  // Leerzeichen und Bindestriche egal („ABC 1“ = „ABC1“). Fehlen Reiter oder Spalten, ist die Karte leer bzw. kürzer.
+  function qualiAusMappe(XLSX, wb) {
+    const karte = new Map();
+    const b = blattZugriff(XLSX, wb, BLATT_PERSONAL);
+    if (!b) return karte;
+    const k = s => kopfNorm(s).replace(/[\s-]/g, '');
+    const spalten = QUALI.map(([feld, kopf]) => {
+      for (let c = 1; c <= b.spalten; c++) if (k(b.text(KOPFZEILE, c)) === k(kopf)) return [feld, c];
+      return null;
+    }).filter(Boolean);
+    for (let r = ERSTE_ZEILE; r <= b.zeilen; r++) {
+      const n = b.text(r, SPALTE_NAME);
+      if (n === '') break;
+      const sl = schluessel(n, b.text(r, SPALTE_VORNAME));
+      if (!karte.has(sl)) karte.set(sl, spalten.filter(([, c]) => b.text(r, c).toUpperCase() === 'X').map(([feld]) => feld));
+    }
+    return karte;
+  }
+
   function csaAusMappe(XLSX, wb) {
     const b = blattZugriff(XLSX, wb, BLATT);
     if (!b) throw new Error(`Das Blatt „${BLATT}“ fehlt in der Excel-Datei.`);
@@ -281,6 +305,8 @@
       leute.push({ name: n, vorname: b.text(r, SPALTE_VORNAME),
                    letzte: datum(XLSX, b.zelle(r, cL), d1904), faellig: datum(XLSX, b.zelle(r, cF), d1904) });
     }
+    const quali = qualiAusMappe(XLSX, wb);
+    for (const p of leute) p.quali = quali.get(schluessel(p.name, p.vorname)) || [];
     return leute;
   }
 

@@ -159,6 +159,22 @@ body:not(.handy) .lane.leerlane h2 .n { display: none; }
 .tn .d.ohne { justify-self: center; }
 .marke { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 600; padding: .1rem .45rem;
   border-radius: .3rem; background: var(--bg); justify-self: start; }
+/* Qualifikationen hinter dem Namen (seit 2.16.0): klein und ruhig, ohne Statusfarbe – nur Information für die Planung */
+/* Größe in rem, nicht em: In „Fällig bis …“ (0,8 rem) wären die Felder sonst rund 7 px klein (Gesamtprüfung 25.11.2026).
+   Abgewogen: Rutschen Felder in die nächste Zeile, wird die Seite höher und die Schrift aller etwas kleiner – mit der echten
+   Verteilung bei 1440 × 900 rund 5 % (14,7 → 14,0 px), ab 1920 × 1080 gar nicht. Kleinere Felder (0,56–0,64 rem) brachten
+   nur 93–97 % und sprunghaft, die Felder wären aber schlechter lesbar. */
+.qf { display: inline-block; padding: 0 .32em; font-size: .68rem; font-weight: 700; line-height: 1.2;
+  letter-spacing: .02em; color: var(--ink2); background: var(--surface2); border: 1px solid var(--rand); border-radius: .3em;
+  vertical-align: .12em; white-space: nowrap; }
+.qf + .qf { margin-left: .2em; }
+/* Zelle mit Feldern: Name ungetrennt, die Felder als Block dahinter oder – wenn sie nicht passen – in der Zeile darunter.
+   Enge Zeilenhöhe, damit umbrochene Zeilen die Seite kaum höher machen (sonst kleinere Schrift für alle). */
+.mq { white-space: normal; line-height: 1.05; }
+.mq .nt { font-style: normal; white-space: nowrap; }
+/* Die Felder bleiben zusammen; nur wenn sie zusammen breiter sind als die ganze Zelle (drei Felder in „Fällig bis …“ bei
+   kleinster Schrift), brechen sie untereinander um, statt abgeschnitten zu werden. */
+.qfg { display: inline-block; white-space: normal; }
 .klein li { display: grid; grid-template-columns: 1rem minmax(0, 1fr) 4.2rem; gap: .3rem; font-size: .8rem;
   color: var(--ink2); padding: .18rem .3rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .klein li span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
@@ -383,7 +399,7 @@ body:not([data-ansicht]) > * { visibility: hidden; }
 
 <script>
 // let statt const: Das Programm CSA-Monitor setzt die Daten nach dem Einlesen der Excel-Datei neu (start.js)
-let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-24T12:49"};
+let DATEN = {"leute":[],"app":true,"quelle":"wird geladen …","erzeugt":"2026-11-25T18:53"};
 
 const KAT = {
   1: { label: 'überfällig', c: 'var(--crit)' },
@@ -450,6 +466,22 @@ window.GSZModus = (() => {
   return { stand, wechseln, anwenden, knopf, NAME };
 })();
 
+// Qualifikationen hinter dem Namen (seit 2.16.0): ABC-B, ABC1, GF, ZF, VF aus „Personal aktiv“ (nur Anzeige für die
+// Planung). Als <b>/<i>, damit die Namens-Selektoren (span:first-child, span:nth-child(2)) sie nicht treffen. Daten ohne
+// „quali“ (älterer Monitor aus csa_monitor_erzeugen.py) ergeben keine Felder.
+// Die Namensspalten sind schmal (Ampel am Bildschirm rund 115 px): In einer Zeile mit dem Namen hätten die Felder die
+// Schrift der ganzen Seite verkleinert (im Test von 16 auf 12 px). Deshalb steht der Name ungetrennt vorn, und die Felder
+// rutschen als Block in die nächste Zeile, wenn sie nicht mehr dahinter passen (Zelle mit Klasse „mq“).
+const qualiListe = p => (p && Array.isArray(p.quali) ? p.quali : []);
+function qualiFelder(p) {
+  const q = qualiListe(p);
+  return q.length ? `<b class="qfg">${q.map(x => `<b class="qf">${esc(x)}</b>`).join('')}</b>` : '';
+}
+function qualiText(p) { return qualiListe(p).join(' '); }
+// Inhalt einer Namenszelle mit Feldern; mq(p) ist die Zusatzklasse der Zelle (nur, wenn es Felder gibt)
+function nameMitQuali(p) { return qualiListe(p).length ? `<i class="nt">${esc(p.voll)}</i> ${qualiFelder(p)}` : esc(p.voll); }
+const mq = p => (qualiListe(p).length ? 'mq' : '');
+
 function personen(h) {
   return DATEN.leute.map(p => {
     const f = parse(p.faellig);
@@ -493,7 +525,7 @@ function ampel(L) {
   if (handy() && zuKat === null && L.length) zuKat = new Set(L.filter(p => p.kat === 4).length > 6 ? [4] : []);
   $('ampel').innerHTML = [1, 2, 3, 4].map(k => {
     const K = KAT[k], liste = L.filter(p => p.kat === k), spalte = k === 1 ? 'fällig seit' : 'fällig am';
-    const zeilen = liste.map(p => `<li><span>${esc(p.voll)}</span>` + (p.f
+    const zeilen = liste.map(p => `<li><span class="${mq(p)}">${nameMitQuali(p)}</span>` + (p.f
       ? `<span class="d zahl">${kurz(p.f)}${p.vorlaeufig ? '<span class="vorl">*</span>' : ''}</span><span class="t zahl">${tagText(p.t)}</span>`
       : '<span class="d ohne">keine Übung</span>') + '</li>').join('');
     const zu = handy() && liste.length && zuKat && zuKat.has(k);
@@ -531,7 +563,7 @@ function planung(h, L) {
   $('tnTitel').textContent = `Teilnehmer · ${N} von ${L.length}, am nächsten fällig`;
   $('tn').innerHTML = L.slice(0, N).map((p, i) => {
     const Z = ZUM_TERMIN[katT(p)];
-    return `<li><span class="nr zahl">${i + 1}</span><span class="name">${esc(p.voll)}</span>` +
+    return `<li><span class="nr zahl">${i + 1}</span><span class="name ${mq(p)}">${nameMitQuali(p)}</span>` +
            `<span class="d zahl${p.f ? '' : ' ohne'}">${kurz(p.f)}</span>` +
            `<span class="marke" style="--bg:${Z.bg}"><span class="icon" style="--c:${Z.c}">${Z.icon}</span>${Z.label}</span></li>`;
   }).join('');
@@ -541,7 +573,7 @@ function planung(h, L) {
   $('kl').innerHTML = m ? faellig2.map((p, i) => {
     const drin = i < N;
     return `<li class="${drin ? '' : 'offen'}" title="${drin ? 'eingeplant' : 'nicht eingeplant'}">` +
-           `<span>${drin ? '✓' : '–'}</span><span>${esc(p.voll)}</span><span class="d zahl${p.f ? '' : ' ohne'}">${kurz(p.f)}</span></li>`;
+           `<span>${drin ? '✓' : '–'}</span><span class="${mq(p)}">${nameMitQuali(p)}</span><span class="d zahl${p.f ? '' : ' ohne'}">${kurz(p.f)}</span></li>`;
   }).join('') : '<li><span></span><span>– niemand –</span><span></span></li>';
   return { termin, N };
 }
@@ -592,7 +624,8 @@ function zeitstrahlListe(h, L, termin) {
   const m0 = new Date(h.getFullYear(), h.getMonth(), 1);
   const idx = d => (d.getFullYear() - m0.getFullYear()) * 12 + d.getMonth() - m0.getMonth();
   const tIdx = idx(termin);
-  const marke = (p, zusatz) => `<span class="chip" style="--c:${KAT[p.kat].c}" title="${esc(p.voll)}">${esc(p.kurz)}` +
+  const marke = (p, zusatz) => `<span class="chip" style="--c:${KAT[p.kat].c}" title="${esc(p.voll)}` +
+                               `${qualiText(p) ? ' · ' + esc(qualiText(p)) : ''}">${esc(p.kurz)}` +
                                (zusatz ? ` <small>${zusatz}</small>` : '') + '</span>';
   const zeile = (titel, unter, liste, tm, f) =>
     `<div class="zeile${tm ? ' tm' : ''}"><span class="mo">${titel}${unter ? `<small>${unter}</small>` : ''}</span>` +
@@ -637,7 +670,7 @@ function zeitstrahl(h, L, termin) {
   const zaehl = new Array(14).fill(0);
   L.forEach((p, r) => {
     const g = r % 2 ? ' gerade' : '';
-    const tip = `data-tip="${esc(p.voll)}|${p.f ? 'fällig ' + lang(p.f) + ' · ' + tagText(p.t) : 'keine Übung erfasst'}|${KAT[p.kat].label}` +
+    const tip = `data-tip="${esc(p.voll)}${qualiText(p) ? ' · ' + esc(qualiText(p)) : ''}|${p.f ? 'fällig ' + lang(p.f) + ' · ' + tagText(p.t) : 'keine Übung erfasst'}|${KAT[p.kat].label}` +
                 `${p.vorlaeufig ? ' · Belastungsübung aus der App, in Excel noch nicht übernommen' : ''}"`;
     html += `<div class="nm${g}" title="${esc(p.voll)}">${esc(p.kurz)}</div>`;
     html += `<div class="${g}">${p.kat === 1 ? `<span class="dot" style="left:50%;--c:var(--crit)" ${tip}></span>` : ''}</div>`;
@@ -701,7 +734,11 @@ function zuBreit(el) {
   const cs = getComputedStyle(el);
   if (cs.display === 'inline' || !el.clientWidth) return false;      // Inline-Elemente haben keine eigene Breite
   const r = document.createRange();
-  r.selectNodeContents(el);
+  // Zelle mit Qualifikationsfeldern (seit 2.16.0): Sie bricht um statt „…“ zu setzen – passen die Felder nicht, stehen sie
+  // in der Zeile darunter. Abgeschnitten werden kann nur der Name selbst, also nur ihn messen. Sonst galt eine genau
+  // passende Zeile (152,8 von 153,0 px) wegen der Luft unten als abgeschnitten, und die Schrift wurde unnötig kleiner.
+  const nt = el.classList.contains('mq') ? el.querySelector('.nt') : null;
+  r.selectNodeContents(nt || el);
   // genaue (gebrochene) Breite statt clientWidth (ganze Pixel) und ein halbes Pixel Luft: Schon 0,2 px zu viel setzt der
   // Browser als „…“ (14.11.2026: „Bauerfeind, Sebasti…“ galt mit der alten Toleranz von +0,25 px als passend)
   const innen = el.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) -
